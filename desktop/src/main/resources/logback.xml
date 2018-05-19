@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="false">
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>
+                %d{yyyy-MM-dd HH:mm:ss} [%20.20thread] %highlight(%-5level) %cyan(%-30.30logger{29}) - %msg%n
+            </Pattern>
+        </layout>
+    </appender>
+
+    <root level="info">
+        <appender-ref ref="STDOUT" />
+    </root>
+
+    <logger name="org.springframework.web.reactive.DispatcherHandler" level="DEBUG" />
+    <logger name="Exposed" level="DEBUG" />
+</configuration>

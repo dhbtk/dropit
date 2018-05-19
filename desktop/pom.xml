@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>io.edanni</groupId>
+		<artifactId>dropit-parent</artifactId>
+		<version>0.1</version>
+	</parent>
+
+	<artifactId>dropit-desktop</artifactId>
+	<version>0.1</version>
+
+	<properties>
+        <!-- dependency versions -->
+		<exposed.version>0.10.2</exposed.version>
+		<sqlite-jdbc.version>3.21.0.1</sqlite-jdbc.version>
+		<spring.version>5.0.5.RELEASE</spring.version>
+		<logback.version>1.2.3</logback.version>
+		<reactor-netty.version>0.7.7.RELEASE</reactor-netty.version>
+		<jackson.version>2.9.2</jackson.version>
+        <jooq.version>3.10.7</jooq.version>
+        <flyway.version>5.0.7</flyway.version>
+        <hikari.version>2.7.8</hikari.version>
+
+        <!-- build config -->
+        <build-db-path>/tmp/dropit-tmp.db</build-db-path>
+	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework</groupId>
+				<artifactId>spring-framework-bom</artifactId>
+				<version>${spring.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<dependencies>
+		<dependency>
+			<groupId>io.edanni</groupId>
+			<artifactId>dropit-common</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>no.tornado</groupId>
+			<artifactId>tornadofx</artifactId>
+			<version>1.7.15</version>
+		</dependency>
+
+        <!-- db -->
+
+		<dependency>
+			<groupId>org.xerial</groupId>
+			<artifactId>sqlite-jdbc</artifactId>
+			<version>${sqlite-jdbc.version}</version>
+		</dependency>
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>${hikari.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>${flyway.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jooq</groupId>
+            <artifactId>jooq</artifactId>
+            <version>${jooq.version}</version>
+        </dependency>
+
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-classic</artifactId>
+			<version>${logback.version}</version>
+		</dependency>
+
+		<!-- spring -->
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-web</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-webflux</artifactId>
+		</dependency>
+
+		<!-- testing -->
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+
+		<!-- web server -->
+
+		<dependency>
+			<groupId>io.projectreactor.ipc</groupId>
+			<artifactId>reactor-netty</artifactId>
+			<version>${reactor-netty.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>${jackson.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.module</groupId>
+			<artifactId>jackson-module-kotlin</artifactId>
+			<version>${jackson.version}</version>
+		</dependency>
+		
+	</dependencies>
+
+	<build>
+		<plugins>
+			<!-- test -->
+
+			<plugin>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.21.0</version>
+				<configuration>
+					<excludes>
+						<exclude>**/*IntegrationTest.java</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<version>2.21.0</version>
+				<configuration>
+					<includes>
+						<include>**/*IntegrationTest.java</include>
+					</includes>
+				</configuration>
+			</plugin>
+
+			<!-- build -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>2.6</version>
+				<executions>
+					<execution>
+						<id>make-assembly</id>
+						<phase>package</phase>
+						<goals> <goal>single</goal> </goals>
+						<configuration>
+							<archive>
+								<manifest>
+									<mainClass>${main.class}</mainClass>
+								</manifest>
+							</archive>
+							<descriptorRefs>
+								<descriptorRef>jar-with-dependencies</descriptorRef>
+							</descriptorRefs>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <tasks>
+                                <delete file="${build-db-path}" />
+                            </tasks>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+			<plugin>
+				<groupId>org.flywaydb</groupId>
+				<artifactId>flyway-maven-plugin</artifactId>
+				<version>${flyway.version}</version>
+
+				<executions>
+					<execution>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>migrate</goal>
+						</goals>
+					</execution>
+				</executions>
+
+				<configuration>
+					<url>jdbc:sqlite:${build-db-path}</url>
+					<locations>
+						<location>filesystem:src/main/resources/db/migration</location>
+					</locations>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.jooq</groupId>
+				<artifactId>jooq-codegen-maven</artifactId>
+				<version>${jooq.version}</version>
+
+				<executions>
+					<execution>
+						<id>generate-pg</id>
+						<phase>generate-sources</phase>
+
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<configuration>
+							<jdbc>
+								<driver>org.sqlite.JDBC</driver>
+								<url>jdbc:sqlite:${build-db-path}</url>
+							</jdbc>
+							<generator>
+								<database>
+									<includes>.*</includes>
+                                    <excludes>flyway_schema_history</excludes>
+									<inputSchema />
+									<includeSequences>false</includeSequences>
+									<includePrimaryKeys>false</includePrimaryKeys>
+									<includeUniqueKeys>false</includeUniqueKeys>
+									<includeForeignKeys>false</includeForeignKeys>
+								</database>
+								<target>
+									<packageName>dropit.jooq</packageName>
+									<directory>target/generated-sources</directory>
+								</target>
+							</generator>
+						</configuration>
+					</execution>
+				</executions>
+
+			</plugin>
+		</plugins>
+	</build>
+
+</project>

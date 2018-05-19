@@ -1,0 +1,201 @@
+openapi: 3.0.0
+info:
+  title: DropIt
+  description: API specification for the DropIt desktop server.
+  version: 0.1.0
+
+servers:
+  - url: https://localhost:45443
+    description: Your local instance for DropIt
+
+paths:
+  /token:
+    post:
+      summary: Creates an authorization request for this client.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+      responses:
+        '200':
+          description: GUID that will be the access token for this client, pending authorization.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "034920f2-9f56-431a-a0a4-bba2267093f0"
+        '401':
+          description: Supplied ID has already requested authorization.
+    get:
+      security:
+        - bearer: []
+      summary: Returns the authorization status for this client.
+      responses:
+        '200':
+          description: Authorization status for this client.
+          content:
+            text/plain:
+              schema:
+                type: string
+                enum:
+                  - PENDING
+                  - DENIED
+                  - AUTHORIZED
+  /transfers:
+    post:
+      security:
+        - bearer: []
+      summary: Creates a new transfer.
+      description: This will send the required metadata to the server so that information about transfer progress can be shown.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+      responses:
+        '200':
+          description: GUID for the new transfer.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: edefef5b-bdc7-45d9-830c-1e048b3b0ebe
+    get:
+      security:
+        - bearer: []
+      summary: Returns a list of pending transfers.
+      responses:
+        '200':
+          description: JSON array with the GUIDs for the pending transfers and the pending files for each.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PendingTransfer'
+  /transfers/{guid}:
+    get:
+      security:
+        - bearer: []
+      summary: Status for a transfer.
+      parameters:
+        - name: guid
+          in: path
+          description: Transfer GUID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferInfo'
+  /files/{guid}:
+    post:
+      security:
+        - bearer: []
+      summary: Uploads a file.
+      parameters:
+        - name: guid
+          in: path
+          description: File GUID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: OK
+components:
+  securitySchemes:
+    token:
+      type: http
+      scheme: bearer
+      bearerFormat: GUID
+  schemas:
+    TokenRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      example:
+        id: "aa1a113f-0328-4607-9471-e93ae35b88b8"
+        name: My Really Nice Phone
+    TransferRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/FileRequest'
+      example:
+        name: Today's Photos
+        files:
+          - id: d439ed07-5617-4d5a-aafa-b6e8fffa28d1
+            fileName: "2018_04_27-0705.jpg"
+            mimeType: image/jpeg
+            fileSize: 120000
+          - id: 846f5fca-d664-4b9f-9f49-50c54aa73e46
+            fileName: "2018_04_27-0708.jpg"
+            mimeType: image/jpeg
+            fileSize: 130000
+    FileRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        fileName:
+          type: string
+        mimeType:
+          type: string
+        fileSize:
+          type: number
+    PendingTransfer:
+      type: object
+      properties:
+        id:
+          type: string
+        files:
+          type: array
+          items:
+            type: string
+      example:
+        id: edefef5b-bdc7-45d9-830c-1e048b3b0ebe
+        files:
+          - 846f5fca-d664-4b9f-9f49-50c54aa73e46
+    TransferInfo:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - PENDING
+            - FINISHED
+        files:
+          type: object
+          additionalProperties:
+            type: string
+            enum:
+              - PENDING
+              - FAILED
+              - FINISHED
+      example:
+        status: PENDING
+        files:
+          d439ed07-5617-4d5a-aafa-b6e8fffa28d1: FINISHED
+          846f5fca-d664-4b9f-9f49-50c54aa73e46: PENDING
