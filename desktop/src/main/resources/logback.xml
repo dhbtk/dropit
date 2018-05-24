@@ -14,5 +14,5 @@
     </root>
 
     <logger name="org.springframework.web.reactive.DispatcherHandler" level="DEBUG" />
-    <logger name="Exposed" level="DEBUG" />
+    <logger name="org.jooq" level="DEBUG"/>
 </configuration>

@@ -5,6 +5,8 @@ import dropit.application.dto.TokenStatus
 import dropit.domain.entity.Phone
 import dropit.infrastructure.i18n.t
 import dropit.jooq.tables.Phone.PHONE
+import dropit.jooq.tables.Transfer.TRANSFER
+import dropit.jooq.tables.TransferFile.TRANSFER_FILE
 import org.jooq.DSLContext
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -12,6 +14,7 @@ import java.util.*
 
 @Service
 class PhoneService(val create: DSLContext) {
+    var phoneChangeListener: (() -> Unit)? = null
     /**
      * Called from web
      *
@@ -31,6 +34,7 @@ class PhoneService(val create: DSLContext) {
                 if(inserted == 0) {
                     throw RuntimeException("Could not save phone record")
                 }
+                phoneChangeListener?.invoke()
                 phone.token.toString()
             }
         }
@@ -74,6 +78,35 @@ class PhoneService(val create: DSLContext) {
                     ?: throw RuntimeException(t("phoneService.common.phoneNotFound", id))
             create.newRecord(PHONE, phone.copy(updatedAt = LocalDateTime.now(), status = TokenStatus.DENIED)).update()
             create.fetchOne(PHONE, PHONE.ID.eq(id.toString())).into(Phone::class.java)
+        }
+    }
+
+    /**
+     * Called from UI
+     *
+     * Lists all phones.
+     */
+    fun listPhones(showDenied: Boolean): List<Phone> {
+        val condition = if (showDenied) {
+            PHONE.STATUS.isNotNull
+        } else {
+            PHONE.STATUS.ne(TokenStatus.DENIED.name)
+        }
+        return create.selectFrom(PHONE).where(condition).orderBy(PHONE.CREATED_AT.desc()).fetchInto(Phone::class.java)
+    }
+
+    /**
+     * Called from UI
+     *
+     * Deletes a denied phone.
+     */
+    fun deletePhone(id: UUID) {
+        create.transaction { _ ->
+            create.deleteFrom(TRANSFER_FILE).where(TRANSFER_FILE.TRANSFER_ID.`in`(
+                    create.select(TRANSFER.ID).from(TRANSFER).where(TRANSFER.PHONE_ID.eq(id.toString()))))
+                    .execute()
+            create.deleteFrom(TRANSFER).where(TRANSFER.PHONE_ID.eq(id.toString())).execute()
+            create.deleteFrom(PHONE).where(PHONE.ID.eq(id.toString())).execute()
         }
     }
 }

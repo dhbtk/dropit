@@ -14,7 +14,7 @@ class ConfigFolderProvider {
         configFolder = when {
             os.contains("win") -> Paths.get(System.getenv("APPDATA"), APP_NAME)
             os.contains("mac") -> Paths.get(System.getProperty("user.home"), "Library", APP_NAME)
-            else -> Paths.get(System.getenv("HOME"), ".${APP_NAME.toLowerCase()}")
+            else -> Paths.get(System.getProperty("user.home"), ".${APP_NAME.toLowerCase()}")
         }
         val file = configFolder.toFile()
         if(file.exists() && !file.isDirectory) {
