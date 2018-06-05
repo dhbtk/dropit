@@ -2,6 +2,8 @@ package dropit.ui
 
 import dropit.APP_NAME
 import dropit.Application
+import dropit.domain.entity.Phone
+import dropit.domain.entity.Transfer
 import dropit.infrastructure.i18n.t
 import javafx.application.Platform
 import java.awt.*
@@ -10,8 +12,8 @@ import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.imageio.ImageIO
 
-class AppTrayIcon() {
-    val trayIcon: TrayIcon
+object AppTrayIcon {
+    val trayIcon: TrayIcon?
 
     init {
         Toolkit.getDefaultToolkit()
@@ -35,31 +37,11 @@ class AppTrayIcon() {
         icon.isImageAutoSize = true
         SystemTray.getSystemTray().add(icon)
         icon.addMouseListener(object : MouseAdapter() {
-            override fun mouseReleased(e: MouseEvent?) {
-                if (e!!.isPopupTrigger) {
-
-                }
-            }
-
-            override fun mouseEntered(e: MouseEvent?) {
-
-            }
-
             override fun mouseClicked(e: MouseEvent?) {
                 if (e!!.button == MouseEvent.BUTTON1) {
                     togglePrimaryStage()
-                } else {
                 }
             }
-
-            override fun mouseExited(e: MouseEvent?) {
-
-            }
-
-            override fun mousePressed(e: MouseEvent?) {
-
-            }
-
         })
         trayIcon = icon
     }
@@ -75,5 +57,21 @@ class AppTrayIcon() {
                 }
             }
         }
+    }
+
+    fun notifyPhoneRequest(phone: Phone) {
+        trayIcon?.displayMessage(
+                t("appTrayIcon.notifyPhoneRequest.title"),
+                t("appTrayIcon.notifyPhoneRequest.message", phone.name!!),
+                TrayIcon.MessageType.INFO
+        )
+    }
+
+    fun notifyTransferStart(transfer: Transfer) {
+        trayIcon?.displayMessage(
+                t("appTrayIcon.notifyTransferStart.title"),
+                t("appTrayIcon.notifyTransferStart.message", transfer.name!!, transfer.phone?.name!!),
+                TrayIcon.MessageType.INFO
+        )
     }
 }

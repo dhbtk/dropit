@@ -141,5 +141,9 @@ class PhoneListView : View() {
         }
 
         listAllPhones()
+
+        Thread {
+            Thread.sleep(2000)
+        }.start()
     }
 }

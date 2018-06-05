@@ -12,8 +12,11 @@ import org.springframework.web.reactive.config.EnableWebFlux
 @EnableWebFlux
 @PropertySource("classpath:/config/application.properties")
 class WebConfiguration {
-    @Bean
-    fun propertySourcesPlaceholderConfigurer() = PropertySourcesPlaceholderConfigurer()
+    companion object {
+        @Bean
+        @JvmStatic
+        fun propertySourcesPlaceholderConfigurer() = PropertySourcesPlaceholderConfigurer()
+    }
 
     @Bean
     fun webHandler(applicationContext: ApplicationContext): DispatcherHandler {

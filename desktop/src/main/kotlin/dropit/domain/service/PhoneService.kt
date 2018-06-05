@@ -7,6 +7,7 @@ import dropit.infrastructure.i18n.t
 import dropit.jooq.tables.Phone.PHONE
 import dropit.jooq.tables.Transfer.TRANSFER
 import dropit.jooq.tables.TransferFile.TRANSFER_FILE
+import dropit.ui.AppTrayIcon
 import org.jooq.DSLContext
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -35,6 +36,7 @@ class PhoneService(val create: DSLContext) {
                     throw RuntimeException("Could not save phone record")
                 }
                 phoneChangeListener?.invoke()
+                AppTrayIcon.notifyPhoneRequest(phone)
                 phone.token.toString()
             }
         }

@@ -1,9 +1,10 @@
 package dropit
 
 import dropit.application.settings.AppSettings
-import dropit.ui.AppTrayIcon
+import dropit.ui.AppTrayIcon.trayIcon
 import dropit.ui.view.MainView
 import javafx.application.Platform
+import javafx.scene.image.Image
 import javafx.stage.Stage
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import tornadofx.*
@@ -12,9 +13,8 @@ import kotlin.reflect.KClass
 
 const val APP_NAME = "DropIt"
 
-class Application : App(MainView::class) {
+class Application : App(Image(Application::class.java.getResourceAsStream("/ui/icon.png")), MainView::class) {
     companion object {
-        val trayIcon = AppTrayIcon().trayIcon
         val context = AnnotationConfigApplicationContext("dropit")
         var primaryStage: Stage? = null
 
@@ -36,7 +36,7 @@ class Application : App(MainView::class) {
 
     override fun start(stage: Stage) {
         primaryStage = stage
-        trayIcon.toolTip = APP_NAME
+        trayIcon?.toolTip = APP_NAME
         stage.setOnCloseRequest {
             it.consume()
             stage.hide()
