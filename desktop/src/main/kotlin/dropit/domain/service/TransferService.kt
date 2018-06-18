@@ -21,6 +21,11 @@ import java.util.*
 
 @Service
 class TransferService(val create: DSLContext, val settings: AppSettings) {
+    /**
+     * Called from web
+     *
+     * creates a transfer from a transfer request.
+     */
     fun createTransfer(token: String, request: TransferRequest): String {
         return create.transactionResult { _ ->
             val phone = create.fetchOne(PHONE, PHONE.TOKEN.eq(token)).into(Phone::class.java)
@@ -50,6 +55,11 @@ class TransferService(val create: DSLContext, val settings: AppSettings) {
         }
     }
 
+    /**
+     * Called from web
+     *
+     * uploads a file, notifying the UI of progress.
+     */
     fun uploadFile(token: String, fileId: String, body: Mono<FilePart>): Mono<Void> {
         val phone = create.fetchOne(PHONE, PHONE.TOKEN.eq(token)).into(Phone::class.java)
                 ?: throw UnauthorizedException()

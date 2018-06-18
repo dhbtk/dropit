@@ -3,6 +3,8 @@ package dropit.domain.service
 import dropit.AbstractIntegrationTest
 import dropit.application.dto.TokenRequest
 import dropit.application.dto.TokenStatus
+import dropit.jooq.tables.Phone.PHONE
+import org.jooq.DSLContext
 import org.junit.Assert
 import org.junit.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -78,5 +80,22 @@ class PhoneServiceIntegrationTests : AbstractIntegrationTest() {
         } catch(e: RuntimeException) {
             // ok
         }
+    }
+
+    @Test
+    @Sql("dataset/clear.sql", "dataset/phone.sql")
+    fun `it should list phones, correctly filtering by authorization status`() {
+        val nonDenied = phoneService.listPhones(false)
+        Assert.assertEquals(0, nonDenied.filter { it.status == TokenStatus.DENIED }.size)
+        val denied = phoneService.listPhones(true)
+        Assert.assertNotEquals(0, denied.filter { it.status == TokenStatus.DENIED }.size)
+    }
+
+    @Test
+    @Sql("dataset/clear.sql", "dataset/phone.sql")
+    fun `it should delete a phone successfully`() {
+        val phones = phoneService.listPhones(false)
+        phoneService.deletePhone(phones[0].id!!)
+        Assert.assertEquals(phones.size - 1, phoneService.listPhones(false).size)
     }
 }

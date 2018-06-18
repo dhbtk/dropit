@@ -4,11 +4,13 @@ import dropit.domain.entity.Settings
 import dropit.infrastructure.i18n.t
 import dropit.jooq.tables.Settings.SETTINGS
 import org.jooq.DSLContext
+import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Component
+import java.nio.file.Files
 import java.nio.file.Paths
 
 @Component
-class AppSettings(val create: DSLContext) {
+class AppSettings(val create: DSLContext, val applicationContext: ApplicationContext) {
     var firstStart: Boolean = false
 
     var settings: Settings = createDefaultSettings()
@@ -33,8 +35,13 @@ class AppSettings(val create: DSLContext) {
     }
 
     private fun getDefaultTransferFolder(): String {
-        val path = Paths.get(System.getProperty("user.home"), t("appSettings.init.defaultTransferFolder"))
-        (path.toFile().exists() && path.toFile().isDirectory) || path.toFile().mkdirs() || throw RuntimeException("Could not create default transfer folder $path")
-        return path.toString()
+        return if (applicationContext.environment.acceptsProfiles("test")) {
+            val folder = Files.createTempDirectory("dropit")
+            folder.toString()
+        } else {
+            val path = Paths.get(System.getProperty("user.home"), t("appSettings.init.defaultTransferFolder"))
+            (path.toFile().exists() && path.toFile().isDirectory) || path.toFile().mkdirs() || throw RuntimeException("Could not create default transfer folder $path")
+            path.toString()
+        }
     }
 }

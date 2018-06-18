@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Scope
 import org.springframework.web.context.WebApplicationContext
+import java.nio.file.Files
 import javax.sql.DataSource
 
 @Configuration
@@ -25,9 +26,9 @@ class DatabaseConfiguration {
     fun dataSource(applicationContext: ApplicationContext, configFolderProvider: ConfigFolderProvider): DataSource {
         val dataSource = HikariDataSource()
         dataSource.jdbcUrl =  if(applicationContext.environment.acceptsProfiles("test")) {
-            "jdbc:sqlite::mem:"
+            "jdbc:sqlite:${configFolderProvider.configFolder.resolve("$APP_NAME.test.db")}"
         } else {
-            "jdbc:sqlite:${configFolderProvider.configFolder.resolve("${APP_NAME}.db")}"
+            "jdbc:sqlite:${configFolderProvider.configFolder.resolve("$APP_NAME.db")}"
         }
         dataSource.maximumPoolSize = 20
         dataSource.poolName = "pool"
