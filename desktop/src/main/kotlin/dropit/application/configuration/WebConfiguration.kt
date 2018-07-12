@@ -1,5 +1,6 @@
 package dropit.application.configuration
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -22,4 +23,7 @@ class WebConfiguration {
     fun webHandler(applicationContext: ApplicationContext): DispatcherHandler {
         return DispatcherHandler(applicationContext)
     }
+
+    @Bean
+    fun objectMapper() = ObjectMapper()
 }
