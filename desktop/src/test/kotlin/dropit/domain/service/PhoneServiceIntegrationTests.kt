@@ -3,8 +3,6 @@ package dropit.domain.service
 import dropit.AbstractIntegrationTest
 import dropit.application.dto.TokenRequest
 import dropit.application.dto.TokenStatus
-import dropit.jooq.tables.Phone.PHONE
-import org.jooq.DSLContext
 import org.junit.Assert
 import org.junit.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -16,7 +14,7 @@ class PhoneServiceIntegrationTests : AbstractIntegrationTest() {
     lateinit var phoneService: PhoneService
 
     @Test
-    @Sql("dataset/clear.sql")
+    @Sql("/dataset/clear.sql")
     fun `it creates a token for a given request and it is in "pending" status`() {
         val request = TokenRequest(UUID.randomUUID().toString(), "test phone")
         val token = phoneService.requestToken(request)
@@ -26,7 +24,7 @@ class PhoneServiceIntegrationTests : AbstractIntegrationTest() {
     }
 
     @Test
-    @Sql("dataset/clear.sql")
+    @Sql("/dataset/clear.sql")
     fun `it throws an exception on an unknown token`() {
         try {
             val status = phoneService.getTokenStatus("asdf")
@@ -37,7 +35,7 @@ class PhoneServiceIntegrationTests : AbstractIntegrationTest() {
     }
 
     @Test
-    @Sql("dataset/clear.sql")
+    @Sql("/dataset/clear.sql")
     fun `it should create a phone and approve it`() {
         val request = TokenRequest(UUID.randomUUID().toString(), "test phone")
         val token = phoneService.requestToken(request)
@@ -49,7 +47,7 @@ class PhoneServiceIntegrationTests : AbstractIntegrationTest() {
     }
 
     @Test
-    @Sql("dataset/clear.sql")
+    @Sql("/dataset/clear.sql")
     fun `it should not authorize a phone that does not exist`() {
         try {
             phoneService.authorizePhone(UUID.randomUUID())
@@ -60,7 +58,7 @@ class PhoneServiceIntegrationTests : AbstractIntegrationTest() {
     }
 
     @Test
-    @Sql("dataset/clear.sql")
+    @Sql("/dataset/clear.sql")
     fun `it should create a phone and deny it`() {
         val request = TokenRequest(UUID.randomUUID().toString(), "test phone")
         val token = phoneService.requestToken(request)
@@ -72,7 +70,7 @@ class PhoneServiceIntegrationTests : AbstractIntegrationTest() {
     }
 
     @Test
-    @Sql("dataset/clear.sql")
+    @Sql("/dataset/clear.sql")
     fun `it should not deauthorize a phone that does not exist`() {
         try {
             phoneService.denyPhone(UUID.randomUUID())
@@ -83,7 +81,7 @@ class PhoneServiceIntegrationTests : AbstractIntegrationTest() {
     }
 
     @Test
-    @Sql("dataset/clear.sql", "dataset/phone.sql")
+    @Sql("/dataset/clear.sql", "/dataset/phone.sql")
     fun `it should list phones, correctly filtering by authorization status`() {
         val nonDenied = phoneService.listPhones(false)
         Assert.assertEquals(0, nonDenied.filter { it.status == TokenStatus.DENIED }.size)
@@ -92,7 +90,7 @@ class PhoneServiceIntegrationTests : AbstractIntegrationTest() {
     }
 
     @Test
-    @Sql("dataset/clear.sql", "dataset/phone.sql")
+    @Sql("/dataset/clear.sql", "/dataset/phone.sql")
     fun `it should delete a phone successfully`() {
         val phones = phoneService.listPhones(false)
         phoneService.deletePhone(phones[0].id!!)

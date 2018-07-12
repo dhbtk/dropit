@@ -28,7 +28,7 @@ class TransferService(val create: DSLContext, val settings: AppSettings) {
      */
     fun createTransfer(token: String, request: TransferRequest): String {
         return create.transactionResult { _ ->
-            val phone = create.fetchOne(PHONE, PHONE.TOKEN.eq(token)).into(Phone::class.java)
+            val phone = create.fetchOne(PHONE, PHONE.TOKEN.eq(token))?.into(Phone::class.java)
                     ?: throw UnauthorizedException()
             val transferId = UUID.randomUUID()
             val count = create.insertInto(TRANSFER)

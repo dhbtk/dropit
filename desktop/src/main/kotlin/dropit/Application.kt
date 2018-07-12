@@ -48,3 +48,7 @@ class Application : App(Image(Application::class.java.getResourceAsStream("/ui/i
         return FX.dicontainer!!.getInstance(AppSettings::class).firstStart
     }
 }
+
+fun main(args: Array<String>) {
+    javafx.application.Application.launch(Application::class.java, *args)
+}

@@ -6,7 +6,6 @@ import dropit.application.dto.TransferRequest
 import org.junit.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.io.ClassPathResource
-import org.springframework.http.client.MultipartBodyBuilder
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.web.reactive.function.BodyInserters.fromMultipartData
 import org.springframework.web.reactive.function.client.WebClient
@@ -18,7 +17,7 @@ class TransferServiceIntegrationTests : AbstractIntegrationTest() {
     lateinit var transferService: TransferService
 
     @Test
-    @Sql("dataset/clear.sql", "dataset/phone.sql")
+    @Sql("/dataset/clear.sql", "/dataset/phone.sql")
     fun `it should upload a test file and mark the transfer as complete`() {
         val phoneToken = "b145285e-7ac5-4553-a49d-8940c12ea47d"
         val fileId = "d3c55137-46ed-4bd9-8637-f205a38cab96"
@@ -43,6 +42,7 @@ class TransferServiceIntegrationTests : AbstractIntegrationTest() {
 
         client.post()
                 .uri("/files/{id}", fileId)
+                .header("Authorization", "Bearer $phoneToken")
                 .body(fromMultipartData("file",  ClassPathResource("zeroes.bin")))
                 .retrieve().bodyToMono(Void::class.java).block()
     }

@@ -105,6 +105,16 @@
 			<artifactId>spring-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-tx</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+            <scope>test</scope>
+        </dependency>
 
 
 		<!-- web server -->
@@ -170,7 +180,7 @@
 						<configuration>
 							<archive>
 								<manifest>
-									<mainClass>${main.class}</mainClass>
+                                    <mainClass>dropit.ApplicationKt</mainClass>
 								</manifest>
 							</archive>
 							<descriptorRefs>

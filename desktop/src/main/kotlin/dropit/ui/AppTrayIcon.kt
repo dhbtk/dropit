@@ -13,37 +13,41 @@ import java.awt.event.MouseEvent
 import javax.imageio.ImageIO
 
 object AppTrayIcon {
-    val trayIcon: TrayIcon?
+    var trayIcon: TrayIcon?
 
     init {
-        Toolkit.getDefaultToolkit()
-        val popUpMenu = PopupMenu()
-        val showItem = MenuItem("Show", MenuShortcut(KeyEvent.VK_S, true))
-        showItem.addActionListener {
-            togglePrimaryStage()
-        }
-        popUpMenu.add(showItem)
-        popUpMenu.addSeparator()
-        val exitItem = MenuItem("Exit", MenuShortcut(KeyEvent.VK_E, true))
-        exitItem.addActionListener {
-            Application.exit()
-        }
-        popUpMenu.add(exitItem)
-        val icon = TrayIcon(
-                ImageIO.read(AppTrayIcon::class.java.getResourceAsStream("/ui/icon.png")),
-                t("trayIcon.starting", APP_NAME),
-                popUpMenu
-        )
-        icon.isImageAutoSize = true
-        SystemTray.getSystemTray().add(icon)
-        icon.addMouseListener(object : MouseAdapter() {
-            override fun mouseClicked(e: MouseEvent?) {
-                if (e!!.button == MouseEvent.BUTTON1) {
-                    togglePrimaryStage()
-                }
+        try {
+            Toolkit.getDefaultToolkit()
+            val popUpMenu = PopupMenu()
+            val showItem = MenuItem("Show", MenuShortcut(KeyEvent.VK_S, true))
+            showItem.addActionListener {
+                togglePrimaryStage()
             }
-        })
-        trayIcon = icon
+            popUpMenu.add(showItem)
+            popUpMenu.addSeparator()
+            val exitItem = MenuItem("Exit", MenuShortcut(KeyEvent.VK_E, true))
+            exitItem.addActionListener {
+                Application.exit()
+            }
+            popUpMenu.add(exitItem)
+            val icon = TrayIcon(
+                    ImageIO.read(AppTrayIcon::class.java.getResourceAsStream("/ui/icon.png")),
+                    t("trayIcon.starting", APP_NAME),
+                    popUpMenu
+            )
+            icon.isImageAutoSize = true
+            SystemTray.getSystemTray().add(icon)
+            icon.addMouseListener(object : MouseAdapter() {
+                override fun mouseClicked(e: MouseEvent?) {
+                    if (e!!.button == MouseEvent.BUTTON1) {
+                        togglePrimaryStage()
+                    }
+                }
+            })
+            trayIcon = icon
+        } catch (e: HeadlessException) {
+            trayIcon = null
+        }
     }
 
     private fun togglePrimaryStage() {
