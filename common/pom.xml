@@ -11,6 +11,6 @@
     </parent>
 
     <artifactId>dropit-common</artifactId>
-    <version>${parent.version}</version>
+    <version>0.1</version>
 
 </project>

@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">DropIt</string>
+    <string name="delete">Remove</string>
+    <string name="file_icon">File icon</string>
+    <string name="removed_from_transfer">Removed from transfer</string>
+    <string name="undo">UNDO</string>
+</resources>

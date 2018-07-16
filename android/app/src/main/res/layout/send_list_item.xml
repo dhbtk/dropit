@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <RelativeLayout
+        android:id="@+id/view_background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/colorPrimaryDark">
+
+        <ImageView
+            android:id="@+id/delete_icon"
+            android:layout_width="@dimen/delete_icon"
+            android:layout_height="@dimen/delete_icon"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="@dimen/delete_pad"
+            android:src="@drawable/ic_delete_sweep_white_24dp"
+            android:contentDescription="@string/delete" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="@dimen/delete_pad"
+            android:layout_toStartOf="@id/delete_icon"
+            android:text="@string/delete"
+            android:textColor="#fff"
+            android:textSize="13sp" />
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/view_foreground"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/white"
+        android:padding="@dimen/small_pad">
+
+        <ImageView
+            android:id="@+id/icon"
+            android:layout_width="@dimen/file_icon"
+            android:layout_height="@dimen/file_icon"
+            android:layout_marginEnd="@dimen/small_pad"
+            android:scaleType="centerCrop"
+            android:contentDescription="@string/file_icon" />
+
+        <TextView
+            android:id="@+id/name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/icon"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
+            android:maxLines="1"
+            android:textSize="17sp" />
+
+        <TextView
+            android:id="@+id/size"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/name"
+            android:layout_marginTop="5dp"
+            android:layout_toEndOf="@id/icon"
+            android:textSize="12sp" />
+    </RelativeLayout>
+</FrameLayout>
