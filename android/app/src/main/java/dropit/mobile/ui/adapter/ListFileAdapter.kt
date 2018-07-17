@@ -25,7 +25,12 @@ class ListFileAdapter(val context: Context, val items: ArrayList<ListFile>) : Re
         val item = items[position]
         holder.name.text = item.fileRequest.fileName
         holder.size.text = Formatter.formatShortFileSize(context, item.fileRequest.fileSize ?: 0)
-        holder.icon.setImageDrawable(item.getIcon(context))
+        val thumbnail = item.getThumbnail(context)
+        if (thumbnail != null) {
+            holder.icon.setImageBitmap(thumbnail)
+        } else {
+            holder.icon.setImageDrawable(item.getIcon(context))
+        }
     }
 
     class ListViewHolder(view: View) : RecyclerView.ViewHolder(view) {

@@ -84,8 +84,6 @@ class SendTransferActivity : AppCompatActivity(), RecyclerItemTouchHelper.SwipeL
         snackbar.show()
     }
 
-    // TODO: pegar também a coluna TITLE para pegar o nome do arquivo, e também verificar se existe a coluna DATA. caso
-    // não exista, abrir o InputStream, copiar para um arquivo temporário
     @SuppressLint("StaticFieldLeak")
     inner class AddFileTask : AsyncTask<Uri, Void, ListFile>() {
         override fun doInBackground(vararg params: Uri?): ListFile {
