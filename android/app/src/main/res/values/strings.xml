@@ -4,4 +4,8 @@
     <string name="file_icon">File icon</string>
     <string name="removed_from_transfer">Removed from transfer</string>
     <string name="undo">UNDO</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="send">Send</string>
 </resources>

@@ -3,7 +3,7 @@ package dropit.mobile.ui
 import android.graphics.Canvas
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.helper.ItemTouchHelper
-import dropit.mobile.ui.adapter.ListFileAdapter
+import dropit.mobile.ui.transfer.adapter.ListFileAdapter
 
 class RecyclerItemTouchHelper(dragDirs: Int, swipeDirs: Int, val listener: SwipeListener) : ItemTouchHelper.SimpleCallback(dragDirs, swipeDirs) {
     override fun onMove(recyclerView: RecyclerView?, viewHolder: RecyclerView.ViewHolder?, target: RecyclerView.ViewHolder?) = true

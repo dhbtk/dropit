@@ -1,4 +1,4 @@
-package dropit.mobile.ui.activity
+package dropit.mobile.ui.transfer
 
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -6,47 +6,29 @@ import android.net.Uri
 import android.os.AsyncTask
 import android.os.Bundle
 import android.provider.MediaStore
-import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.DefaultItemAnimator
-import android.support.v7.widget.DividerItemDecoration
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.helper.ItemTouchHelper
 import android.util.Log
 import android.webkit.MimeTypeMap
 import dropit.application.dto.FileRequest
 import dropit.mobile.R
-import dropit.mobile.ui.RecyclerItemTouchHelper
-import dropit.mobile.ui.adapter.ListFileAdapter
-import dropit.mobile.ui.model.ListFile
-import kotlinx.android.synthetic.main.activity_send_transfer.*
+import dropit.mobile.ui.transfer.model.ListFile
 import java.io.File
 import java.io.FileInputStream
 import java.util.*
 import kotlin.collections.ArrayList
 
-class SendTransferActivity : AppCompatActivity(), RecyclerItemTouchHelper.SwipeListener {
+class SendTransferActivity : AppCompatActivity() {
     val items = ArrayList<ListFile>()
-    lateinit var listFileAdapter: ListFileAdapter
+    val fileListFragment = FileListFragment.newInstance(items)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_send_transfer)
 
-        // list
-        listFileAdapter = ListFileAdapter(this, items)
-        recyclerView.layoutManager = LinearLayoutManager(applicationContext)
-        recyclerView.itemAnimator = DefaultItemAnimator()
-        recyclerView.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
-        recyclerView.adapter = listFileAdapter
-        val swipeCallback = RecyclerItemTouchHelper(0, ItemTouchHelper.LEFT, this)
-        ItemTouchHelper(swipeCallback).attachToRecyclerView(recyclerView)
-
         val savedItems = savedInstanceState?.getSerializable("items")
         if (savedItems != null && savedItems is ArrayList<*>) {
             items.clear()
             savedItems.forEach { items.add(it as ListFile) }
-            listFileAdapter.notifyDataSetChanged()
         }
         handleShares(intent)
     }
@@ -71,17 +53,21 @@ class SendTransferActivity : AppCompatActivity(), RecyclerItemTouchHelper.SwipeL
         } else if (action == Intent.ACTION_SEND_MULTIPLE) {
             intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM).forEach { AddFileTask().execute(it) }
         }
+        showFileList()
     }
 
-    override fun onSwiped(viewHolder: ListFileAdapter.ListViewHolder, direction: Int) {
-        val index = viewHolder.adapterPosition
-        val listFile = items.get(index)
-        listFileAdapter.remove(index)
-        val snackbar = Snackbar.make(coordinatorLayout, getString(R.string.removed_from_transfer), Snackbar.LENGTH_LONG)
-        snackbar.setAction(getString(R.string.undo), {
-            listFileAdapter.add(listFile, index)
-        })
-        snackbar.show()
+    fun showFileList() {
+        if (supportFragmentManager.findFragmentByTag("tag") is FileListFragment) {
+            Log.i("SendTransferActivity", "Already showing file list")
+        } else {
+            supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragmentContainer, fileListFragment, "tag").commit()
+            invalidateOptionsMenu()
+        }
+    }
+
+    fun showServerList(): Boolean {
+        return true
     }
 
     @SuppressLint("StaticFieldLeak")
@@ -123,7 +109,7 @@ class SendTransferActivity : AppCompatActivity(), RecyclerItemTouchHelper.SwipeL
         override fun onPostExecute(result: ListFile?) {
             if (items.find { it.uri == result!!.uri } == null) {
                 items.add(result!!)
-                listFileAdapter.notifyItemInserted(items.size - 1)
+                fileListFragment.listFileAdapter.notifyItemInserted(items.size - 1)
             }
         }
     }

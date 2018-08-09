@@ -1,4 +1,4 @@
-package dropit.mobile.ui.model
+package dropit.mobile.ui.transfer.model
 
 import android.content.Context
 import android.content.Intent

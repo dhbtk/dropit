@@ -1,4 +1,4 @@
-package dropit.mobile.ui.adapter
+package dropit.mobile.ui.transfer.adapter
 
 import android.content.Context
 import android.support.v7.widget.RecyclerView
@@ -10,7 +10,7 @@ import android.widget.ImageView
 import android.widget.RelativeLayout
 import android.widget.TextView
 import dropit.mobile.R
-import dropit.mobile.ui.model.ListFile
+import dropit.mobile.ui.transfer.model.ListFile
 
 class ListFileAdapter(val context: Context, val items: ArrayList<ListFile>) : RecyclerView.Adapter<ListFileAdapter.ListViewHolder>() {
 

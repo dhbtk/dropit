@@ -98,6 +98,7 @@ class TransferService(val create: DSLContext, val settings: AppSettings) {
                 val transferRecord = create.newRecord(TRANSFER)
                 transferRecord.from(transfer.copy(status = TransferStatus.FINISHED));
                 transferRecord.update()
+                // TODO notify UI of end
             }
         }.doOnError {
             // TODO notify UI of error
