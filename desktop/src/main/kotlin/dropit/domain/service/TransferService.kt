@@ -61,7 +61,7 @@ class TransferService(val create: DSLContext, val settings: AppSettings) {
      * uploads a file, notifying the UI of progress.
      */
     fun uploadFile(token: String, fileId: String, body: Mono<FilePart>): Mono<Void> {
-        val phone = create.fetchOne(PHONE, PHONE.TOKEN.eq(token)).into(Phone::class.java)
+        val phone = create.fetchOne(PHONE, PHONE.TOKEN.eq(token).and(PHONE.STATUS.eq(TokenStatus.AUTHORIZED.name))).into(Phone::class.java)
                 ?: throw UnauthorizedException()
         val transferFile = create.select().from(TRANSFER_FILE)
                 .join(TRANSFER).on(TRANSFER_FILE.TRANSFER_ID.eq(TRANSFER.ID))

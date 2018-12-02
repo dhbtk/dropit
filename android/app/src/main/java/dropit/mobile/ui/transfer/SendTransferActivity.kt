@@ -56,18 +56,29 @@ class SendTransferActivity : AppCompatActivity() {
         showFileList()
     }
 
-    fun showFileList() {
+    private fun showFileList(backwards: Boolean = false) {
         if (supportFragmentManager.findFragmentByTag("tag") is FileListFragment) {
             Log.i("SendTransferActivity", "Already showing file list")
         } else {
-            supportFragmentManager.beginTransaction()
-                    .replace(R.id.fragmentContainer, fileListFragment, "tag").commit()
-            invalidateOptionsMenu()
+            val trans = supportFragmentManager.beginTransaction()
+            if (backwards) {
+                trans.setCustomAnimations(R.anim.enter_from_right, R.anim.exit_to_left)
+            }
+            trans.replace(R.id.fragmentContainer, fileListFragment, "tag").commit()
         }
     }
 
     fun showServerList(): Boolean {
+        supportFragmentManager.beginTransaction().replace(R.id.fragmentContainer, ServerListFragment(), "tag").commit()
         return true
+    }
+
+    override fun onBackPressed() {
+        when (supportFragmentManager.findFragmentByTag("tag")) {
+            is ServerListFragment -> showFileList(true)
+            is FileListFragment -> super.onBackPressed()
+            null -> super.onBackPressed()
+        }
     }
 
     @SuppressLint("StaticFieldLeak")

@@ -57,9 +57,9 @@ class FileListFragment : Fragment(), RecyclerItemTouchHelper.SwipeListener {
         val listFile = items.get(index)
         listFileAdapter.remove(index)
         val snackbar = Snackbar.make(coordinatorLayout, getString(R.string.removed_from_transfer), Snackbar.LENGTH_LONG)
-        snackbar.setAction(getString(R.string.undo), {
+        snackbar.setAction(getString(R.string.undo)) {
             listFileAdapter.add(listFile, index)
-        })
+        }
         snackbar.show()
     }
 
