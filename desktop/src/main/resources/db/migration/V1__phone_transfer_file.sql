@@ -15,7 +15,7 @@ CREATE TABLE transfer (
   updated_at datetime     NOT NULL DEFAULT current_timestamp,
   name       varchar(255) NOT NULL,
   status     varchar(255) NOT NULL,
-  phone_id   varchar(40)  NOT NULL REFERENCES phone (id)
+  phone_id   varchar(40)  NOT NULL REFERENCES phone(id)
 );
 
 CREATE TABLE transfer_file (
@@ -26,12 +26,13 @@ CREATE TABLE transfer_file (
   mime_type   varchar(255) NOT NULL,
   file_size   bigint       NOT NULL,
   status      varchar(255) NOT NULL,
-  transfer_id varchar(40)  NOT NULL REFERENCES transfer (id)
+  transfer_id varchar(40)  NOT NULL REFERENCES transfer(id)
 );
 
 CREATE TABLE settings (
   computer_id          varchar(40)  NOT NULL,
   computer_name        varchar(255) NOT NULL,
   transfer_folder_name varchar(255) NOT NULL,
-  root_transfer_folder varchar(255) NOT NULL
+  root_transfer_folder varchar(255) NOT NULL,
+  server_port          integer      NOT NULL
 );

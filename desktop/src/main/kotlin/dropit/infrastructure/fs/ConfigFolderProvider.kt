@@ -2,11 +2,9 @@ package dropit.infrastructure.fs
 
 import dropit.APP_NAME
 import dropit.infrastructure.i18n.t
-import org.springframework.stereotype.Component
 import java.nio.file.Path
 import java.nio.file.Paths
 
-@Component
 class ConfigFolderProvider {
     final val configFolder: Path
     init {

@@ -3,18 +3,20 @@ package dropit.domain.service
 import dropit.application.dto.TokenRequest
 import dropit.application.dto.TokenStatus
 import dropit.domain.entity.Phone
+import dropit.infrastructure.event.AppEvent
+import dropit.infrastructure.event.EventBus
 import dropit.infrastructure.i18n.t
 import dropit.jooq.tables.Phone.PHONE
 import dropit.jooq.tables.Transfer.TRANSFER
 import dropit.jooq.tables.TransferFile.TRANSFER_FILE
-import dropit.ui.AppTrayIcon
 import org.jooq.DSLContext
-import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.util.*
+import javax.inject.Inject
 
-@Service
-class PhoneService(val create: DSLContext) {
+class PhoneService @Inject constructor(val create: DSLContext, val bus: EventBus) {
+    data class NewPhoneRequestEvent(override val payload: Phone?) : AppEvent<Phone>
+
     var phoneChangeListener: (() -> Unit)? = null
     /**
      * Called from web
@@ -36,7 +38,7 @@ class PhoneService(val create: DSLContext) {
                     throw RuntimeException("Could not save phone record")
                 }
                 phoneChangeListener?.invoke()
-                AppTrayIcon.notifyPhoneRequest(phone)
+                bus.broadcast(NewPhoneRequestEvent(phone))
                 phone.token.toString()
             }
         }

@@ -1,8 +1,10 @@
 package dropit.infrastructure.db
 
+import org.apache.commons.lang3.ClassUtils
 import org.jooq.*
 import org.jooq.RecordMapperProvider
 import java.beans.Introspector
+import java.lang.reflect.Type
 import java.sql.Timestamp
 import java.time.LocalDateTime
 import java.util.*
@@ -27,7 +29,7 @@ class RecordMapperProvider : RecordMapperProvider {
             val sourceProperties = Introspector.getBeanInfo(source.javaClass).propertyDescriptors
             // same type properties
             sourceProperties.forEach { property ->
-                val matchingParameter = parameters.find { parameter -> parameter.type.javaType == property.propertyType && parameter.name == property.name }
+                val matchingParameter = parameters.find { parameter -> isEquivalentType(parameter.type.javaType, property.propertyType) && parameter.name == property.name }
                 if (matchingParameter != null) {
                     val value = property.readMethod.invoke(source)
                     if (value != null) {
@@ -69,6 +71,22 @@ class RecordMapperProvider : RecordMapperProvider {
                         }
                     }
             return dest.primaryConstructor!!.callBy(parametersMap)
+        }
+
+        private fun isEquivalentType(jvmType: Type, propType: Class<*>?): Boolean {
+            if(propType == null) {
+                return false
+            }
+
+            if(jvmType == propType) {
+                return true
+            }
+
+            if(jvmType is Class<*> && ClassUtils.primitiveToWrapper(jvmType) == propType) {
+                return true
+            }
+
+            return false
         }
     }
 }

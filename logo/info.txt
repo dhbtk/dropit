@@ -1,0 +1,14 @@
+
+Hope you enjoy your new logo, here are the people that
+made your beautiful logo happen :)
+
+font name: Sriracha-Regular
+font link: https://fonts.google.com/specimen/Sriracha
+font author: Cadson Demak
+font author site: http://font.cadsondemak.com/foundry/
+
+icon designer: Stefan Mayerhofer
+icon designer link: /stefan.mayerhofer
+        
+{"bg":"#E6F2FE","icon-gradient-0":"#51A4FB","icon-gradient-1":"#51A4FB","font":"#193655"}
+      

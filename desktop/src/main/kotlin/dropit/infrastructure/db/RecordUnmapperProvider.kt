@@ -1,6 +1,10 @@
 package dropit.infrastructure.db
 
-import org.jooq.*
+import org.apache.commons.lang3.ClassUtils.primitiveToWrapper
+import org.jooq.Configuration
+import org.jooq.Field
+import org.jooq.Record
+import org.jooq.RecordType
 import org.jooq.impl.DSL
 import java.sql.Timestamp
 import java.time.LocalDateTime
@@ -22,7 +26,7 @@ class RecordUnmapperProvider(private val configuration: Configuration) : org.joo
                 val property = properties.find { it.name == field.name.camelCase() }
                 if(property != null) {
                     val fieldClass = field.type
-                    val propClass = property.returnType.jvmErasure.java
+                    val propClass = boxIfNeeded(property.returnType.jvmErasure.java)
                     if(fieldClass.isAssignableFrom(propClass)) {
                         record.set(field as Field<Any?>, property.getter.call(source))
                     } else if(fieldClass == String::class.java && propClass == UUID::class.java) {
@@ -38,6 +42,10 @@ class RecordUnmapperProvider(private val configuration: Configuration) : org.joo
                 }
             }
             return record
+        }
+
+        private fun boxIfNeeded(sourceClass: Class<*>): Class<*> {
+            return primitiveToWrapper(sourceClass)
         }
 
     }
