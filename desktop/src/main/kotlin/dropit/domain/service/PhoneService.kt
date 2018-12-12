@@ -16,8 +16,7 @@ import javax.inject.Inject
 
 class PhoneService @Inject constructor(val create: DSLContext, val bus: EventBus) {
     data class NewPhoneRequestEvent(override val payload: Phone?) : AppEvent<Phone>
-
-    var phoneChangeListener: (() -> Unit)? = null
+    class PhoneChangedEvent(override val payload: Phone?) : AppEvent<Phone>
     /**
      * Called from web
      *
@@ -37,7 +36,7 @@ class PhoneService @Inject constructor(val create: DSLContext, val bus: EventBus
                 if(inserted == 0) {
                     throw RuntimeException("Could not save phone record")
                 }
-                phoneChangeListener?.invoke()
+                bus.broadcast(PhoneChangedEvent(phone))
                 bus.broadcast(NewPhoneRequestEvent(phone))
                 phone.token.toString()
             }

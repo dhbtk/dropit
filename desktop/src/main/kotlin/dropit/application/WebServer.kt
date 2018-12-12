@@ -1,10 +1,12 @@
 package dropit.application
 
+import dropit.application.dto.TokenRequest
+import dropit.application.dto.TransferRequest
 import dropit.application.security.TokenService
 import dropit.application.settings.AppSettings
+import dropit.domain.entity.Phone
 import dropit.domain.service.PhoneService
 import dropit.domain.service.TransferService
-import dropit.jooq.tables.Phone
 import io.javalin.Javalin
 import io.javalin.apibuilder.ApiBuilder.*
 import org.eclipse.jetty.server.Server
@@ -27,7 +29,7 @@ class WebServer @Inject constructor(
         javalin = Javalin.create()
                 .requestLogger { ctx, ms ->
                     val phone = ctx.attribute<Phone>("phone")
-                    logger.info("${ctx.method()} ${ctx.path()} took ${ms} ms")
+                    logger.info("[${phone?.name}] ${ctx.method()} ${ctx.path()} took $ms ms")
                 }
                 .server {
                     val server = Server()
@@ -43,7 +45,7 @@ class WebServer @Inject constructor(
                     }
                     path("token") {
                         post {
-
+                            it.result(phoneService.requestToken(it.bodyAsClass(TokenRequest::class.java)))
                         }
 
                         get {
@@ -51,6 +53,21 @@ class WebServer @Inject constructor(
                             val phone = token.getPendingPhone(it)
                             it.result(phone.status!!.name)
                         }
+                    }
+                    post("transfers") {
+                        before { it.attribute("phone", token.getApprovedPhone(it)) }
+                        it.result(transferService.createTransfer(
+                                it.attribute<Phone>("phone")!!,
+                                it.bodyAsClass(TransferRequest::class.java)))
+                    }
+                    post("files/:id") {
+                        before { it.attribute("phone", token.getApprovedPhone(it)) }
+                        transferService.uploadFile(
+                                it.attribute<Phone>("phone")!!,
+                                it.pathParam("id"),
+                                it.uploadedFile("file")!!.content
+                        )
+                        it.status(201)
                     }
                 }
     }

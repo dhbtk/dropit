@@ -20,12 +20,11 @@ class DatabaseModule {
     @Singleton
     fun dataSource(configFolderProvider: ConfigFolderProvider): DataSource {
         val dataSource = HikariDataSource()
-        dataSource.jdbcUrl = "jdbc:sqlite:${configFolderProvider.configFolder.resolve("$APP_NAME.db")}"
-//        dataSource.jdbcUrl =  if(applicationContext.environment.acceptsProfiles("test")) {
-//            "jdbc:sqlite:${configFolderProvider.configFolder.resolve("$APP_NAME.test.db")}"
-//        } else {
-//            "jdbc:sqlite:${configFolderProvider.configFolder.resolve("$APP_NAME.db")}"
-//        }
+        dataSource.jdbcUrl = if (System.getProperty("dropit.test") == "true") {
+            "jdbc:sqlite:${configFolderProvider.configFolder.resolve("$APP_NAME.test.db")}"
+        } else {
+            "jdbc:sqlite:${configFolderProvider.configFolder.resolve("$APP_NAME.db")}"
+        }
         dataSource.maximumPoolSize = 20
         dataSource.poolName = "pool"
         return dataSource
