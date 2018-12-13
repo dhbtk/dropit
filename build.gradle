@@ -32,6 +32,10 @@ allprojects {
 
     // desktop - UI
 
+    // client
+    ext.retrofit_version = '2.5.0'
+    ext.rxjava_version = '2.2.4'
+
     // android
     ext.support_version = '27.1.1'
 

@@ -31,6 +31,7 @@ CREATE TABLE transfer_file (
 
 CREATE TABLE settings (
   computer_id          varchar(40)  NOT NULL,
+  computer_secret      varchar(40)  NOT NULL,
   computer_name        varchar(255) NOT NULL,
   transfer_folder_name varchar(255) NOT NULL,
   root_transfer_folder varchar(255) NOT NULL,

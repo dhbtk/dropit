@@ -45,15 +45,15 @@ object PhoneServiceTest : Spek({
         }
 
         it("returns authorized for an authorized phone") {
-            assertEquals(TokenStatus.AUTHORIZED, phoneService.getTokenStatus(PhoneFactory.authorizedPhone().token!!.toString()))
+            assertEquals(TokenStatus.AUTHORIZED, phoneService.getTokenStatus(PhoneFactory.authorizedPhone().token!!.toString()).status)
         }
 
         it("returns pending for a pending phone") {
-            assertEquals(TokenStatus.PENDING, phoneService.getTokenStatus(PhoneFactory.pendingPhone().token!!.toString()))
+            assertEquals(TokenStatus.PENDING, phoneService.getTokenStatus(PhoneFactory.pendingPhone().token!!.toString()).status)
         }
 
         it("returns denied for a denied phone") {
-            assertEquals(TokenStatus.DENIED, phoneService.getTokenStatus(PhoneFactory.deniedPhone().token!!.toString()))
+            assertEquals(TokenStatus.DENIED, phoneService.getTokenStatus(PhoneFactory.deniedPhone().token!!.toString()).status)
         }
     }
 

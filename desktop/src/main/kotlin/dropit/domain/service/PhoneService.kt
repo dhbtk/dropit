@@ -1,7 +1,9 @@
 package dropit.domain.service
 
 import dropit.application.dto.TokenRequest
+import dropit.application.dto.TokenResponse
 import dropit.application.dto.TokenStatus
+import dropit.application.settings.AppSettings
 import dropit.domain.entity.Phone
 import dropit.infrastructure.event.AppEvent
 import dropit.infrastructure.event.EventBus
@@ -14,9 +16,13 @@ import java.time.LocalDateTime
 import java.util.*
 import javax.inject.Inject
 
-class PhoneService @Inject constructor(val create: DSLContext, val bus: EventBus) {
+class PhoneService @Inject constructor(
+    val create: DSLContext,
+    val bus: EventBus,
+    val appSettings: AppSettings) {
     data class NewPhoneRequestEvent(override val payload: Phone) : AppEvent<Phone>
     class PhoneChangedEvent(override val payload: Phone) : AppEvent<Phone>
+
     /**
      * Called from web
      *
@@ -25,15 +31,15 @@ class PhoneService @Inject constructor(val create: DSLContext, val bus: EventBus
     fun requestToken(request: TokenRequest): String {
         return create.transactionResult { _ ->
             val alreadyExists = create.select()
-                    .from(PHONE)
-                    .where(PHONE.ID.eq(request.id))
-                    .fetchOneInto(Phone::class.java)
-            if(alreadyExists != null) {
+                .from(PHONE)
+                .where(PHONE.ID.eq(request.id))
+                .fetchOneInto(Phone::class.java)
+            if (alreadyExists != null) {
                 alreadyExists.token.toString()
             } else {
                 val phone = Phone(id = UUID.fromString(request.id), name = request.name, token = UUID.randomUUID(), status = TokenStatus.PENDING)
                 val inserted = create.newRecord(PHONE, phone).store()
-                if(inserted == 0) {
+                if (inserted == 0) {
                     throw RuntimeException("Could not save phone record")
                 }
                 bus.broadcast(PhoneChangedEvent(phone))
@@ -48,12 +54,13 @@ class PhoneService @Inject constructor(val create: DSLContext, val bus: EventBus
      *
      * Returns the status for a given phone token.
      */
-    fun getTokenStatus(token: String): TokenStatus {
+    fun getTokenStatus(token: String): TokenResponse {
         return create.selectFrom(PHONE)
-                .where(PHONE.TOKEN.eq(token))
-                .fetchOptionalInto(Phone::class.java)
-                .map { it.status!! }
-                .orElseThrow { UnauthorizedException(token) }
+            .where(PHONE.TOKEN.eq(token))
+            .fetchOptionalInto(Phone::class.java)
+            .map { it.status!! }
+            .map { TokenResponse(it, if (it == TokenStatus.AUTHORIZED) appSettings.settings.computerSecret else null) }
+            .orElseThrow { UnauthorizedException(token) }
     }
 
     /**
@@ -64,7 +71,7 @@ class PhoneService @Inject constructor(val create: DSLContext, val bus: EventBus
     fun authorizePhone(id: UUID): Phone {
         return create.transactionResult { _ ->
             val phone: Phone = create.fetchOne(PHONE, PHONE.ID.eq(id.toString())).into(Phone::class.java)
-                    ?: throw RuntimeException(t("phoneService.common.phoneNotFound", id))
+                ?: throw RuntimeException(t("phoneService.common.phoneNotFound", id))
             create.newRecord(PHONE, phone.copy(updatedAt = LocalDateTime.now(), status = TokenStatus.AUTHORIZED)).update()
             create.fetchOne(PHONE, PHONE.ID.eq(id.toString())).into(Phone::class.java)
         }
@@ -78,7 +85,7 @@ class PhoneService @Inject constructor(val create: DSLContext, val bus: EventBus
     fun denyPhone(id: UUID): Phone {
         return create.transactionResult { _ ->
             val phone: Phone = create.fetchOne(PHONE, PHONE.ID.eq(id.toString())).into(Phone::class.java)
-                    ?: throw RuntimeException(t("phoneService.common.phoneNotFound", id))
+                ?: throw RuntimeException(t("phoneService.common.phoneNotFound", id))
             create.newRecord(PHONE, phone.copy(updatedAt = LocalDateTime.now(), status = TokenStatus.DENIED)).update()
             create.fetchOne(PHONE, PHONE.ID.eq(id.toString())).into(Phone::class.java)
         }
@@ -106,8 +113,8 @@ class PhoneService @Inject constructor(val create: DSLContext, val bus: EventBus
     fun deletePhone(id: UUID) {
         create.transaction { _ ->
             create.deleteFrom(TRANSFER_FILE).where(TRANSFER_FILE.TRANSFER_ID.`in`(
-                    create.select(TRANSFER.ID).from(TRANSFER).where(TRANSFER.PHONE_ID.eq(id.toString()))))
-                    .execute()
+                create.select(TRANSFER.ID).from(TRANSFER).where(TRANSFER.PHONE_ID.eq(id.toString()))))
+                .execute()
             create.deleteFrom(TRANSFER).where(TRANSFER.PHONE_ID.eq(id.toString())).execute()
             create.deleteFrom(PHONE).where(PHONE.ID.eq(id.toString())).execute()
         }

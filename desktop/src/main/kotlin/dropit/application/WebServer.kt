@@ -1,5 +1,6 @@
 package dropit.application
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import dropit.application.dto.TokenRequest
 import dropit.application.dto.TransferRequest
 import dropit.application.security.TokenService
@@ -9,9 +10,9 @@ import dropit.domain.service.PhoneService
 import dropit.domain.service.TransferService
 import io.javalin.Javalin
 import io.javalin.apibuilder.ApiBuilder.*
+import io.javalin.json.JavalinJackson
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.ServerConnector
-import org.eclipse.jetty.server.SessionIdManager
 import org.eclipse.jetty.util.ssl.SslContextFactory
 import org.slf4j.LoggerFactory
 import javax.inject.Inject
@@ -19,14 +20,16 @@ import javax.inject.Singleton
 
 @Singleton
 class WebServer @Inject constructor(
-        val appSettings: AppSettings,
-        val phoneService: PhoneService,
-        val transferService: TransferService,
-        val token: TokenService
+    val appSettings: AppSettings,
+    val phoneService: PhoneService,
+    val transferService: TransferService,
+    val token: TokenService,
+    objectMapper: ObjectMapper
 ) {
     val logger = LoggerFactory.getLogger(this::class.java)
     val javalin: Javalin
     init {
+        JavalinJackson.configure(objectMapper)
         javalin = Javalin.create()
                 .requestLogger { ctx, ms ->
                     val phone = ctx.attribute<Phone>("phone")
@@ -46,13 +49,13 @@ class WebServer @Inject constructor(
                     }
                     path("token") {
                         post {
-                            it.result(phoneService.requestToken(it.bodyAsClass(TokenRequest::class.java)))
+                            it.json(phoneService.requestToken(it.bodyAsClass(TokenRequest::class.java)))
                         }
 
                         get {
                             it.attribute("phone", token.getPendingPhone(it))
                             val phone = token.getPendingPhone(it)
-                            it.result(phone.status!!.name)
+                            it.json(phoneService.getTokenStatus(phone.token.toString()))
                         }
                     }
                     post("transfers") {
