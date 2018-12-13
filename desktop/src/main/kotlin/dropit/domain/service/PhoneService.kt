@@ -15,8 +15,8 @@ import java.util.*
 import javax.inject.Inject
 
 class PhoneService @Inject constructor(val create: DSLContext, val bus: EventBus) {
-    data class NewPhoneRequestEvent(override val payload: Phone?) : AppEvent<Phone>
-    class PhoneChangedEvent(override val payload: Phone?) : AppEvent<Phone>
+    data class NewPhoneRequestEvent(override val payload: Phone) : AppEvent<Phone>
+    class PhoneChangedEvent(override val payload: Phone) : AppEvent<Phone>
     /**
      * Called from web
      *

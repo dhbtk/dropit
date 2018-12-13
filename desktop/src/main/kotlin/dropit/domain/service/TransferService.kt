@@ -15,17 +15,30 @@ import dropit.jooq.tables.Transfer.TRANSFER
 import dropit.jooq.tables.TransferFile.TRANSFER_FILE
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
+import java.io.File
 import java.io.InputStream
 import java.nio.file.Paths
 import java.util.*
 import javax.inject.Inject
 
 class TransferService @Inject constructor(val create: DSLContext, val settings: AppSettings, val bus: EventBus) {
+    data class CompletedFileTransfer(
+        val transferFile: TransferFile,
+        val transferFolder: File,
+        val file: File
+    )
+
+    data class CompletedTransfer(
+        val transfer: Transfer,
+        val transferFolder: File,
+        val locations: Map<UUID, File>
+    )
+
     data class NewTransferEvent(override val payload: Transfer) : AppEvent<Transfer>
     data class FileTransferBeginEvent(override val payload: TransferFile) : AppEvent<TransferFile>
     data class FileTransferReceiveEvent(override val payload: Pair<TransferFile, Int>) : AppEvent<Pair<TransferFile, Int>>
-    data class FileTransferFinishEvent(override val payload: TransferFile) : AppEvent<TransferFile>
-    data class TransferCompleteEvent(override val payload: Transfer) : AppEvent<Transfer>
+    data class FileTransferFinishEvent(override val payload: CompletedFileTransfer) : AppEvent<CompletedFileTransfer>
+    data class TransferCompleteEvent(override val payload: CompletedTransfer) : AppEvent<CompletedTransfer>
 
     val logger = LoggerFactory.getLogger(this::class.java)
 
@@ -79,7 +92,7 @@ class TransferService @Inject constructor(val create: DSLContext, val settings: 
                 .fetchOneInto(TRANSFER_FILE).into(TransferFile::class.java)
         val record = create.newRecord(TRANSFER_FILE)
         val transfer = create.fetchOne(TRANSFER, TRANSFER.ID.eq(transferFile.transferId.toString())).into(Transfer::class.java)
-        val transferFolder = Paths.get(settings.settings.rootTransferFolder, settings.settings.transferFolderName.replaceFirst("%transfer%", transfer.name!!)).toFile()
+        val transferFolder = Paths.get(settings.settings.rootTransferFolder, transfer.transferFolderName(settings.settings.transferFolderName)).toFile()
         transferFolder.exists() || transferFolder.mkdirs()
         val tempFile = transferFolder.toPath().resolve(transferFile.fileName + ".part").toFile()
         !tempFile.exists() || (tempFile.delete() && tempFile.createNewFile())
@@ -90,9 +103,11 @@ class TransferService @Inject constructor(val create: DSLContext, val settings: 
                 body.use {
                     val buffer = ByteArray(512 * 1024)
                     var bytesRead = body.read(buffer)
+                    var totalRead = 0
                     while (bytesRead > -1) {
                         outputStream.write(buffer, 0, bytesRead)
-                        bus.broadcast(FileTransferReceiveEvent(Pair(displayTransferFile, bytesRead)))
+                        totalRead += bytesRead
+                        bus.broadcast(FileTransferReceiveEvent(Pair(displayTransferFile, totalRead)))
                         bytesRead = body.read(buffer)
                     }
                 }
@@ -103,15 +118,28 @@ class TransferService @Inject constructor(val create: DSLContext, val settings: 
             tempFile.renameTo(actualFile)
             record.from(transferFile.copy(status = FileStatus.FINISHED))
             record.update()
-            bus.broadcast(FileTransferFinishEvent(record.into(TransferFile::class.java).copy(transfer = transfer)))
+            bus.broadcast(FileTransferFinishEvent(CompletedFileTransfer(
+                record.into(TransferFile::class.java).copy(transfer = transfer),
+                transferFolder,
+                actualFile
+            )))
 
             val (count) = create.selectCount().from(TRANSFER_FILE).where(TRANSFER_FILE.TRANSFER_ID.eq(transferFile.transferId.toString()))
                     .and(TRANSFER_FILE.STATUS.ne(FileStatus.FINISHED.name)).fetchOne()
             if (count == 0) {
                 val transferRecord = create.newRecord(TRANSFER)
-                transferRecord.from(transfer.copy(status = TransferStatus.FINISHED));
+                transferRecord.from(transfer.copy(status = TransferStatus.FINISHED))
                 transferRecord.update()
-                bus.broadcast(TransferCompleteEvent(transferRecord.into(Transfer::class.java)))
+                val files = create.selectFrom(TRANSFER_FILE).where(TRANSFER_FILE.TRANSFER_ID.eq(transfer.id.toString()))
+                    .fetchInto(TransferFile::class.java)
+                val locations = files.map {
+                    it.id!! to transferFolder.resolve(it.fileName!!)
+                }.toMap()
+                bus.broadcast(TransferCompleteEvent(CompletedTransfer(
+                    transferRecord.into(Transfer::class.java).copy(files = files),
+                    transferFolder,
+                    locations
+                )))
             }
         } catch (exception: Exception) {
             logger.error("Failure receiving file: ${exception.message}")

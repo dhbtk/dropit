@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.spekframework.spek2.Spek
 import org.spekframework.spek2.style.specification.describe
 
-object EventBusSpec : Spek({
+object EventBusTest : Spek({
     data class TestEvent(override val payload: String) : AppEvent<String>
 
     val eventBus by memoized { EventBus() }

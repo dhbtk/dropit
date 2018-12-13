@@ -23,7 +23,7 @@ class AppSettings(val jooq: DSLContext) {
             val settings = dropit.domain.entity.Settings(
                     computerName = t("appSettings.init.defaultComputerName", System.getProperty("user.name")),
                     rootTransferFolder = getDefaultTransferFolder(),
-                    transferFolderName = "yyyy-MM-dd HH-mm %transfer%",
+                transferFolderName = "{0,date,yyyy-MM-dd HH-mm} {1}",
                     serverPort = 58992
             )
             jooq.newRecord(SETTINGS, settings).insert()

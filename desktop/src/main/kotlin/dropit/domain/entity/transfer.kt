@@ -2,7 +2,9 @@ package dropit.domain.entity
 
 import dropit.application.dto.FileStatus
 import dropit.application.dto.TransferStatus
+import java.text.MessageFormat
 import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.util.*
 
 data class Transfer(
@@ -14,7 +16,13 @@ data class Transfer(
         val phoneId: UUID? = null,
         val phone: Phone? = null,
         val files: List<TransferFile> = emptyList()
-) : IEntity
+) : IEntity {
+    fun transferFolderName(template: String): String {
+        return MessageFormat(template).format(
+            arrayOf(Date.from(createdAt!!.toInstant(ZoneOffset.UTC)), name!!)
+        )
+    }
+}
 
 data class TransferFile(
         override val id: UUID? = null,
