@@ -11,6 +11,7 @@ import io.javalin.Javalin
 import io.javalin.apibuilder.ApiBuilder.*
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.ServerConnector
+import org.eclipse.jetty.server.SessionIdManager
 import org.eclipse.jetty.util.ssl.SslContextFactory
 import org.slf4j.LoggerFactory
 import javax.inject.Inject

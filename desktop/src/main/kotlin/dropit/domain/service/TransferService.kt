@@ -10,6 +10,7 @@ import dropit.domain.entity.Transfer
 import dropit.domain.entity.TransferFile
 import dropit.infrastructure.event.AppEvent
 import dropit.infrastructure.event.EventBus
+import dropit.infrastructure.fs.TransferFolderProvider
 import dropit.jooq.tables.Phone.PHONE
 import dropit.jooq.tables.Transfer.TRANSFER
 import dropit.jooq.tables.TransferFile.TRANSFER_FILE
@@ -21,7 +22,11 @@ import java.nio.file.Paths
 import java.util.*
 import javax.inject.Inject
 
-class TransferService @Inject constructor(val create: DSLContext, val settings: AppSettings, val bus: EventBus) {
+class TransferService @Inject constructor(
+    val create: DSLContext,
+    val settings: AppSettings,
+    val bus: EventBus,
+    val transferFolderProvider: TransferFolderProvider) {
     data class CompletedFileTransfer(
         val transferFile: TransferFile,
         val transferFolder: File,
@@ -92,8 +97,7 @@ class TransferService @Inject constructor(val create: DSLContext, val settings: 
                 .fetchOneInto(TRANSFER_FILE).into(TransferFile::class.java)
         val record = create.newRecord(TRANSFER_FILE)
         val transfer = create.fetchOne(TRANSFER, TRANSFER.ID.eq(transferFile.transferId.toString())).into(Transfer::class.java)
-        val transferFolder = Paths.get(settings.settings.rootTransferFolder, transfer.transferFolderName(settings.settings.transferFolderName)).toFile()
-        transferFolder.exists() || transferFolder.mkdirs()
+        val transferFolder = transferFolderProvider.getForTransfer(transfer).toFile()
         val tempFile = transferFolder.toPath().resolve(transferFile.fileName + ".part").toFile()
         !tempFile.exists() || (tempFile.delete() && tempFile.createNewFile())
         val displayTransferFile = transferFile.copy(transfer = transfer)

@@ -16,13 +16,7 @@ data class Transfer(
         val phoneId: UUID? = null,
         val phone: Phone? = null,
         val files: List<TransferFile> = emptyList()
-) : IEntity {
-    fun transferFolderName(template: String): String {
-        return MessageFormat(template).format(
-            arrayOf(Date.from(createdAt!!.toInstant(ZoneOffset.UTC)), name!!)
-        )
-    }
-}
+) : IEntity
 
 data class TransferFile(
         override val id: UUID? = null,
