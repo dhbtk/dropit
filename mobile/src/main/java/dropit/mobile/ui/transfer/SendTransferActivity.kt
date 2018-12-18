@@ -89,12 +89,10 @@ class SendTransferActivity : AppCompatActivity() {
             return cursor.use {
                 it.moveToFirst()
                 val fileNameAccessible = it.getColumnIndex(MediaStore.MediaColumns.DATA) != -1
-                val fileName = if (fileNameAccessible) {
-                    File(cursor.getString(it.getColumnIndex(MediaStore.MediaColumns.DATA))).name
-                } else if (it.getColumnIndex(MediaStore.MediaColumns.DISPLAY_NAME) != -1) {
-                    cursor.getString(it.getColumnIndex(MediaStore.MediaColumns.DISPLAY_NAME))
-                } else {
-                    ""
+                val fileName = when {
+                    fileNameAccessible -> File(cursor.getString(it.getColumnIndex(MediaStore.MediaColumns.DATA))).name
+                    it.getColumnIndex(MediaStore.MediaColumns.DISPLAY_NAME) != -1 -> cursor.getString(it.getColumnIndex(MediaStore.MediaColumns.DISPLAY_NAME))
+                    else -> ""
                 }
                 val fileSize = if (fileNameAccessible) {
                     File(cursor.getString(it.getColumnIndex(MediaStore.MediaColumns.DATA))).length()

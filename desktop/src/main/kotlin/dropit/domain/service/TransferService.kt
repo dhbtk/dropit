@@ -18,7 +18,6 @@ import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.InputStream
-import java.nio.file.Paths
 import java.util.*
 import javax.inject.Inject
 

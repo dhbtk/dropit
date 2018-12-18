@@ -1,21 +1,23 @@
 package dropit.infrastructure.discovery
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import dropit.application.discovery.DISCOVERY_GROUP
+import dropit.application.discovery.DISCOVERY_PORT
 import dropit.application.dto.BroadcastMessage
 import dropit.application.settings.AppSettings
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.net.DatagramPacket
-import java.net.InetAddress
 import java.net.MulticastSocket
 
-class DiscoveryBroadcaster(serverPort: Int, appSettings: AppSettings, objectMapper: ObjectMapper) {
+class DiscoveryBroadcaster(appSettings: AppSettings, objectMapper: ObjectMapper) {
     val log = LoggerFactory.getLogger(this::class.java)
-    val broadcastPort = 58993
-    val group = InetAddress.getByName("237.0.0.0")
+    val broadcastPort = DISCOVERY_PORT
+    val group = DISCOVERY_GROUP
     val socket = MulticastSocket(broadcastPort)
+    private var running = true
     val senderThread = Thread {
-        while (true) {
+        while (running) {
             val settings = appSettings.settings
             val broadcast = BroadcastMessage(settings.computerName, settings.computerId, settings.serverPort)
             val message = objectMapper.writeValueAsBytes(broadcast)
@@ -35,5 +37,10 @@ class DiscoveryBroadcaster(serverPort: Int, appSettings: AppSettings, objectMapp
         log.info("Starting discovery broadcaster on port $broadcastPort")
         socket.joinGroup(group)
         senderThread.start()
+    }
+
+    fun stop() {
+        running = false
+        senderThread.join(500)
     }
 }

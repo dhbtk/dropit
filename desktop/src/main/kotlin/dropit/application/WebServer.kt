@@ -24,7 +24,7 @@ class WebServer @Inject constructor(
     val phoneService: PhoneService,
     val transferService: TransferService,
     val token: TokenService,
-    objectMapper: ObjectMapper
+    val objectMapper: ObjectMapper
 ) {
     val logger = LoggerFactory.getLogger(this::class.java)
     val javalin: Javalin
@@ -59,13 +59,13 @@ class WebServer @Inject constructor(
                         }
                     }
                     post("transfers") {
-                        before { it.attribute("phone", token.getApprovedPhone(it)) }
-                        it.result(transferService.createTransfer(
+                        it.attribute("phone", token.getApprovedPhone(it))
+                        it.json(transferService.createTransfer(
                                 it.attribute<Phone>("phone")!!,
                                 it.bodyAsClass(TransferRequest::class.java)))
                     }
                     post("files/:id") {
-                        before { it.attribute("phone", token.getApprovedPhone(it)) }
+                        it.attribute("phone", token.getApprovedPhone(it))
                         transferService.uploadFile(
                                 it.attribute<Phone>("phone")!!,
                                 it.pathParam("id"),

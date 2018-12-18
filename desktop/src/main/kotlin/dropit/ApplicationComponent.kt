@@ -1,7 +1,9 @@
 package dropit
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import dagger.Component
 import dropit.application.WebServer
+import dropit.application.settings.AppSettings
 import dropit.domain.service.PhoneService
 import dropit.domain.service.TransferService
 import dropit.infrastructure.discovery.DiscoveryBroadcaster
@@ -23,4 +25,8 @@ interface ApplicationComponent {
     fun webServer(): WebServer
 
     fun jooq(): DSLContext
+
+    fun appSettings(): AppSettings
+
+    fun objectMapper(): ObjectMapper
 }
