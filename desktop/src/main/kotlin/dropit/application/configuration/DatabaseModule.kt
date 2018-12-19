@@ -10,6 +10,7 @@ import dropit.infrastructure.fs.ConfigFolderProvider
 import org.flywaydb.core.Flyway
 import org.jooq.SQLDialect
 import org.jooq.impl.DefaultConfiguration
+import java.io.File
 import javax.inject.Singleton
 import javax.sql.DataSource
 
@@ -21,12 +22,13 @@ class DatabaseModule {
     fun dataSource(configFolderProvider: ConfigFolderProvider): DataSource {
         val dataSource = HikariDataSource()
         dataSource.jdbcUrl = if (System.getProperty("dropit.test") == "true") {
-            "jdbc:sqlite:${configFolderProvider.configFolder.resolve("$APP_NAME.test.db")}"
+            val file = File.createTempFile("dropit", ".db")
+            file.deleteOnExit()
+            "jdbc:sqlite:$file"
         } else {
             "jdbc:sqlite:${configFolderProvider.configFolder.resolve("$APP_NAME.db")}"
         }
-        dataSource.maximumPoolSize = 20
-        dataSource.poolName = "pool"
+        dataSource.maximumPoolSize = 5
         return dataSource
     }
 
@@ -34,8 +36,9 @@ class DatabaseModule {
     @Provides
     @Singleton
     fun flyway(dataSource: DataSource): Flyway {
-        val flyway = Flyway()
-        flyway.dataSource = dataSource
+        val flyway = Flyway.configure()
+            .dataSource(dataSource)
+            .load()
         flyway.migrate()
         return flyway
     }
