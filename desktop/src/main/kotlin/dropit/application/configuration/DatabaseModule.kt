@@ -19,39 +19,32 @@ class DatabaseModule {
 
     @Provides
     @Singleton
-    fun dataSource(configFolderProvider: ConfigFolderProvider): DataSource {
-        val dataSource = HikariDataSource()
-        dataSource.jdbcUrl = if (System.getProperty("dropit.test") == "true") {
-            val file = File.createTempFile("dropit", ".db")
-            file.deleteOnExit()
-            "jdbc:sqlite:$file"
-        } else {
-            "jdbc:sqlite:${configFolderProvider.configFolder.resolve("$APP_NAME.db")}"
+    fun dataSource(configFolderProvider: ConfigFolderProvider): DataSource = HikariDataSource()
+        .apply {
+            jdbcUrl = if (System.getProperty("dropit.test") == "true") {
+                val file = File.createTempFile("dropit", ".db")
+                file.deleteOnExit()
+                "jdbc:sqlite:$file"
+            } else {
+                "jdbc:sqlite:${configFolderProvider.configFolder.resolve("$APP_NAME.db")}"
+            }
         }
-        dataSource.maximumPoolSize = 5
-        return dataSource
-    }
 
 
     @Provides
     @Singleton
-    fun flyway(dataSource: DataSource): Flyway {
-        val flyway = Flyway.configure()
-            .dataSource(dataSource)
-            .load()
-        flyway.migrate()
-        return flyway
-    }
+    fun flyway(dataSource: DataSource) = Flyway.configure()
+        .dataSource(dataSource)
+        .load()
+        .apply { migrate() }
 
     @Provides
     @Singleton
-    fun jooqConfiguration(dataSource: DataSource, flyway: Flyway): org.jooq.Configuration {
-        return DefaultConfiguration()
-                .set(dataSource)
-                .set(SQLDialect.SQLITE)
-                .set(RecordMapperProvider())
-                .set(RecordUnmapperProvider(DefaultConfiguration().set(SQLDialect.SQLITE)))
-    }
+    fun jooqConfiguration(dataSource: DataSource, flyway: Flyway): org.jooq.Configuration = DefaultConfiguration()
+        .set(dataSource)
+        .set(SQLDialect.SQLITE)
+        .set(RecordMapperProvider())
+        .set(RecordUnmapperProvider(DefaultConfiguration().set(SQLDialect.SQLITE)))
 
     @Provides
     @Singleton

@@ -28,52 +28,54 @@ class WebServer @Inject constructor(
 ) {
     val logger = LoggerFactory.getLogger(this::class.java)
     val javalin: Javalin
+
     init {
         JavalinJackson.configure(objectMapper)
         javalin = Javalin.create()
-                .requestLogger { ctx, ms ->
-                    val phone = ctx.attribute<Phone>("phone")
-                    logger.info("[${phone?.name}] ${ctx.method()} ${ctx.path()} took $ms ms")
+            .disableStartupBanner()
+            .requestLogger { ctx, ms ->
+                val phone = ctx.attribute<Phone>("phone")
+                logger.info("[${phone?.name}] ${ctx.method()} ${ctx.path()} took $ms ms")
+            }
+            .server {
+                val server = Server()
+                val connector = ServerConnector(server, getSslContextFactory())
+                connector.port = appSettings.settings.serverPort
+                server.connectors = arrayOf(connector)
+                server
+            }
+            .start(appSettings.settings.serverPort)
+            .routes {
+                get("/") {
+                    it.result("0.1")
                 }
-                .server {
-                    val server = Server()
-                    val connector = ServerConnector(server, getSslContextFactory())
-                    connector.port = appSettings.settings.serverPort
-                    server.connectors = arrayOf(connector)
-                    server
-                }
-                .start(appSettings.settings.serverPort)
-                .routes {
-                    get("/") {
-                        it.result("0.1")
+                path("token") {
+                    post {
+                        it.json(phoneService.requestToken(it.bodyAsClass(TokenRequest::class.java)))
                     }
-                    path("token") {
-                        post {
-                            it.json(phoneService.requestToken(it.bodyAsClass(TokenRequest::class.java)))
-                        }
 
-                        get {
-                            it.attribute("phone", token.getPendingPhone(it))
-                            val phone = token.getPendingPhone(it)
-                            it.json(phoneService.getTokenStatus(phone.token.toString()))
-                        }
-                    }
-                    post("transfers") {
-                        it.attribute("phone", token.getApprovedPhone(it))
-                        it.json(transferService.createTransfer(
-                                it.attribute<Phone>("phone")!!,
-                                it.bodyAsClass(TransferRequest::class.java)))
-                    }
-                    post("files/:id") {
-                        it.attribute("phone", token.getApprovedPhone(it))
-                        transferService.uploadFile(
-                                it.attribute<Phone>("phone")!!,
-                                it.pathParam("id"),
-                                it.uploadedFile("file")!!.content
-                        )
-                        it.status(201)
+                    get {
+                        it.attribute("phone", token.getPendingPhone(it))
+                        val phone = token.getPendingPhone(it)
+                        it.json(phoneService.getTokenStatus(phone.token.toString()))
                     }
                 }
+                post("transfers") {
+                    it.attribute("phone", token.getApprovedPhone(it))
+                    it.json(transferService.createTransfer(
+                        it.attribute<Phone>("phone")!!,
+                        it.bodyAsClass(TransferRequest::class.java)))
+                }
+                post("files/:id") {
+                    it.attribute("phone", token.getApprovedPhone(it))
+                    transferService.uploadFile(
+                        it.attribute<Phone>("phone")!!,
+                        it.pathParam("id"),
+                        it.uploadedFile("file")!!.content
+                    )
+                    it.status(201)
+                }
+            }
     }
 
     private fun getSslContextFactory(): SslContextFactory {

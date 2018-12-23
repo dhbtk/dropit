@@ -31,6 +31,7 @@ allprojects {
     ext.fileupload_version = '1.3.3'
 
     // desktop - UI
+    ext.swt_version = '3.109.0'
 
     // client
     ext.retrofit_version = '2.5.0'
@@ -67,5 +68,8 @@ subprojects {
         maven { url "http://jcenter.bintray.com" }
         maven { url "https://dl.bintray.com/spekframework/spek-dev" }
         maven { url "http://repo.maven.apache.org/maven2" }
-    }
+        maven { url "https://oss.sonatype.org/content/repositories/releases/" }
+        maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+        maven { url "http://maven-eclipse.github.io/maven"  }
+        }
 }

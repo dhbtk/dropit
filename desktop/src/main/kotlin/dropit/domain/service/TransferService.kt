@@ -18,9 +18,14 @@ import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.InputStream
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import java.util.*
 import javax.inject.Inject
+import javax.inject.Singleton
+import kotlin.collections.HashMap
 
+@Singleton
 class TransferService @Inject constructor(
     val create: DSLContext,
     val settings: AppSettings,
@@ -40,11 +45,13 @@ class TransferService @Inject constructor(
 
     data class NewTransferEvent(override val payload: Transfer) : AppEvent<Transfer>
     data class FileTransferBeginEvent(override val payload: TransferFile) : AppEvent<TransferFile>
-    data class FileTransferReceiveEvent(override val payload: Pair<TransferFile, Int>) : AppEvent<Pair<TransferFile, Int>>
+    data class FileTransferReceiveEvent(override val payload: Pair<TransferFile, Long>) : AppEvent<Pair<TransferFile, Long>>
     data class FileTransferFinishEvent(override val payload: CompletedFileTransfer) : AppEvent<CompletedFileTransfer>
     data class TransferCompleteEvent(override val payload: CompletedTransfer) : AppEvent<CompletedTransfer>
 
     val logger = LoggerFactory.getLogger(this::class.java)
+
+    val transferTimes = HashMap<TransferFile, List<Pair<LocalDateTime, Long>>>()
 
     /**
      * Called from web
@@ -55,21 +62,21 @@ class TransferService @Inject constructor(
         return create.transactionResult { _ ->
             val transferId = UUID.randomUUID()
             val count = create.insertInto(TRANSFER)
-                    .set(create.newRecord(TRANSFER, Transfer(
-                            id = transferId,
-                            name = request.name,
-                            phoneId = phone.id,
-                            status = TransferStatus.PENDING
-                    ))).execute()
+                .set(create.newRecord(TRANSFER, Transfer(
+                    id = transferId,
+                    name = request.name,
+                    phoneId = phone.id,
+                    status = TransferStatus.PENDING
+                ))).execute()
             count == 0 && throw RuntimeException("Could not save transfer")
             request.files.forEach {
                 val record = create.newRecord(TRANSFER_FILE, TransferFile(
-                        id = UUID.fromString(it.id),
-                        transferId = transferId,
-                        fileName = it.fileName,
-                        mimeType = it.mimeType,
-                        fileSize = it.fileSize,
-                        status = FileStatus.PENDING
+                    id = UUID.fromString(it.id),
+                    transferId = transferId,
+                    fileName = it.fileName,
+                    mimeType = it.mimeType,
+                    fileSize = it.fileSize,
+                    status = FileStatus.PENDING
                 ))
                 create.insertInto(TRANSFER_FILE).set(record).execute() == 0 && throw RuntimeException("Could not save transfer file")
             }
@@ -86,14 +93,14 @@ class TransferService @Inject constructor(
      */
     fun uploadFile(phone: Phone, fileId: String, body: InputStream) {
         val transferFile = create.select().from(TRANSFER_FILE)
-                .join(TRANSFER).on(TRANSFER_FILE.TRANSFER_ID.eq(TRANSFER.ID))
-                .join(PHONE).on(TRANSFER.PHONE_ID.eq(PHONE.ID))
-                .where(PHONE.ID.eq(phone.id.toString()))
-                .and(PHONE.STATUS.eq(TokenStatus.AUTHORIZED.name))
-                .and(TRANSFER.STATUS.eq(TransferStatus.PENDING.name))
-                .and(TRANSFER_FILE.STATUS.ne(FileStatus.FINISHED.name))
-                .and(TRANSFER_FILE.ID.eq(fileId))
-                .fetchOneInto(TRANSFER_FILE).into(TransferFile::class.java)
+            .join(TRANSFER).on(TRANSFER_FILE.TRANSFER_ID.eq(TRANSFER.ID))
+            .join(PHONE).on(TRANSFER.PHONE_ID.eq(PHONE.ID))
+            .where(PHONE.ID.eq(phone.id.toString()))
+            .and(PHONE.STATUS.eq(TokenStatus.AUTHORIZED.name))
+            .and(TRANSFER.STATUS.eq(TransferStatus.PENDING.name))
+            .and(TRANSFER_FILE.STATUS.ne(FileStatus.FINISHED.name))
+            .and(TRANSFER_FILE.ID.eq(fileId))
+            .fetchOneInto(TRANSFER_FILE).into(TransferFile::class.java)
         val record = create.newRecord(TRANSFER_FILE)
         val transfer = create.fetchOne(TRANSFER, TRANSFER.ID.eq(transferFile.transferId.toString())).into(Transfer::class.java)
         val transferFolder = transferFolderProvider.getForTransfer(transfer).toFile()
@@ -101,16 +108,19 @@ class TransferService @Inject constructor(
         !tempFile.exists() || (tempFile.delete() && tempFile.createNewFile())
         val displayTransferFile = transferFile.copy(transfer = transfer)
         bus.broadcast(FileTransferBeginEvent(displayTransferFile))
+        val transferList = mutableListOf(Pair(LocalDateTime.now(), 0L))
+        transferTimes[displayTransferFile] = transferList
         try {
             tempFile.outputStream().use { outputStream ->
                 body.use {
                     val buffer = ByteArray(512 * 1024)
                     var bytesRead = body.read(buffer)
-                    var totalRead = 0
+                    var totalRead = 0L
                     while (bytesRead > -1) {
                         outputStream.write(buffer, 0, bytesRead)
                         totalRead += bytesRead
                         bus.broadcast(FileTransferReceiveEvent(Pair(displayTransferFile, totalRead)))
+                        transferList += Pair(LocalDateTime.now(), totalRead)
                         bytesRead = body.read(buffer)
                     }
                 }
@@ -126,9 +136,10 @@ class TransferService @Inject constructor(
                 transferFolder,
                 actualFile
             )))
+            transferTimes.remove(displayTransferFile)
 
             val (count) = create.selectCount().from(TRANSFER_FILE).where(TRANSFER_FILE.TRANSFER_ID.eq(transferFile.transferId.toString()))
-                    .and(TRANSFER_FILE.STATUS.ne(FileStatus.FINISHED.name)).fetchOne()
+                .and(TRANSFER_FILE.STATUS.ne(FileStatus.FINISHED.name)).fetchOne()
             if (count == 0) {
                 val transferRecord = create.newRecord(TRANSFER)
                 transferRecord.from(transfer.copy(status = TransferStatus.FINISHED))
@@ -149,6 +160,23 @@ class TransferService @Inject constructor(
             exception.printStackTrace()
             record.from(transferFile.copy(status = FileStatus.PENDING))
             record.update()
+        }
+    }
+
+    /**
+     * Returns in B/s
+     */
+    fun calculateTransferRate(transferFile: TransferFile, points: List<Pair<LocalDateTime, Long>>): Long {
+        val interval = 5 // 5 seconds to calc
+        try {
+            val currentData = points.last()
+            val olderData = points.reversed().find { ChronoUnit.SECONDS.between(currentData.first, it.first) >= interval }
+                ?: return 0L
+            val secondsDiff = ChronoUnit.SECONDS.between(currentData.first, olderData.first)
+            val dataDiff = currentData.second - olderData.second
+            return dataDiff / secondsDiff
+        } catch (e: Exception) {
+            return 0L
         }
     }
 }

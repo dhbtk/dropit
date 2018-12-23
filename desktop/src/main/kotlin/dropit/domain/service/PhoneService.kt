@@ -15,7 +15,9 @@ import org.jooq.DSLContext
 import java.time.LocalDateTime
 import java.util.*
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class PhoneService @Inject constructor(
     val create: DSLContext,
     val bus: EventBus,

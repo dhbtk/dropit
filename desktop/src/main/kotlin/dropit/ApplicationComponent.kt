@@ -8,6 +8,8 @@ import dropit.domain.service.PhoneService
 import dropit.domain.service.TransferService
 import dropit.infrastructure.discovery.DiscoveryBroadcaster
 import dropit.infrastructure.event.EventBus
+import dropit.ui.GraphicalInterface
+import org.eclipse.swt.widgets.Display
 import org.jooq.DSLContext
 import javax.inject.Singleton
 
@@ -29,4 +31,8 @@ interface ApplicationComponent {
     fun appSettings(): AppSettings
 
     fun objectMapper(): ObjectMapper
+
+    fun graphicalInterface(): GraphicalInterface
+
+    fun display(): Display
 }

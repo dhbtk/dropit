@@ -44,6 +44,14 @@ dependencies {
         exclude group: 'org.jetbrains.kotlin'
     }
 
+    // UI
+    compile("org.eclipse.platform:org.eclipse.swt.gtk.linux.x86_64:$swt_version") {
+        exclude group: 'org.eclipse.platform'
+    }
+    compile("org.eclipse.platform:org.eclipse.swt:$swt_version") {
+        exclude group: 'org.eclipse.platform'
+    }
+
     kapt group: 'com.google.dagger', name: 'dagger-compiler', version: dagger_version
 }
 
