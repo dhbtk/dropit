@@ -20,7 +20,7 @@ class ListServerAdapter(val items: List<ListServer>)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context)
-                .inflate(R.layout.fragment_server, parent, false)
+            .inflate(R.layout.server_list_item, parent, false)
         return ViewHolder(view)
     }
 
@@ -37,8 +37,8 @@ class ListServerAdapter(val items: List<ListServer>)
     override fun getItemCount(): Int = items.size
 
     inner class ViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
-        val name = view.findViewById<TextView>(R.id.server_name)
-        val ip = view.findViewById<TextView>(R.id.server_ip)
+        val name = view.findViewById<TextView>(R.id.serverName)
+        val ip = view.findViewById<TextView>(R.id.serverIp)
 
         override fun toString(): String {
             return super.toString() + " '" + name.text + "'"

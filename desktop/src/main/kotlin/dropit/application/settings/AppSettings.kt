@@ -4,6 +4,7 @@ import dropit.domain.entity.Settings
 import dropit.infrastructure.i18n.t
 import dropit.jooq.tables.Settings.SETTINGS
 import org.jooq.DSLContext
+import java.net.InetAddress
 import java.nio.file.Files
 import java.nio.file.Paths
 
@@ -21,7 +22,7 @@ class AppSettings(val jooq: DSLContext) {
     private fun createDefaultSettings(): Settings {
         if (jooq.fetchOne(SETTINGS) == null) {
             val settings = dropit.domain.entity.Settings(
-                    computerName = t("appSettings.init.defaultComputerName", System.getProperty("user.name")),
+                computerName = getDefaultComputerName(),
                     rootTransferFolder = getDefaultTransferFolder(),
                 transferFolderName = "{0,date,yyyy-MM-dd HH-mm} {1}",
                     serverPort = 58992
@@ -40,6 +41,14 @@ class AppSettings(val jooq: DSLContext) {
             val path = Paths.get(System.getProperty("user.home"), t("appSettings.init.defaultTransferFolder"))
             (path.toFile().exists() && path.toFile().isDirectory) || path.toFile().mkdirs() || throw RuntimeException("Could not create default transfer folder $path")
             return path.toString()
+        }
+    }
+
+    private fun getDefaultComputerName(): String {
+        return try {
+            InetAddress.getLocalHost().hostName
+        } catch (e: Exception) {
+            t("appSettings.init.defaultComputerName", System.getProperty("user.name"))
         }
     }
 }

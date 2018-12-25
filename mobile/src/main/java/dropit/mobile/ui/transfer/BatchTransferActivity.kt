@@ -17,7 +17,7 @@ import java.io.FileInputStream
 import java.util.*
 import kotlin.collections.ArrayList
 
-class SendTransferActivity : AppCompatActivity() {
+class BatchTransferActivity : AppCompatActivity() {
     val items = ArrayList<ListFile>()
     val fileListFragment = FileListFragment.newInstance(items)
 
@@ -58,7 +58,7 @@ class SendTransferActivity : AppCompatActivity() {
 
     private fun showFileList(backwards: Boolean = false) {
         if (supportFragmentManager.findFragmentByTag("tag") is FileListFragment) {
-            Log.i("SendTransferActivity", "Already showing file list")
+            Log.i("BatchTransferActivity", "Already showing file list")
         } else {
             val trans = supportFragmentManager.beginTransaction()
             if (backwards) {
@@ -110,7 +110,7 @@ class SendTransferActivity : AppCompatActivity() {
                         fileSize = fileSize,
                         mimeType = mimeType
                 )
-                Log.i("SendTransferActivity", fileRequest.toString())
+                Log.i("BatchTransferActivity", fileRequest.toString())
                 ListFile(uri, fileRequest)
             }
         }

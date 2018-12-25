@@ -66,6 +66,7 @@ class GraphicalInterface @Inject constructor(
 
             listOf(
                 PhoneService.NewPhoneRequestEvent::class,
+                PhoneService.PhoneChangedEvent::class,
                 TransferService.FileTransferBeginEvent::class,
                 TransferService.FileTransferReceiveEvent::class,
                 TransferService.FileTransferFinishEvent::class

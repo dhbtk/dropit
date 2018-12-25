@@ -5,7 +5,20 @@
     <string name="removed_from_transfer">Removed from transfer</string>
     <string name="undo">UNDO</string>
 
-    <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="send">Send</string>
+    <string name="selected">Selected</string>
+    <string name="default_server">Default</string>
+    <string name="server_is_paired">Paired</string>
+
+    <string name="activity_configuration_help_text">This list shows all computer running DropIt in your network. The computer in green is currently active, and this is where your files and data will go.
+
+    Touch a computer to pair with it.</string>
+    <string name="cancel">Cancel</string>
+    <string name="pairing_dialog_title">Pairing with \"%1$s\"</string>
+    <string name="pairing_dialog_message_1">Requesting pairing…</string>
+    <string name="pairing_dialog_message_2">Please confirm the pairing on your computer to continue.</string>
+    <string name="pairing_request_denied">You have denied the pairing request</string>
+    <string name="computer_secret_changed">The computer\'s identity has changed.</string>
+    <string name="paired_and_set_as_default">Paired and set as default.</string>
 </resources>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?android:attr/selectableItemBackground"
+    android:orientation="horizontal"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/serverName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="Server name" />
+
+    <TextView
+        android:id="@+id/serverIsPaired"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/server_is_paired"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/serverIp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/serverName"
+        tools:text="xxx.xxx.xxx.xxx" />
+
+    <TextView
+        android:id="@+id/serverIsDefault"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/default_server"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+</android.support.constraint.ConstraintLayout>

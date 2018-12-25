@@ -31,7 +31,7 @@ class FileListFragment : Fragment(), RecyclerItemTouchHelper.SwipeListener {
     override fun onAttach(context: Context) {
         setHasOptionsMenu(true)
         super.onAttach(context)
-        if (context is SendTransferActivity) {
+        if (context is BatchTransferActivity) {
             items = context.items
         }
     }
@@ -69,7 +69,7 @@ class FileListFragment : Fragment(), RecyclerItemTouchHelper.SwipeListener {
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         return when (item!!.itemId) {
-            R.id.send -> (context as SendTransferActivity).showServerList()
+            R.id.send -> (context as BatchTransferActivity).showServerList()
             else -> super.onOptionsItemSelected(item)
         }
     }
