@@ -10,6 +10,7 @@ import org.eclipse.swt.SWT
 import org.eclipse.swt.graphics.Image
 import org.eclipse.swt.widgets.*
 import org.slf4j.LoggerFactory
+import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
@@ -130,7 +131,7 @@ class GraphicalInterface @Inject constructor(
             trayIcon?.toolTipText = t("graphicalInterface.trayIcon.tooltip.pendingPhone", APP_NAME, pendingPhone.name!!)
         } else if (transferingFile != null && !transferingFile.second.isEmpty()) {
             val (transferFile, data) = transferingFile
-            val percentage = (((data[0].second).toFloat() / transferFile.fileSize!!) * 100).roundToInt()
+            val percentage = (((data.last().second).toFloat() / transferFile.fileSize!!) * 100).roundToInt()
             val bytesPerSec = transferService.calculateTransferRate(transferFile, data)
             trayIcon?.toolTipText = t("graphicalInterface.trayIcon.tooltip.downloadingFile",
                 APP_NAME,
@@ -143,7 +144,7 @@ class GraphicalInterface @Inject constructor(
 
     private fun bytesToHuman(bytes: Long): String {
         return when {
-            bytes > (1024 * 1024) -> "${bytes / (1024 * 1024)} MB/s"
+            bytes > (1024 * 1024) -> "${String.format(Locale.getDefault(), "%.1f", bytes.toDouble() / (1024 * 1024))} MB/s"
             bytes > 1024 -> "${bytes / 1024} kB/s"
             else -> "$bytes B/s"
         }

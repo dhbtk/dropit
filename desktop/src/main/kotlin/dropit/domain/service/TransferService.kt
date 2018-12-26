@@ -14,15 +14,18 @@ import dropit.infrastructure.fs.TransferFolderProvider
 import dropit.jooq.tables.Phone.PHONE
 import dropit.jooq.tables.Transfer.TRANSFER
 import dropit.jooq.tables.TransferFile.TRANSFER_FILE
+import org.apache.commons.fileupload.ProgressListener
+import org.apache.commons.fileupload.servlet.ServletFileUpload
+import org.apache.commons.io.IOUtils
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.io.InputStream
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
+import javax.servlet.http.HttpServletRequest
 import kotlin.collections.HashMap
 
 @Singleton
@@ -31,6 +34,14 @@ class TransferService @Inject constructor(
     val settings: AppSettings,
     val bus: EventBus,
     val transferFolderProvider: TransferFolderProvider) {
+
+    init {
+        create.transaction { _ ->
+            create.deleteFrom(TRANSFER_FILE).where(TRANSFER_FILE.STATUS.eq(FileStatus.PENDING.toString())).execute()
+            create.deleteFrom(TRANSFER).where(TRANSFER.STATUS.eq(TransferStatus.PENDING.toString())).execute()
+        }
+    }
+
     data class CompletedFileTransfer(
         val transferFile: TransferFile,
         val transferFolder: File,
@@ -91,7 +102,7 @@ class TransferService @Inject constructor(
      *
      * uploads a file, notifying the UI of progress.
      */
-    fun uploadFile(phone: Phone, fileId: String, body: InputStream) {
+    fun uploadFile(phone: Phone, fileId: String, request: HttpServletRequest) {
         val transferFile = create.select().from(TRANSFER_FILE)
             .join(TRANSFER).on(TRANSFER_FILE.TRANSFER_ID.eq(TRANSFER.ID))
             .join(PHONE).on(TRANSFER.PHONE_ID.eq(PHONE.ID))
@@ -111,19 +122,26 @@ class TransferService @Inject constructor(
         val transferList = mutableListOf(Pair(LocalDateTime.now(), 0L))
         transferTimes[displayTransferFile] = transferList
         try {
+            val upload = ServletFileUpload()
+            var lastNanoTime = System.nanoTime()
+            upload.progressListener = ProgressListener { pBytesRead, pContentLength, pItems ->
+                if (System.nanoTime() - lastNanoTime >= (500 * 1000 * 1000) || pBytesRead == pContentLength) {
+                    bus.broadcast(FileTransferReceiveEvent(Pair(displayTransferFile, pBytesRead)))
+                    transferList += Pair(LocalDateTime.now(), pBytesRead)
+                    lastNanoTime = System.nanoTime()
+                }
+            }
             tempFile.outputStream().use { outputStream ->
-                body.use {
-                    val buffer = ByteArray(512 * 1024)
-                    var bytesRead = body.read(buffer)
-                    var totalRead = 0L
-                    while (bytesRead > -1) {
-                        outputStream.write(buffer, 0, bytesRead)
-                        totalRead += bytesRead
-                        bus.broadcast(FileTransferReceiveEvent(Pair(displayTransferFile, totalRead)))
-                        transferList += Pair(LocalDateTime.now(), totalRead)
-                        bytesRead = body.read(buffer)
+                val iterator = upload.getItemIterator(request)
+                var foundBody = false
+                while (iterator.hasNext()) {
+                    val item = iterator.next()
+                    if (item.fieldName == "file") {
+                        IOUtils.copy(item.openStream(), outputStream)
+                        foundBody = true
                     }
                 }
+                !foundBody && throw IllegalArgumentException("No file upload")
             }
 
             val actualFile = transferFolder.toPath().resolve(transferFile.fileName).toFile()
@@ -170,11 +188,10 @@ class TransferService @Inject constructor(
         val interval = 5 // 5 seconds to calc
         try {
             val currentData = points.last()
-            val olderData = points.reversed().find { ChronoUnit.SECONDS.between(currentData.first, it.first) >= interval }
-                ?: return 0L
-            val secondsDiff = ChronoUnit.SECONDS.between(currentData.first, olderData.first)
-            val dataDiff = currentData.second - olderData.second
-            return dataDiff / secondsDiff
+            val filteredData = points.filter { ChronoUnit.SECONDS.between(it.first, currentData.first) < interval }
+            val secondsDiff = ChronoUnit.SECONDS.between(filteredData.first().first, currentData.first)
+            val dataDiff = currentData.second - filteredData.first().second
+            return (dataDiff.toDouble() / secondsDiff).toLong()
         } catch (e: Exception) {
             return 0L
         }

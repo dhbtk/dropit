@@ -71,7 +71,7 @@ class WebServer @Inject constructor(
                     transferService.uploadFile(
                         it.attribute<Phone>("phone")!!,
                         it.pathParam("id"),
-                        it.uploadedFile("file")!!.content
+                        it.req
                     )
                     it.status(201)
                 }
