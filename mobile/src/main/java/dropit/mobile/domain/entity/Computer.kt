@@ -14,4 +14,7 @@ data class Computer(
     val tokenStatus: TokenStatus?,
     val contacted: Boolean = false,
     val default: Boolean = false
-) : Serializable
+) : Serializable {
+    val url
+        get() = "https://$ipAddress:$port"
+}

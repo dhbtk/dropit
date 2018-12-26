@@ -81,7 +81,7 @@ class GraphicalInterface @Inject constructor(
             }
 
             eventBus.subscribe(TransferService.TransferCompleteEvent::class) { (completedTransfer) ->
-                notifyTransferFinished(completedTransfer)
+                display.asyncExec { notifyTransferFinished(completedTransfer) }
             }
 
             return trayIcon

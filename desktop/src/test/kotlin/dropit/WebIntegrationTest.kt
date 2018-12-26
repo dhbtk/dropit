@@ -60,7 +60,7 @@ object WebIntegrationTest : Spek({
             dropItClient.uploadFile(
                 transferRequest.files[0],
                 javaClass.getResourceAsStream("/zeroes.bin")
-            ).blockingFirst()
+            ) {}.blockingFirst()
         }
     }
 
@@ -109,7 +109,7 @@ object WebIntegrationTest : Spek({
                 MultipartBody.Part.createFormData(
                     "file",
                     "zeroes.bin",
-                    InputStreamBody(javaClass.getResourceAsStream("/zeroes.bin"), transferRequest.files[0].fileSize!!)
+                    InputStreamBody(javaClass.getResourceAsStream("/zeroes.bin"), transferRequest.files[0].fileSize!!) {}
                 ))
                 .execute()
 

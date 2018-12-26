@@ -47,10 +47,10 @@ class Client(
             }
     }
 
-    fun uploadFile(fileRequest: FileRequest, inputStream: InputStream): Observable<Unit> {
+    fun uploadFile(fileRequest: FileRequest, inputStream: InputStream, callback: (Long) -> Unit): Observable<Unit> {
         return headerObservable()
             .map {
-                val body = InputStreamBody(inputStream, fileRequest.fileSize!!)
+                val body = InputStreamBody(inputStream, fileRequest.fileSize!!, callback)
                 dropItServer.uploadFile(
                     it,
                     fileRequest.id!!,

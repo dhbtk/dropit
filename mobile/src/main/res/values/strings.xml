@@ -21,4 +21,8 @@
     <string name="pairing_request_denied">You have denied the pairing request</string>
     <string name="computer_secret_changed">The computer\'s identity has changed.</string>
     <string name="paired_and_set_as_default">Paired and set as default.</string>
+    <string name="no_current_computer">You need to pair to a computer first.</string>
+
+    <string name="connecting_to_computer">Connecting to %1$s…</string>
+    <string name="connect_to_computer_failed">Failed to connect to computer. Check if you are in the same network as your computer.</string>
 </resources>

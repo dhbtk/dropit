@@ -3,6 +3,8 @@
     package="dropit.mobile">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:allowBackup="true"
@@ -50,6 +52,19 @@
         <service
             android:name=".domain.service.ServerDiscoveryService"
             android:permission="android.permission.BIND_JOB_SERVICE" />
+        <service
+            android:name=".domain.service.FileUploadService"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
+        <provider
+            android:name="android.support.v4.content.FileProvider"
+            android:authorities="dropit.mobile.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/filepaths" />
+        </provider>
 
     </application>
 
