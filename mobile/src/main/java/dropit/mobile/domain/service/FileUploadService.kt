@@ -50,13 +50,17 @@ class FileUploadService : JobIntentService() {
 
         val totalBytes = fileList.map { it.first.fileSize!! }.sum()
         var uploadedBytes = 0L
+        var currentPercentage = 0
 
         fileList.forEach { (fileRequest, uri) ->
             client.uploadFile(fileRequest, contentResolver.openInputStream(Uri.parse(uri))) { uploaded ->
                 uploadedBytes += uploaded
-                val percentage = ((uploadedBytes.toDouble() / totalBytes) * 100).roundToInt()
-                notificationBuilder.setProgress(100, percentage, false)
-                NotificationManagerCompat.from(this).notify(NOTIFICATION_ID, notificationBuilder.build())
+                val newPercentage = ((uploadedBytes.toDouble() / totalBytes) * 100).roundToInt()
+                if (newPercentage > currentPercentage) {
+                    currentPercentage = newPercentage
+                    notificationBuilder.setProgress(100, currentPercentage, false)
+                    NotificationManagerCompat.from(this).notify(NOTIFICATION_ID, notificationBuilder.build())
+                }
             }.blockingFirst()
         }
 
