@@ -11,6 +11,7 @@ class EventBus {
 
     @Suppress("UNCHECKED_CAST")
     fun <T : AppEvent<*>> subscribe(type: KClass<T>, handler: EventHandler<T>): EventHandler<T> {
+        // FIXME change to synchronized or something else that works on Android < 6.0
         subscriptions.compute(type) { _, set ->
             if(set == null) {
                 LinkedHashSet(listOf(handler as EventHandler<AppEvent<*>>))
@@ -30,7 +31,7 @@ class EventBus {
     }
 
     fun broadcast(event: AppEvent<*>) {
-        log.info("Broadcasting ${event::class.simpleName} - ${event}")
+        log.fine("Broadcasting ${event::class.simpleName} - ${event}")
         subscriptions[event::class]?.forEach { it(event) }
     }
 }
