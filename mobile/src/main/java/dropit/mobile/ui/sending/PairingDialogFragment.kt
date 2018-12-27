@@ -1,4 +1,4 @@
-package dropit.mobile.ui.activity
+package dropit.mobile.ui.sending
 
 import android.app.Dialog
 import android.content.Context

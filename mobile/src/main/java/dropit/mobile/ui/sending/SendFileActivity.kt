@@ -1,11 +1,9 @@
-package dropit.mobile.ui.activity
+package dropit.mobile.ui.sending
 
 import android.content.Intent
 import android.net.Uri
 import android.os.AsyncTask
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.provider.MediaStore
 import android.support.v4.content.FileProvider
 import android.support.v7.app.AppCompatActivity
@@ -23,6 +21,8 @@ import dropit.mobile.domain.service.FileUploadService
 import dropit.mobile.domain.service.TOKEN_REQUEST
 import dropit.mobile.infrastructure.db.SQLiteHelper
 import dropit.mobile.infrastructure.preferences.PreferencesHelper
+import dropit.mobile.onMainThread
+import dropit.mobile.ui.configuration.ConfigurationActivity
 import kotlinx.android.synthetic.main.activity_send_file.*
 import java.io.File
 import java.io.FileInputStream
@@ -34,6 +34,7 @@ class SendFileActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setTheme(R.style.NoTopBar)
         setContentView(R.layout.activity_send_file)
         sqliteHelper = SQLiteHelper(this)
         preferencesHelper = PreferencesHelper(this)
@@ -56,6 +57,7 @@ class SendFileActivity : AppCompatActivity() {
             val action = intent.action
             val fileRequests = if (action == Intent.ACTION_SEND) {
                 if (intent.type == "text/plain") {
+                    // TODO implement clipboard sharing
                     val uri = plainTextToUri(intent.getStringExtra(Intent.EXTRA_TEXT))
                     listOf(Pair(extractUriData(uri).copy(fileName = "clipboard.txt"), uri.toString()))
                 } else {
@@ -90,7 +92,7 @@ class SendFileActivity : AppCompatActivity() {
 
                 return fileRequests
             } catch (e: Exception) {
-                Handler(Looper.getMainLooper()).post {
+                onMainThread {
                     Toast.makeText(this@SendFileActivity, R.string.connect_to_computer_failed, Toast.LENGTH_LONG).show()
                     val intent = Intent(this@SendFileActivity, ConfigurationActivity::class.java)
                     startActivity(intent)
@@ -110,7 +112,7 @@ class SendFileActivity : AppCompatActivity() {
                         preferencesHelper.phoneId,
                         preferencesHelper.phoneName
                     ))
-                this@SendFileActivity.startService(intent)
+                FileUploadService.enqueueWork(this@SendFileActivity, intent)
                 this@SendFileActivity.finish()
             }
         }

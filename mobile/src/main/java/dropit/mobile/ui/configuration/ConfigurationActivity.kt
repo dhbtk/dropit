@@ -1,4 +1,4 @@
-package dropit.mobile.ui.activity
+package dropit.mobile.ui.configuration
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
@@ -13,7 +13,8 @@ import dropit.mobile.domain.entity.Computer
 import dropit.mobile.infrastructure.db.SQLiteHelper
 import dropit.mobile.infrastructure.preferences.PreferencesHelper
 import dropit.mobile.onMainThread
-import dropit.mobile.ui.activity.adapter.ServerListAdapter
+import dropit.mobile.ui.sending.PairingDialogFragment
+import dropit.mobile.ui.sending.adapter.ServerListAdapter
 import kotlinx.android.synthetic.main.activity_configuration.*
 import java.util.*
 

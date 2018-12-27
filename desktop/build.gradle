@@ -3,7 +3,7 @@ plugins {
     id "org.jetbrains.kotlin.kapt"
     id "org.flywaydb.flyway" version '5.2.4'
     id 'nu.studer.jooq' version '3.0.2'
-//    id 'com.github.johnrengelman.shadow' version '4.0.3'
+    id 'com.github.johnrengelman.shadow' version '4.0.3'
     id 'application'
     id 'edu.sc.seis.launch4j' version '2.4.4'
 }
@@ -15,16 +15,16 @@ def buildDbPath = '/tmp/dropit-tmp.db'
 
 mainClassName = 'dropit.ApplicationKt'
 applicationName = 'DropIt'
-//shadowJar {
-//    baseName = 'dropit-desktop'
-//    classifier = getDesktopClassifier()
-//}
+shadowJar {
+    baseName = 'dropit-desktop'
+    classifier = getDesktopClassifier()
+}
 launch4j {
     icon = "${projectDir}/desktop.ico"
     outfile = "${project.applicationName}.exe"
     mainClassName = project.mainClassName
-//    copyConfigurable = project.tasks.shadowJar.outputs.files
-//    jar = "lib/${project.tasks.shadowJar.archiveName}"
+    copyConfigurable = project.tasks.shadowJar.outputs.files
+    jar = "lib/${project.tasks.shadowJar.archiveName}"
 }
 
 dependencies {

@@ -14,7 +14,7 @@ class BootBroadcastReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context?, intent: Intent?) {
         if (events.any { it == intent?.action }) {
-            ServerDiscoveryService.enqueueWork(context!!, intent!!)
+            ServerConnectionService.enqueueWork(context!!, intent!!)
         }
     }
 }

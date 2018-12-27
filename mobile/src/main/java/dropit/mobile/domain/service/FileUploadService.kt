@@ -2,6 +2,7 @@ package dropit.mobile.domain.service
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.support.v4.app.JobIntentService
 import android.support.v4.app.NotificationCompat
@@ -24,16 +25,17 @@ class FileUploadService : JobIntentService() {
         const val NOTIFICATION_ID = 1
 
         fun enqueueWork(context: Context, work: Intent) {
-            enqueueWork(context, ServerDiscoveryService::class.java, JOB_ID, work)
+            enqueueWork(context, FileUploadService::class.java, JOB_ID, work)
         }
     }
 
     override fun onHandleWork(intent: Intent) {
         val fileList = intent.getSerializableExtra(FILE_LIST) as List<Pair<FileRequest, String>>
         val notificationBuilder = NotificationCompat.Builder(this)
-            .setContentTitle(getText(R.string.app_name))
-            .setContentText("Sending file")
-            .setTicker("Sending file to computer")
+            .setContentTitle(getText(R.string.sending_file))
+            .setContentText("0%")
+            .setTicker(getText(R.string.sending_file))
+            .setLargeIcon(BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher))
             .setSmallIcon(R.mipmap.ic_launcher)
             .setOngoing(true)
             .setProgress(100, 0, false)
@@ -58,12 +60,24 @@ class FileUploadService : JobIntentService() {
                 val newPercentage = ((uploadedBytes.toDouble() / totalBytes) * 100).roundToInt()
                 if (newPercentage > currentPercentage) {
                     currentPercentage = newPercentage
-                    notificationBuilder.setProgress(100, currentPercentage, false)
+                    notificationBuilder
+                        .setProgress(100, currentPercentage, false)
+                        .setContentText("$currentPercentage%")
                     NotificationManagerCompat.from(this).notify(NOTIFICATION_ID, notificationBuilder.build())
                 }
             }.blockingFirst()
         }
 
         stopForeground(true)
+
+        NotificationCompat.Builder(this)
+            .setContentTitle(getText(R.string.file_sent))
+            .setContentText(getText(R.string.file_sent_successfully))
+            .setTicker(getText(R.string.file_sent_successfully))
+            .setLargeIcon(BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher))
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .apply {
+                NotificationManagerCompat.from(this@FileUploadService).notify(NOTIFICATION_ID, build())
+            }
     }
 }

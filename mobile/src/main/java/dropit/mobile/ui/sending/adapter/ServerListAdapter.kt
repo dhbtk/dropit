@@ -1,4 +1,4 @@
-package dropit.mobile.ui.activity.adapter
+package dropit.mobile.ui.sending.adapter
 
 import android.content.Context
 import android.support.v7.widget.RecyclerView
