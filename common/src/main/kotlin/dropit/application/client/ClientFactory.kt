@@ -7,6 +7,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import okhttp3.logging.HttpLoggingInterceptor.Level.HEADERS
 import java.security.KeyStore
 import java.security.SecureRandom
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
@@ -25,6 +26,8 @@ class ClientFactory @Inject constructor(private val objectMapper: ObjectMapper) 
     private val okHttpClient = OkHttpClient.Builder()
         .sslSocketFactory(sslSocketFactory, trustManager)
         .addInterceptor(okHttpLogger)
+        .addInterceptor(Client.ErrorHandlingInterceptor())
+        .connectTimeout(1, TimeUnit.SECONDS)
         .hostnameVerifier { _, _ -> true }
         .build()
 

@@ -82,7 +82,7 @@ class SendFileActivity : AppCompatActivity() {
             )
             val computer = sqliteHelper.getComputer(UUID.fromString(preferencesHelper.currentComputerId))
             val client = ClientFactory(ObjectMapper().apply { this.findAndRegisterModules() })
-                .create("https://${computer.ipAddress}:${computer.port}", tokenRequest, null)
+                .create(computer.url, tokenRequest, null)
 
             try {
                 val transferId = client.createTransfer(TransferRequest(

@@ -8,11 +8,14 @@ import android.support.v4.app.JobIntentService
 import android.support.v4.app.NotificationCompat
 import android.support.v4.app.NotificationManagerCompat
 import com.fasterxml.jackson.databind.ObjectMapper
+import dropit.application.client.Client
 import dropit.application.client.ClientFactory
 import dropit.application.dto.FileRequest
 import dropit.application.dto.TokenRequest
 import dropit.mobile.R
 import dropit.mobile.domain.entity.Computer
+import java.io.IOException
+import java.net.SocketTimeoutException
 import kotlin.math.roundToInt
 
 const val FILE_LIST = "fileList"
@@ -54,19 +57,28 @@ class FileUploadService : JobIntentService() {
         var uploadedBytes = 0L
         var currentPercentage = 0
 
-        fileList.forEach { (fileRequest, uri) ->
-            client.uploadFile(fileRequest, contentResolver.openInputStream(Uri.parse(uri))) { uploaded ->
-                uploadedBytes += uploaded
-                val newPercentage = ((uploadedBytes.toDouble() / totalBytes) * 100).roundToInt()
-                if (newPercentage > currentPercentage) {
-                    currentPercentage = newPercentage
-                    notificationBuilder
-                        .setProgress(100, currentPercentage, false)
-                        .setContentText("$currentPercentage%")
-                    NotificationManagerCompat.from(this).notify(NOTIFICATION_ID, notificationBuilder.build())
-                }
-            }.blockingFirst()
+        try {
+            fileList.forEach { (fileRequest, uri) ->
+                client.uploadFile(fileRequest, contentResolver.openInputStream(Uri.parse(uri))) { uploaded ->
+                    uploadedBytes += uploaded
+                    val newPercentage = ((uploadedBytes.toDouble() / totalBytes) * 100).roundToInt()
+                    if (newPercentage > currentPercentage) {
+                        currentPercentage = newPercentage
+                        notificationBuilder
+                            .setProgress(100, currentPercentage, false)
+                            .setContentText("$currentPercentage%")
+                        NotificationManagerCompat.from(this).notify(NOTIFICATION_ID, notificationBuilder.build())
+                    }
+                }.blockingFirst()
+            }
+        } catch (e: Client.DropitClientException) {
+
+        } catch (e: IOException) {
+
+        } catch (e: SocketTimeoutException) {
+
         }
+
 
         stopForeground(true)
 

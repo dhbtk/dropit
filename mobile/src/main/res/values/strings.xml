@@ -28,4 +28,5 @@
     <string name="sending_file">Sending file</string>
     <string name="file_sent">File transfer finished</string>
     <string name="file_sent_successfully">The transfer has finished successfully.</string>
+    <string name="loading">Loading...</string>
 </resources>

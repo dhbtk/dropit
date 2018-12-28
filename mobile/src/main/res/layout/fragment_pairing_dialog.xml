@@ -5,10 +5,11 @@
     android:layout_height="match_parent"
     android:padding="24dp">
 
-    <ProgressBar
+    <dropit.mobile.ui.shared.view.CustomProgress
+        android:layout_width="64dp"
         android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="64dp"
+        android:contentDescription="@string/pairing_dialog_message_1"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />

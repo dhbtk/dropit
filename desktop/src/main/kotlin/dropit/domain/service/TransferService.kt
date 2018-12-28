@@ -174,8 +174,7 @@ class TransferService @Inject constructor(
                 )))
             }
         } catch (exception: Exception) {
-            logger.error("Failure receiving file: ${exception.message}")
-            exception.printStackTrace()
+            logger.error("Failure receiving file: ${exception.message}", exception)
             record.from(transferFile.copy(status = FileStatus.PENDING))
             record.update()
         }
@@ -184,7 +183,7 @@ class TransferService @Inject constructor(
     /**
      * Returns in B/s
      */
-    fun calculateTransferRate(transferFile: TransferFile, points: List<Pair<LocalDateTime, Long>>): Long {
+    fun calculateTransferRate(points: List<Pair<LocalDateTime, Long>>): Long {
         val interval = 5 // 5 seconds to calc
         try {
             val currentData = points.last()

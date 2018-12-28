@@ -132,7 +132,7 @@ class GraphicalInterface @Inject constructor(
         } else if (transferingFile != null && !transferingFile.second.isEmpty()) {
             val (transferFile, data) = transferingFile
             val percentage = (((data.last().second).toFloat() / transferFile.fileSize!!) * 100).roundToInt()
-            val bytesPerSec = transferService.calculateTransferRate(transferFile, data)
+            val bytesPerSec = transferService.calculateTransferRate(data)
             trayIcon?.toolTipText = t("graphicalInterface.trayIcon.tooltip.downloadingFile",
                 APP_NAME,
                 "$percentage%",
