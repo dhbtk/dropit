@@ -44,8 +44,12 @@ class SendFileActivity : AppCompatActivity() {
 
         if (action == Intent.ACTION_SEND || action == Intent.ACTION_SEND_MULTIPLE) {
             if (intent.type == "text/plain") {
-                // TODO: share clipboard
-                finish()
+                SendClipboardTask(
+                    computer,
+                    preferencesHelper.tokenRequest,
+                    this::showTransferError,
+                    this::showClipboardSuccess
+                ).execute(intent.getStringExtra(Intent.EXTRA_TEXT))
             } else {
                 val uris = if (action == Intent.ACTION_SEND) {
                     listOf(intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
@@ -64,6 +68,11 @@ class SendFileActivity : AppCompatActivity() {
         } else {
             finish()
         }
+    }
+
+    private fun showClipboardSuccess() {
+        Toast.makeText(this, R.string.text_sent_to_clipboard, Toast.LENGTH_LONG).show()
+        finish()
     }
 
     private fun showTransferError() {

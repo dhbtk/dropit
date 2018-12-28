@@ -65,6 +65,11 @@ class Client(
             }
     }
 
+    fun sendToClipboard(data: String): Observable<Unit> {
+        return headerObservable()
+            .map { dropItServer.sendToClipboard(it, data).execute().body() }
+    }
+
     private fun tokenHeader() = "Bearer $token"
 
     private fun headerObservable(): Observable<String> {

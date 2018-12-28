@@ -102,7 +102,7 @@ class TransferService @Inject constructor(
      *
      * uploads a file, notifying the UI of progress.
      */
-    fun uploadFile(phone: Phone, fileId: String, request: HttpServletRequest) {
+    fun receiveFile(phone: Phone, fileId: String, request: HttpServletRequest) {
         val transferFile = create.select().from(TRANSFER_FILE)
             .join(TRANSFER).on(TRANSFER_FILE.TRANSFER_ID.eq(TRANSFER.ID))
             .join(PHONE).on(TRANSFER.PHONE_ID.eq(PHONE.ID))

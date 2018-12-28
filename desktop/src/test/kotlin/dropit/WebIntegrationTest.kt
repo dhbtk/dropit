@@ -1,27 +1,15 @@
 package dropit
 
 import dropit.application.client.ClientFactory
-import dropit.application.client.DropItServer
-import dropit.application.client.InputStreamBody
-import dropit.application.client.TrustSelfSignedTrustManager
 import dropit.application.dto.TokenRequest
 import dropit.application.dto.TokenStatus
+import dropit.domain.service.ClipboardService
 import dropit.factories.TransferFactory
-import okhttp3.MultipartBody
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.spekframework.spek2.Spek
 import org.spekframework.spek2.style.specification.describe
-import retrofit2.Retrofit
-import retrofit2.converter.jackson.JacksonConverterFactory
-import java.security.KeyStore
-import java.security.SecureRandom
 import java.util.*
-import javax.net.ssl.SSLContext
-import javax.net.ssl.TrustManagerFactory
-import javax.net.ssl.X509TrustManager
 import kotlin.test.assertEquals
 
 object WebIntegrationTest : Spek({
@@ -39,7 +27,7 @@ object WebIntegrationTest : Spek({
         TestHelper.clearDatabase(component.jooq())
     }
 
-    describe("using the Client class") {
+    describe("sending a file and sending clipboard text") {
         it("works as expected") {
             webServer.javalin.start()
             val token = dropItClient.requestToken().blockingFirst()
@@ -61,59 +49,16 @@ object WebIntegrationTest : Spek({
                 transferRequest.files[0],
                 javaClass.getResourceAsStream("/zeroes.bin")
             ) {}.blockingFirst()
-        }
-    }
 
-    describe("using the DropItServer class") {
-        it("works as expected") {
-            val trustManager = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
-                .apply { init(null as KeyStore?) }.trustManagers
-                .find { it is X509TrustManager } as X509TrustManager
-            val sslContext = SSLContext.getInstance("TLS").apply {
-                init(null, arrayOf(TrustSelfSignedTrustManager(trustManager)), SecureRandom())
+            val textToSend = "abcde\nfghijk"
+            var callbackCalled = false
+            component.eventBus().subscribe(ClipboardService.ClipboardReceiveEvent::class) { (data) ->
+                callbackCalled = true
+                assertEquals(textToSend, data)
             }
-            val logger = HttpLoggingInterceptor()
-            logger.level = HttpLoggingInterceptor.Level.HEADERS
-            val okHttpClient = OkHttpClient.Builder()
-                .sslSocketFactory(sslContext.socketFactory, trustManager)
-                .hostnameVerifier { _, _ -> true }
-                .addInterceptor(logger)
-                .build()
-            val client = Retrofit.Builder()
-                .addConverterFactory(JacksonConverterFactory.create(webServer.objectMapper))
-                .baseUrl("https://localhost:58992")
-                .client(okHttpClient)
-                .build().create(DropItServer::class.java)
+            dropItClient.sendToClipboard(textToSend).blockingFirst()
 
-            val phoneId = UUID.randomUUID()
-            val tokenRequest = TokenRequest(phoneId.toString(), "Phone")
-
-            val token = client.requestToken(tokenRequest).execute().body()!!
-            val header = "Bearer $token"
-
-            phoneService.authorizePhone(phoneId)
-
-            val status = client.getTokenStatus(header).execute().body()!!
-
-            assertEquals(TokenStatus.AUTHORIZED, status.status)
-
-            val transferRequest = TransferFactory.transferRequestBinary()
-
-            val transferId = client.createTransfer(header, transferRequest).execute().body()
-
-            Assertions.assertNotNull(transferId)
-
-            val response = client.uploadFile(
-                header,
-                transferRequest.files[0].id!!,
-                MultipartBody.Part.createFormData(
-                    "file",
-                    "zeroes.bin",
-                    InputStreamBody(javaClass.getResourceAsStream("/zeroes.bin"), transferRequest.files[0].fileSize!!) {}
-                ))
-                .execute()
-
-            Assertions.assertTrue(response.isSuccessful)
+            assertTrue(callbackCalled)
         }
     }
 

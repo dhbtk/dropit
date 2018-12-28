@@ -29,18 +29,18 @@ class CreateTransferTask(
         val client = ClientFactory(ObjectMapper().apply { this.findAndRegisterModules() })
             .create(computer.url, tokenRequest, null)
 
-        try {
+        return try {
             client.createTransfer(TransferRequest(
                 "Transfer",
                 fileRequests.map { it.first }
             )).blockingFirst()
 
-            return fileRequests
+            fileRequests
         } catch (e: Exception) {
             onMainThread {
                 onError()
             }
-            return emptyList()
+            emptyList()
         }
 
     }

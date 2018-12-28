@@ -20,4 +20,7 @@ interface DropItServer {
     @POST("/files/{id}")
     @Multipart
     fun uploadFile(@Header("Authorization") token: String, @Path("id") id: String, @Part file: MultipartBody.Part): Call<Unit>
+
+    @POST("/clipboard")
+    fun sendToClipboard(@Header("Authorization") token: String, @Body data: String): Call<Unit>
 }

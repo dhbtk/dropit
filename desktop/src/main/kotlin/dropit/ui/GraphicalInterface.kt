@@ -2,11 +2,14 @@ package dropit.ui
 
 import dropit.APP_NAME
 import dropit.application.dto.TokenStatus
+import dropit.domain.service.ClipboardService
 import dropit.domain.service.PhoneService
 import dropit.domain.service.TransferService
 import dropit.infrastructure.event.EventBus
 import dropit.infrastructure.i18n.t
 import org.eclipse.swt.SWT
+import org.eclipse.swt.dnd.Clipboard
+import org.eclipse.swt.dnd.TextTransfer
 import org.eclipse.swt.graphics.Image
 import org.eclipse.swt.widgets.*
 import org.slf4j.LoggerFactory
@@ -31,6 +34,19 @@ class GraphicalInterface @Inject constructor(
         eventBus.subscribe(PhoneService.NewPhoneRequestEvent::class) { (phone) ->
             log.info("Auto approving phone $phone")
             phoneService.authorizePhone(phone.id!!)
+        }
+
+        eventBus.subscribe(ClipboardService.ClipboardReceiveEvent::class) { (data) ->
+            display.asyncExec {
+                Clipboard(display)
+                    .setContents(arrayOf(data), arrayOf(TextTransfer.getInstance()))
+                if (trayIcon != null) {
+                    val toolTip = ToolTip(shell, SWT.BALLOON or SWT.ICON_INFORMATION)
+                    toolTip.text = t("graphicalInterface.trayIcon.balloon.clipboardReceived.title")
+                    trayIcon.toolTip = toolTip
+                    toolTip.visible = true
+                }
+            }
         }
     }
 

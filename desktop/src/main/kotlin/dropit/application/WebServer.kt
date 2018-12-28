@@ -6,6 +6,7 @@ import dropit.application.dto.TransferRequest
 import dropit.application.security.TokenService
 import dropit.application.settings.AppSettings
 import dropit.domain.entity.Phone
+import dropit.domain.service.ClipboardService
 import dropit.domain.service.PhoneService
 import dropit.domain.service.TransferService
 import io.javalin.Javalin
@@ -23,6 +24,7 @@ class WebServer @Inject constructor(
     val appSettings: AppSettings,
     val phoneService: PhoneService,
     val transferService: TransferService,
+    val clipboardService: ClipboardService,
     val token: TokenService,
     val objectMapper: ObjectMapper
 ) {
@@ -68,11 +70,16 @@ class WebServer @Inject constructor(
                 }
                 post("files/:id") {
                     it.attribute("phone", token.getApprovedPhone(it))
-                    transferService.uploadFile(
+                    transferService.receiveFile(
                         it.attribute<Phone>("phone")!!,
                         it.pathParam("id"),
                         it.req
                     )
+                    it.status(201)
+                }
+                post("clipboard") {
+                    it.attribute("phone", token.getApprovedPhone(it))
+                    clipboardService.receive(it.bodyAsClass(String::class.java))
                     it.status(201)
                 }
             }
