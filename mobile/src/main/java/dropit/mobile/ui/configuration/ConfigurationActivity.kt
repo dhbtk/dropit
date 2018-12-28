@@ -65,7 +65,7 @@ class ConfigurationActivity : AppCompatActivity() {
         seenComputerIds.add(broadcast.data.computerId)
         sqliteHelper.saveFromBroadcast(broadcast)
         val newList = sqliteHelper.getComputers(seenComputerIds).map {
-            it.copy(default = it.id.toString() == preferencesHelper.currentComputerId)
+            it.copy(default = it.id == preferencesHelper.currentComputerId)
         }
 
         onMainThread {

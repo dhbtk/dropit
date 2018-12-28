@@ -2,6 +2,7 @@ package dropit.mobile.infrastructure.preferences
 
 import android.content.Context
 import android.provider.Settings
+import dropit.application.dto.TokenRequest
 import java.util.*
 
 private const val PHONE_ID = "phoneId"
@@ -17,10 +18,13 @@ class PreferencesHelper(context: Context) {
     val phoneName: String
         get() = sharedPreferences.getString(PHONE_NAME, "")
 
-    var currentComputerId: String?
-        get() = sharedPreferences.getString(CURRENT_COMPUTER_ID, null)
+    val tokenRequest
+        get() = TokenRequest(phoneId, phoneName)
+
+    var currentComputerId: UUID?
+        get() = UUID.fromString(sharedPreferences.getString(CURRENT_COMPUTER_ID, null))
         set(value) {
-            sharedPreferences.edit().putString(CURRENT_COMPUTER_ID, value).apply()
+            sharedPreferences.edit().putString(CURRENT_COMPUTER_ID, value?.toString()).apply()
         }
 
     init {
