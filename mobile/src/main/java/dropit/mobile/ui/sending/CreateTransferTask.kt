@@ -20,6 +20,7 @@ class CreateTransferTask(
     val contentResolver: ContentResolver,
     val computer: Computer,
     val tokenRequest: TokenRequest,
+    val sendToClipboard: Boolean,
     val onError: () -> Unit,
     val onSuccess: (list: List<Pair<FileRequest, String>>) -> Unit
 ) : AsyncTask<Uri, Unit, List<Pair<FileRequest, String>>>() {
@@ -32,6 +33,7 @@ class CreateTransferTask(
         return try {
             client.createTransfer(TransferRequest(
                 "Transfer",
+                sendToClipboard,
                 fileRequests.map { it.first }
             )).blockingFirst()
 

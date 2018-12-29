@@ -76,6 +76,7 @@ class TransferService @Inject constructor(
                 .set(create.newRecord(TRANSFER, Transfer(
                     id = transferId,
                     name = request.name,
+                    sendToClipboard = request.sendToClipboard,
                     phoneId = phone.id,
                     status = TransferStatus.PENDING
                 ))).execute()

@@ -2,7 +2,7 @@ package dropit.application.dto
 
 import java.io.Serializable
 
-data class TransferRequest(val name: String? = null, val files: List<FileRequest> = emptyList()) : Serializable
+data class TransferRequest(val name: String? = null, val sendToClipboard: Boolean? = false, val files: List<FileRequest> = emptyList()) : Serializable
 
 data class FileRequest(
         val id: String? = null,

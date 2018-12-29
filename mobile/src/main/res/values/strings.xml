@@ -33,4 +33,7 @@
     <string name="connected_to_computer">Connected to %1$s</string>
     <string name="ready_to_receive_data">Ready to receive files and data</string>
     <string name="received_clipboard">Computer clipboard has been copied.</string>
+    <string name="send_to_computer">Send to computer</string>
+    <string name="send_to_clipboard">Send to clipboard</string>
+    <string name="pairing_failed">Pairing failed.</string>
 </resources>

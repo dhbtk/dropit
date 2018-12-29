@@ -17,12 +17,27 @@
         <activity
             android:name=".ui.sending.SendFileActivity"
             android:theme="@style/SplashTheme">
-            <intent-filter>
+            <intent-filter android:label="@string/send_to_computer">
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="*/*" />
             </intent-filter>
-            <intent-filter>
+            <intent-filter android:label="@string/send_to_computer">
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".ui.sending.SendFileToClipboardActivity"
+            android:theme="@style/SplashTheme">
+            <intent-filter android:label="@string/send_to_clipboard">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <intent-filter android:label="@string/send_to_clipboard">
                 <action android:name="android.intent.action.SEND_MULTIPLE" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="*/*" />
@@ -38,6 +53,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
 
         <receiver android:name=".domain.service.BootBroadcastReceiver">
             <intent-filter>

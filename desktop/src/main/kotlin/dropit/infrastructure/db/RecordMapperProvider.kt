@@ -1,8 +1,9 @@
 package dropit.infrastructure.db
 
 import org.apache.commons.lang3.ClassUtils
-import org.jooq.*
+import org.jooq.Record
 import org.jooq.RecordMapperProvider
+import org.jooq.RecordType
 import java.beans.Introspector
 import java.lang.reflect.Type
 import java.sql.Timestamp
@@ -39,50 +40,60 @@ class RecordMapperProvider : RecordMapperProvider {
             }
 
             sourceProperties.filter { it.propertyType == String::class.java }
-                    .forEach { property ->
-                        // string to enums
-                        val enumParameter = parameters.find { it.name == property.name && Enum::class.java.isAssignableFrom(it.type.jvmErasure.java) }
-                        if (enumParameter != null) {
+                .forEach { property ->
+                    // string to enums
+                    val enumParameter = parameters.find { it.name == property.name && Enum::class.java.isAssignableFrom(it.type.jvmErasure.java) }
+                    if (enumParameter != null) {
+                        val sourceValue = property.readMethod.invoke(source)
+                        if (sourceValue != null) {
+                            parametersMap[enumParameter] = enumParameter.type.jvmErasure.java
+                                .getMethod("valueOf", String::class.java)
+                                .invoke(null, sourceValue)
+                        }
+                    } else {
+                        val uuidParameter = parameters.find { it.name == property.name && UUID::class.java.isAssignableFrom(it.type.jvmErasure.java) }
+                        if (uuidParameter != null) {
                             val sourceValue = property.readMethod.invoke(source)
-                            if (sourceValue != null) {
-                                parametersMap[enumParameter] = enumParameter.type.jvmErasure.java
-                                        .getMethod("valueOf", String::class.java)
-                                        .invoke(null, sourceValue)
-                            }
-                        } else {
-                            val uuidParameter = parameters.find { it.name == property.name && UUID::class.java.isAssignableFrom(it.type.jvmErasure.java) }
-                            if (uuidParameter != null) {
-                                val sourceValue = property.readMethod.invoke(source)
-                                if (sourceValue != null && sourceValue is String) {
-                                    parametersMap[uuidParameter] = UUID.fromString(sourceValue)
-                                }
+                            if (sourceValue != null && sourceValue is String) {
+                                parametersMap[uuidParameter] = UUID.fromString(sourceValue)
                             }
                         }
                     }
+                }
             sourceProperties.filter { it.propertyType == Timestamp::class.java }
-                    .forEach { property ->
-                        val dateTimeParameter = parameters.find { it.name == property.name && it.type.jvmErasure.java == LocalDateTime::class.java }
-                        if (dateTimeParameter != null) {
-                            val sourceValue = property.readMethod.invoke(source) as Timestamp?
-                            if (sourceValue != null) {
-                                val localDateTime = sourceValue.toLocalDateTime()
-                                parametersMap[dateTimeParameter] = localDateTime
-                            }
+                .forEach { property ->
+                    val dateTimeParameter = parameters.find { it.name == property.name && it.type.jvmErasure.java == LocalDateTime::class.java }
+                    if (dateTimeParameter != null) {
+                        val sourceValue = property.readMethod.invoke(source) as Timestamp?
+                        if (sourceValue != null) {
+                            val localDateTime = sourceValue.toLocalDateTime()
+                            parametersMap[dateTimeParameter] = localDateTime
                         }
                     }
+                }
+            sourceProperties.filter { it.propertyType == java.lang.Integer::class.java }
+                .forEach { property ->
+                    val boolParameter = parameters.find { it.name == property.name && java.lang.Boolean::class.java.isAssignableFrom(it.type.jvmErasure.java) }
+                    if (boolParameter != null) {
+                        val sourceValue = property.readMethod.invoke(source) as Int?
+                        if (sourceValue != null) {
+                            parametersMap[boolParameter] = sourceValue == 1
+                        }
+                    }
+                }
             return dest.primaryConstructor!!.callBy(parametersMap)
         }
 
         private fun isEquivalentType(jvmType: Type, propType: Class<*>?): Boolean {
-            if(propType == null) {
+            if (propType == null) {
                 return false
             }
 
-            if(jvmType == propType) {
+            if (jvmType == propType) {
                 return true
             }
 
-            if(jvmType is Class<*> && ClassUtils.primitiveToWrapper(jvmType) == propType) {
+            if (jvmType is Class<*> && ClassUtils.primitiveToWrapper(jvmType) == propType) {
                 return true
             }
 

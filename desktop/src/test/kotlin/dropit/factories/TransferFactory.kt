@@ -7,6 +7,7 @@ import java.util.*
 object TransferFactory {
     fun transferRequestBinary() = TransferRequest(
         "Test transfer",
+        false,
         listOf(FileRequest(
             id = UUID.randomUUID().toString(),
             fileName = "zeroes.bin",

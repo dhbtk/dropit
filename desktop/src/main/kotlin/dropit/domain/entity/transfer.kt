@@ -2,20 +2,19 @@ package dropit.domain.entity
 
 import dropit.application.dto.FileStatus
 import dropit.application.dto.TransferStatus
-import java.text.MessageFormat
 import java.time.LocalDateTime
-import java.time.ZoneOffset
 import java.util.*
 
 data class Transfer(
-        override val id: UUID? = null,
-        override val createdAt: LocalDateTime? = null,
-        override val updatedAt: LocalDateTime? = null,
-        val name: String? = null,
-        val status: TransferStatus? = null,
-        val phoneId: UUID? = null,
-        val phone: Phone? = null,
-        val files: List<TransferFile> = emptyList()
+    override val id: UUID? = null,
+    override val createdAt: LocalDateTime? = null,
+    override val updatedAt: LocalDateTime? = null,
+    val name: String? = null,
+    val status: TransferStatus? = null,
+    val phoneId: UUID? = null,
+    val sendToClipboard: Boolean? = false,
+    val phone: Phone? = null,
+    val files: List<TransferFile> = emptyList()
 ) : IEntity
 
 data class TransferFile(

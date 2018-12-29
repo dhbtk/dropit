@@ -18,9 +18,10 @@ import dropit.mobile.ui.configuration.ConfigurationActivity
 import kotlinx.android.synthetic.main.activity_send_file.*
 import java.util.*
 
-class SendFileActivity : AppCompatActivity() {
+open class SendFileActivity : AppCompatActivity() {
     lateinit var sqliteHelper: SQLiteHelper
     lateinit var preferencesHelper: PreferencesHelper
+    open val sendToClipboard = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,6 +62,7 @@ class SendFileActivity : AppCompatActivity() {
                     contentResolver,
                     computer,
                     preferencesHelper.tokenRequest,
+                    sendToClipboard,
                     this::showTransferError,
                     this::startTransfer
                 ).execute(*uris.toTypedArray())

@@ -48,6 +48,7 @@ class PairingTask(
             )
             onSuccess(updatedComputer)
         } catch (e: Exception) {
+            onError(R.string.pairing_failed)
             e.printStackTrace()
         }
     }

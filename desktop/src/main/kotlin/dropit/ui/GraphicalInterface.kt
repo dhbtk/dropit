@@ -4,6 +4,7 @@ import dropit.APP_NAME
 import dropit.application.PhoneSessionManager
 import dropit.application.dto.TokenStatus
 import dropit.application.settings.AppSettings
+import dropit.domain.entity.ShowFileAction
 import dropit.domain.service.ClipboardService
 import dropit.domain.service.PhoneService
 import dropit.domain.service.TransferService
@@ -12,6 +13,7 @@ import dropit.infrastructure.i18n.t
 import org.eclipse.swt.SWT
 import org.eclipse.swt.dnd.Clipboard
 import org.eclipse.swt.dnd.FileTransfer
+import org.eclipse.swt.dnd.ImageTransfer
 import org.eclipse.swt.dnd.TextTransfer
 import org.eclipse.swt.graphics.Image
 import org.eclipse.swt.widgets.*
@@ -30,6 +32,7 @@ class GraphicalInterface @Inject constructor(
     private val phoneSessionManager: PhoneSessionManager,
     private val executor: Executor,
     private val appSettings: AppSettings,
+    private val desktopIntegrations: DesktopIntegrations,
     private val display: Display
 ) {
     val logger = LoggerFactory.getLogger(javaClass)
@@ -182,19 +185,58 @@ class GraphicalInterface @Inject constructor(
 
     private fun notifyTransferFinished(completedTransfer: TransferService.CompletedTransfer) {
         val toolTip = ToolTip(shell, SWT.BALLOON or SWT.ICON_INFORMATION)
-        if (completedTransfer.locations.size == 1) {
-            toolTip.text = t("graphicalInterface.trayIcon.balloon.fileDownloaded.title", completedTransfer.transfer.files[0].fileName
-                ?: "")
-            toolTip.message = t("graphicalInterface.trayIcon.balloon.fileDownloaded.message")
-            toolTip.addListener(SWT.Selection) {
-                logger.info("TODO open file")
+        if (completedTransfer.transfer.sendToClipboard!! && completedTransfer.locations.size == 1) {
+            val path = completedTransfer.locations.values.first().toString()
+            val mimeType = completedTransfer.transfer.files.first().mimeType!!
+            if (mimeType.startsWith("image/")) {
+                val image = Image(display, path)
+                Clipboard(display)
+                    .apply { setContents(arrayOf(image.imageData), arrayOf(ImageTransfer.getInstance())) }
+                    .dispose()
+                image.dispose()
+            } else {
+                Clipboard(display)
+                    .apply { setContents(arrayOf(path), arrayOf(FileTransfer.getInstance())) }
+                    .dispose()
             }
-        } else {
             toolTip.text = t("graphicalInterface.trayIcon.balloon.fileDownloaded.title", completedTransfer.transfer.files[0].fileName
                 ?: "")
-            toolTip.message = t("graphicalInterface.trayIcon.balloon.fileDownloaded.message")
-            toolTip.addListener(SWT.Selection) {
-                logger.info("TODO open folder")
+            toolTip.message = t("graphicalInterface.trayIcon.balloon.fileIntoClipboard.message")
+        } else {
+            val autoOpen = appSettings.settings.openTransferOnCompletion
+            if (autoOpen) {
+                if (completedTransfer.locations.size == 1) {
+                    // TODO: do this by mime type?
+                    when (appSettings.settings.showTransferAction) {
+                        ShowFileAction.OPEN_FOLDER -> desktopIntegrations.openFolderSelectFile(completedTransfer.locations.values.first())
+                        ShowFileAction.OPEN_FILE -> desktopIntegrations.openFile(completedTransfer.locations.values.first())
+                    }
+                } else {
+                    desktopIntegrations.openFolder(completedTransfer.transferFolder)
+                }
+            }
+
+            if (completedTransfer.locations.size == 1) {
+                toolTip.text = t("graphicalInterface.trayIcon.balloon.fileDownloaded.title", completedTransfer.transfer.files[0].fileName
+                    ?: "")
+                toolTip.message = t("graphicalInterface.trayIcon.balloon.fileDownloaded.message")
+                if (!autoOpen) {
+                    toolTip.addListener(SWT.Selection) {
+                        when (appSettings.settings.showTransferAction) {
+                            ShowFileAction.OPEN_FOLDER -> desktopIntegrations.openFolderSelectFile(completedTransfer.locations.values.first())
+                            ShowFileAction.OPEN_FILE -> desktopIntegrations.openFile(completedTransfer.locations.values.first())
+                        }
+                    }
+                }
+            } else {
+                toolTip.text = t("graphicalInterface.trayIcon.balloon.fileDownloaded.title", completedTransfer.transfer.files[0].fileName
+                    ?: "")
+                toolTip.message = t("graphicalInterface.trayIcon.balloon.fileDownloaded.message")
+                if (!autoOpen) {
+                    toolTip.addListener(SWT.Selection) {
+                        desktopIntegrations.openFolder(completedTransfer.transferFolder)
+                    }
+                }
             }
         }
         trayIcon?.toolTip = toolTip

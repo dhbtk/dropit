@@ -27,7 +27,7 @@ class ClientFactory @Inject constructor(private val objectMapper: ObjectMapper) 
         .sslSocketFactory(sslSocketFactory, trustManager)
         .addInterceptor(okHttpLogger)
         .addInterceptor(Client.ErrorHandlingInterceptor())
-        .connectTimeout(1, TimeUnit.SECONDS)
+        .connectTimeout(5, TimeUnit.SECONDS)
         .hostnameVerifier { _, _ -> true }
         .build()
 

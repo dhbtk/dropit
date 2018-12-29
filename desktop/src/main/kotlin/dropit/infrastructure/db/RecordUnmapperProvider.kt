@@ -29,6 +29,9 @@ class RecordUnmapperProvider(private val configuration: Configuration) : org.joo
                     val propClass = boxIfNeeded(property.returnType.jvmErasure.java)
                     if(fieldClass.isAssignableFrom(propClass)) {
                         record.set(field as Field<Any?>, property.getter.call(source))
+                    } else if (Number::class.java.isAssignableFrom(fieldClass) && propClass == java.lang.Boolean::class.java) {
+                        val number = if (property.getter.call(source) as Boolean) 1 else 0
+                        record.set(field as Field<Number>, number)
                     } else if(fieldClass == String::class.java && propClass == UUID::class.java) {
                         record.set(field as Field<String?>, property.getter.call(source)?.toString())
                     } else if(fieldClass == String::class.java && Enum::class.java.isAssignableFrom(propClass)) {
