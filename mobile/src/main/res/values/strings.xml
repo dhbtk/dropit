@@ -28,6 +28,9 @@
     <string name="sending_file">Sending file</string>
     <string name="file_sent">File transfer finished</string>
     <string name="file_sent_successfully">The transfer has finished successfully.</string>
-    <string name="loading">Loading...</string>
+    <string name="loading">Loading…</string>
     <string name="text_sent_to_clipboard">Text sent to clipboard.</string>
+    <string name="connected_to_computer">Connected to %1$s</string>
+    <string name="ready_to_receive_data">Ready to receive files and data</string>
+    <string name="received_clipboard">Computer clipboard has been copied.</string>
 </resources>

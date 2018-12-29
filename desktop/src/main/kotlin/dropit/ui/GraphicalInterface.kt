@@ -1,7 +1,9 @@
 package dropit.ui
 
 import dropit.APP_NAME
+import dropit.application.PhoneSessionManager
 import dropit.application.dto.TokenStatus
+import dropit.application.settings.AppSettings
 import dropit.domain.service.ClipboardService
 import dropit.domain.service.PhoneService
 import dropit.domain.service.TransferService
@@ -9,11 +11,13 @@ import dropit.infrastructure.event.EventBus
 import dropit.infrastructure.i18n.t
 import org.eclipse.swt.SWT
 import org.eclipse.swt.dnd.Clipboard
+import org.eclipse.swt.dnd.FileTransfer
 import org.eclipse.swt.dnd.TextTransfer
 import org.eclipse.swt.graphics.Image
 import org.eclipse.swt.widgets.*
 import org.slf4j.LoggerFactory
 import java.util.*
+import java.util.concurrent.Executor
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
@@ -23,29 +27,25 @@ class GraphicalInterface @Inject constructor(
     private val eventBus: EventBus,
     private val phoneService: PhoneService,
     private val transferService: TransferService,
+    private val phoneSessionManager: PhoneSessionManager,
+    private val executor: Executor,
+    private val appSettings: AppSettings,
     private val display: Display
 ) {
-    val log = LoggerFactory.getLogger(javaClass)
+    val logger = LoggerFactory.getLogger(javaClass)
     private val shell = Shell(display)
     private val trayImage = Image(display, javaClass.getResourceAsStream("/ui/icon.png"))
     private val trayIcon = setupTrayIcon()
 
     init {
         eventBus.subscribe(PhoneService.NewPhoneRequestEvent::class) { (phone) ->
-            log.info("Auto approving phone $phone")
+            logger.info("Auto approving phone $phone")
             phoneService.authorizePhone(phone.id!!)
         }
 
         eventBus.subscribe(ClipboardService.ClipboardReceiveEvent::class) { (data) ->
             display.asyncExec {
-                Clipboard(display)
-                    .setContents(arrayOf(data), arrayOf(TextTransfer.getInstance()))
-                if (trayIcon != null) {
-                    val toolTip = ToolTip(shell, SWT.BALLOON or SWT.ICON_INFORMATION)
-                    toolTip.text = t("graphicalInterface.trayIcon.balloon.clipboardReceived.title")
-                    trayIcon.toolTip = toolTip
-                    toolTip.visible = true
-                }
+                receiveClipboardText(data)
             }
         }
     }
@@ -74,11 +74,11 @@ class GraphicalInterface @Inject constructor(
             trayIcon.addListener(SWT.Selection) {
                 val runtime = Runtime.getRuntime()
                 val usedMemory = runtime.totalMemory() - runtime.freeMemory()
-                log.debug("Heap stats: ${usedMemory / (1024 * 1024)} MB used, ${Runtime.getRuntime().totalMemory() / (1024 * 1024)} MB total")
+                logger.debug("Heap stats: ${usedMemory / (1024 * 1024)} MB used, ${Runtime.getRuntime().totalMemory() / (1024 * 1024)} MB total")
             }
 
             trayIcon.addListener(SWT.DefaultSelection) {
-                log.info("Default selected")
+                logger.info("Default selected")
             }
 
             listOf(
@@ -109,26 +109,40 @@ class GraphicalInterface @Inject constructor(
     private fun buildTrayMenu(trayItem: TrayItem): Menu {
         val menu = Menu(shell, SWT.POP_UP)
 
-        val showItem = MenuItem(menu, SWT.PUSH)
+        MenuItem(menu, SWT.PUSH)
+            .apply { text = "Send clipboard contents" }
+            .apply {
+                addListener(SWT.Selection) {
+                    sendClipboardToPhone()
+                }
+            }
+
+        MenuItem(menu, SWT.PUSH)
             .apply { text = t("graphicalInterface.trayIcon.show") }
             .apply { menu.defaultItem = this }
-        showItem.addListener(SWT.Selection) {
-            log.info("TODO show main window")
-        }
+            .apply {
+                addListener(SWT.Selection) {
+                    logger.info("TODO show main window")
+                }
+            }
 
-        val settingsItem = MenuItem(menu, SWT.PUSH)
+        MenuItem(menu, SWT.PUSH)
             .apply { text = t("graphicalInterface.trayIcon.settings") }
-        settingsItem.addListener(SWT.Selection) {
-            log.info("TODO show settings")
-        }
+            .apply {
+                addListener(SWT.Selection) {
+                    logger.info("TODO show settings")
+                }
+            }
 
         MenuItem(menu, SWT.SEPARATOR)
 
-        val exitItem = MenuItem(menu, SWT.PUSH)
+        MenuItem(menu, SWT.PUSH)
             .apply { text = t("graphicalInterface.trayIcon.exit") }
-        exitItem.addListener(SWT.Selection) {
-            confirmExit()
-        }
+            .apply {
+                addListener(SWT.Selection) {
+                    confirmExit()
+                }
+            }
 
         return menu
     }
@@ -173,17 +187,61 @@ class GraphicalInterface @Inject constructor(
                 ?: "")
             toolTip.message = t("graphicalInterface.trayIcon.balloon.fileDownloaded.message")
             toolTip.addListener(SWT.Selection) {
-                log.info("TODO open file")
+                logger.info("TODO open file")
             }
         } else {
             toolTip.text = t("graphicalInterface.trayIcon.balloon.fileDownloaded.title", completedTransfer.transfer.files[0].fileName
                 ?: "")
             toolTip.message = t("graphicalInterface.trayIcon.balloon.fileDownloaded.message")
             toolTip.addListener(SWT.Selection) {
-                log.info("TODO open folder")
+                logger.info("TODO open folder")
             }
         }
         trayIcon?.toolTip = toolTip
         toolTip.visible = true
+    }
+
+    private fun receiveClipboardText(data: String) {
+        Clipboard(display)
+            .apply { setContents(arrayOf(data), arrayOf(TextTransfer.getInstance())) }
+            .dispose()
+        if (trayIcon != null) {
+            val toolTip = ToolTip(shell, SWT.BALLOON or SWT.ICON_INFORMATION)
+            toolTip.text = t("graphicalInterface.trayIcon.balloon.clipboardReceived.title")
+            trayIcon.toolTip = toolTip
+            toolTip.visible = true
+        }
+    }
+
+    private fun sendClipboardToPhone() {
+        val clipboard = Clipboard(display)
+        val stringContents = clipboard.getContents(TextTransfer.getInstance()) as String?
+        val fileContents = clipboard.getContents(FileTransfer.getInstance()) as Array<String>?
+        logger.info("string contents: $stringContents")
+        logger.info("file contents: $fileContents")
+
+        if (fileContents != null) {
+            MessageBox(shell, SWT.ICON_WARNING or SWT.OK)
+                .apply { text = "File sending not implemented" }
+                .apply { message = "File sending is not yet implemented." }
+                .apply { open() }
+            return
+        }
+
+        val defaultPhoneId = appSettings.settings.currentPhoneId
+
+        if (defaultPhoneId == null) {
+            MessageBox(shell, SWT.ICON_WARNING or SWT.OK)
+                .apply { text = APP_NAME }
+                .apply { message = t("graphicalInterface.trayIcon.sendClipboard.noPhoneConfigured") }
+                .apply { open() }
+            return
+        }
+
+        executor.execute {
+            if (stringContents != null) {
+                phoneSessionManager.sendClipboard(defaultPhoneId, stringContents)
+            }
+        }
     }
 }

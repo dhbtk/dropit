@@ -32,7 +32,6 @@ class DiscoveryClient(private val objectMapper: ObjectMapper, private val eventB
             } catch (e: SocketTimeoutException) {
                 // nop
             } catch (e: Exception) {
-                // nop
             }
         }
     }

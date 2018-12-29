@@ -2,6 +2,7 @@ package dropit.mobile.ui.sending
 
 import android.app.Dialog
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.support.v4.app.DialogFragment
 import android.support.v7.app.AlertDialog
@@ -9,6 +10,7 @@ import android.widget.Toast
 import dropit.application.dto.TokenRequest
 import dropit.mobile.R
 import dropit.mobile.domain.entity.Computer
+import dropit.mobile.domain.service.ServerConnectionService
 import dropit.mobile.infrastructure.db.SQLiteHelper
 import dropit.mobile.infrastructure.preferences.PreferencesHelper
 import dropit.mobile.onMainThread
@@ -82,6 +84,7 @@ class PairingDialogFragment : DialogFragment() {
         onMainThread {
             preferencesHelper.currentComputerId = computer.id
             Toast.makeText(activity, R.string.paired_and_set_as_default, Toast.LENGTH_LONG).show()
+            ServerConnectionService.enqueueWork(activity!!, Intent())
             dismissAllowingStateLoss()
         }
     }

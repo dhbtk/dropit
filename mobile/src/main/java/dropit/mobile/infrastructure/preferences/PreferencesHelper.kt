@@ -22,7 +22,7 @@ class PreferencesHelper(context: Context) {
         get() = TokenRequest(phoneId, phoneName)
 
     var currentComputerId: UUID?
-        get() = UUID.fromString(sharedPreferences.getString(CURRENT_COMPUTER_ID, null))
+        get() = sharedPreferences.getString(CURRENT_COMPUTER_ID, null)?.let { UUID.fromString(it) }
         set(value) {
             sharedPreferences.edit().putString(CURRENT_COMPUTER_ID, value?.toString()).apply()
         }

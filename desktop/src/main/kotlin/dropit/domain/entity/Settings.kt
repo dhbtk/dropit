@@ -8,5 +8,6 @@ data class Settings(
     val computerName: String,
     val transferFolderName: String,
     val rootTransferFolder: String,
-    val serverPort: Int = 58992
+    val serverPort: Int = 58992,
+    val currentPhoneId: UUID? = null
 )

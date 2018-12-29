@@ -35,5 +35,6 @@ CREATE TABLE settings (
   computer_name        varchar(255) NOT NULL,
   transfer_folder_name varchar(255) NOT NULL,
   root_transfer_folder varchar(255) NOT NULL,
-  server_port          integer      NOT NULL
+  server_port          integer      NOT NULL,
+  current_phone_id     varchar(40) REFERENCES phone(id)
 );

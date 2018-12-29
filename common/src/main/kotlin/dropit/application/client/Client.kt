@@ -6,18 +6,15 @@ import dropit.application.dto.TokenRequest
 import dropit.application.dto.TokenResponse
 import dropit.application.dto.TransferRequest
 import io.reactivex.Observable
-import okhttp3.Interceptor
-import okhttp3.MultipartBody
-import okhttp3.OkHttpClient
-import okhttp3.Response
+import okhttp3.*
 import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
 import java.io.InputStream
 
 class Client(
-    okHttpClient: OkHttpClient,
+    val okHttpClient: OkHttpClient,
     objectMapper: ObjectMapper,
-    host: String,
+    val host: String,
     val phoneData: TokenRequest,
     var token: String?) {
     private var dropItServer = Retrofit.Builder()
@@ -68,6 +65,16 @@ class Client(
     fun sendToClipboard(data: String): Observable<Unit> {
         return headerObservable()
             .map { dropItServer.sendToClipboard(it, data).execute().body() }
+    }
+
+    fun connectWebSocket(listener: WebSocketListener): WebSocket {
+        return okHttpClient.newBuilder().build().newWebSocket(
+            Request.Builder()
+                .url(host.replaceFirst("https://", "wss://") + "/ws")
+                .header("Authorization", tokenHeader())
+                .build(),
+            listener
+        )
     }
 
     private fun tokenHeader() = "Bearer $token"

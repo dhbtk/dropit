@@ -25,6 +25,7 @@ class WebServer @Inject constructor(
     val phoneService: PhoneService,
     val transferService: TransferService,
     val clipboardService: ClipboardService,
+    val phoneSessionManager: PhoneSessionManager,
     val token: TokenService,
     val objectMapper: ObjectMapper
 ) {
@@ -43,6 +44,7 @@ class WebServer @Inject constructor(
                 val server = Server()
                 val connector = ServerConnector(server, getSslContextFactory())
                 connector.port = appSettings.settings.serverPort
+                connector.idleTimeout = Long.MAX_VALUE
                 server.connectors = arrayOf(connector)
                 server
             }
@@ -81,6 +83,17 @@ class WebServer @Inject constructor(
                     it.attribute("phone", token.getApprovedPhone(it))
                     clipboardService.receive(it.bodyAsClass(String::class.java))
                     it.status(201)
+                }
+            }
+            .ws("ws") {
+                it.onConnect(phoneSessionManager::handleNewSession)
+                it.onError { session, throwable ->
+                    logger.warn("Error on phone session", throwable)
+                    phoneSessionManager.closeSession(session)
+                }
+                it.onClose { session, statusCode, reason ->
+                    logger.info("Closing session: statusCode = $statusCode, reason: $reason")
+                    phoneSessionManager.closeSession(session)
                 }
             }
     }
