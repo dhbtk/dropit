@@ -15,9 +15,15 @@ import org.eclipse.swt.dnd.Clipboard
 import org.eclipse.swt.dnd.FileTransfer
 import org.eclipse.swt.dnd.TextTransfer
 import org.eclipse.swt.graphics.Image
+import org.eclipse.swt.graphics.ImageData
+import org.eclipse.swt.graphics.ImageLoader
 import org.eclipse.swt.widgets.*
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.*
 import java.util.concurrent.Executor
 import javax.inject.Inject
@@ -259,9 +265,11 @@ class GraphicalInterface @Inject constructor(
         val clipboard = Clipboard(display)
         val stringContents = clipboard.getContents(TextTransfer.getInstance()) as String?
         val fileContents = clipboard.getContents(FileTransfer.getInstance()) as Array<String>?
+        val imageContents = clipboard.getContents(desktopIntegrations.getImageTransfer()) as ImageData?
         val defaultPhoneId = appSettings.settings.currentPhoneId
         logger.info("string contents: $stringContents")
         logger.info("file contents: $fileContents")
+        logger.info("image contents: $imageContents")
 
         if (defaultPhoneId == null) {
             MessageBox(shell, SWT.ICON_WARNING or SWT.OK)
@@ -272,7 +280,9 @@ class GraphicalInterface @Inject constructor(
         }
 
         executor.execute {
-            if (fileContents != null) {
+            if (imageContents != null) {
+                phoneSessionManager.sendFile(defaultPhoneId, imageClipboardToFile(imageContents))
+            } else if (fileContents != null) {
                 val files = fileContents.map(::File)
                 files.forEach {
                     phoneSessionManager.sendFile(defaultPhoneId, it)
@@ -281,5 +291,15 @@ class GraphicalInterface @Inject constructor(
                 phoneSessionManager.sendClipboard(defaultPhoneId, stringContents)
             }
         }
+    }
+
+    private fun imageClipboardToFile(imageData: ImageData): File {
+        val tempDir = Files.createTempDirectory("dropitClipboard")
+        val fileName = "clipboard_${LocalDateTime.now().format(DateTimeFormatter.ofPattern("uuuu-MM-dd_kk-mm"))}.png"
+        val file = Paths.get(tempDir.toString(), fileName).toFile()
+        ImageLoader()
+            .apply { data = arrayOf(imageData) }
+            .apply { save(file.toString(), SWT.IMAGE_PNG) }
+        return file
     }
 }
