@@ -16,7 +16,7 @@ object PhoneServiceTest : Spek({
     val eventBus by memoized { component.eventBus() }
 
     beforeEachTest {
-        TestHelper.clearDatabase(component.jooq())
+        TestHelper.clearDatabase(component.jooq(), component.appSettings())
     }
 
     describe("#requestToken") {

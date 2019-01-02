@@ -10,20 +10,14 @@ import dropit.domain.service.PhoneService
 import dropit.domain.service.TransferService
 import dropit.infrastructure.event.EventBus
 import dropit.infrastructure.i18n.t
+import dropit.ui.main.MainWindowFactory
 import org.eclipse.swt.SWT
 import org.eclipse.swt.dnd.Clipboard
 import org.eclipse.swt.dnd.FileTransfer
 import org.eclipse.swt.dnd.TextTransfer
 import org.eclipse.swt.graphics.Image
-import org.eclipse.swt.graphics.ImageData
-import org.eclipse.swt.graphics.ImageLoader
 import org.eclipse.swt.widgets.*
 import org.slf4j.LoggerFactory
-import java.io.File
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.util.*
 import java.util.concurrent.Executor
 import javax.inject.Inject
@@ -39,7 +33,9 @@ class GraphicalInterface @Inject constructor(
     private val executor: Executor,
     private val appSettings: AppSettings,
     private val desktopIntegrations: DesktopIntegrations,
-    private val display: Display
+    private val sharedOperations: SharedOperations,
+    private val display: Display,
+    private val mainWindowFactory: MainWindowFactory
 ) {
     val logger = LoggerFactory.getLogger(javaClass)
     private val shell = Shell(display)
@@ -88,6 +84,7 @@ class GraphicalInterface @Inject constructor(
 
             trayIcon.addListener(SWT.DefaultSelection) {
                 logger.info("Default selected")
+                mainWindowFactory.open()
             }
 
             listOf(
@@ -122,7 +119,7 @@ class GraphicalInterface @Inject constructor(
             .apply { text = "Send clipboard contents" }
             .apply {
                 addListener(SWT.Selection) {
-                    sendClipboardToPhone()
+                    sharedOperations.sendClipboardToPhone(shell)
                 }
             }
 
@@ -131,7 +128,7 @@ class GraphicalInterface @Inject constructor(
             .apply { menu.defaultItem = this }
             .apply {
                 addListener(SWT.Selection) {
-                    logger.info("TODO show main window")
+                    mainWindowFactory.open()
                 }
             }
 
@@ -259,47 +256,5 @@ class GraphicalInterface @Inject constructor(
             trayIcon.toolTip = toolTip
             toolTip.visible = true
         }
-    }
-
-    private fun sendClipboardToPhone() {
-        val clipboard = Clipboard(display)
-        val stringContents = clipboard.getContents(TextTransfer.getInstance()) as String?
-        val fileContents = clipboard.getContents(FileTransfer.getInstance()) as Array<String>?
-        val imageContents = clipboard.getContents(desktopIntegrations.getImageTransfer()) as ImageData?
-        val defaultPhoneId = appSettings.settings.currentPhoneId
-        logger.info("string contents: $stringContents")
-        logger.info("file contents: $fileContents")
-        logger.info("image contents: $imageContents")
-
-        if (defaultPhoneId == null) {
-            MessageBox(shell, SWT.ICON_WARNING or SWT.OK)
-                .apply { text = APP_NAME }
-                .apply { message = t("graphicalInterface.trayIcon.sendClipboard.noPhoneConfigured") }
-                .apply { open() }
-            return
-        }
-
-        executor.execute {
-            if (imageContents != null) {
-                phoneSessionManager.sendFile(defaultPhoneId, imageClipboardToFile(imageContents))
-            } else if (fileContents != null) {
-                val files = fileContents.map(::File)
-                files.forEach {
-                    phoneSessionManager.sendFile(defaultPhoneId, it)
-                }
-            } else if (stringContents != null) {
-                phoneSessionManager.sendClipboard(defaultPhoneId, stringContents)
-            }
-        }
-    }
-
-    private fun imageClipboardToFile(imageData: ImageData): File {
-        val tempDir = Files.createTempDirectory("dropitClipboard")
-        val fileName = "clipboard_${LocalDateTime.now().format(DateTimeFormatter.ofPattern("uuuu-MM-dd_kk-mm"))}.png"
-        val file = Paths.get(tempDir.toString(), fileName).toFile()
-        ImageLoader()
-            .apply { data = arrayOf(imageData) }
-            .apply { save(file.toString(), SWT.IMAGE_PNG) }
-        return file
     }
 }

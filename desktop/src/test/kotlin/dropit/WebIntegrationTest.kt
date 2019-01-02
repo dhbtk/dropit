@@ -24,7 +24,7 @@ object WebIntegrationTest : Spek({
     val dropItClient = ClientFactory(webServer.objectMapper).create("https://localhost:58992", phoneData, null)
 
     beforeEachTest {
-        TestHelper.clearDatabase(component.jooq())
+        TestHelper.clearDatabase(component.jooq(), component.appSettings())
     }
 
     describe("sending a file and sending clipboard text") {

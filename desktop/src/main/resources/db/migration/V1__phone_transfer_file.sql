@@ -52,7 +52,28 @@ CREATE TABLE file_type_settings (
 
 CREATE TABLE clipboard_log (
   id         varchar(40) PRIMARY KEY,
-  created_at datetime NOT NULL DEFAULT current_timestamp,
-  updated_at datetime NOT NULL DEFAULT current_timestamp,
-  content    text     NOT NULL
+  created_at datetime     NOT NULL DEFAULT current_timestamp,
+  updated_at datetime     NOT NULL DEFAULT current_timestamp,
+  content    text         NOT NULL,
+  source     varchar(255) NOT NULL
 );
+
+CREATE TABLE sent_file (
+  id         varchar(40) PRIMARY KEY,
+  created_at datetime     NOT NULL DEFAULT current_timestamp,
+  updated_at datetime     NOT NULL DEFAULT current_timestamp,
+  phone_id   varchar(40)  NOT NULL REFERENCES phone(id),
+  file_name  varchar(255) NOT NULL,
+  mime_type  varchar(255) NOT NULL,
+  file_size  bigint       NOT NULL
+);
+
+CREATE VIEW file_transfer_log AS
+  SELECT id, created_at, updated_at, phone_id, file_name, mime_type, file_size, 'COMPUTER' AS source
+  FROM sent_file
+  UNION
+  SELECT transfer_file.id, transfer_file.created_at, transfer_file.updated_at, transfer.phone_id,
+         file_name, mime_type, file_size, 'PHONE' AS source
+  FROM transfer_file
+         JOIN transfer ON transfer_file.transfer_id = transfer.id
+  WHERE transfer.status = 'FINISHED' AND transfer_file.status = 'FINISHED';

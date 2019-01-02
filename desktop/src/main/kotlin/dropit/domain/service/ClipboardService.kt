@@ -2,6 +2,7 @@ package dropit.domain.service
 
 import dropit.application.settings.AppSettings
 import dropit.domain.entity.ClipboardLog
+import dropit.domain.entity.TransferSource
 import dropit.infrastructure.event.AppEvent
 import dropit.infrastructure.event.EventBus
 import dropit.jooq.tables.ClipboardLog.CLIPBOARD_LOG
@@ -22,7 +23,8 @@ class ClipboardService @Inject constructor(
         if (appSettings.settings.logClipboardTransfers) {
             ClipboardLog(
                 id = UUID.randomUUID(),
-                content = data
+                content = data,
+                source = TransferSource.PHONE
             ).apply {
                 jooq.newRecord(CLIPBOARD_LOG, this).insert()
             }

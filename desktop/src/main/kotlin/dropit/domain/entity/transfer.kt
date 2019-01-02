@@ -28,3 +28,24 @@ data class TransferFile(
         val status: FileStatus? = null,
         val transfer: Transfer? = null
 ) : IEntity
+
+data class SentFile(
+    override val id: UUID? = null,
+    override val createdAt: LocalDateTime? = null,
+    override val updatedAt: LocalDateTime? = null,
+    val phoneId: UUID? = null,
+    val fileName: String? = null,
+    val mimeType: String? = null,
+    val fileSize: Long? = null
+) : IEntity
+
+data class FileTransferLog(
+    override val id: UUID? = null,
+    override val createdAt: LocalDateTime? = null,
+    override val updatedAt: LocalDateTime? = null,
+    val phoneId: UUID? = null,
+    val fileName: String? = null,
+    val mimeType: String? = null,
+    val fileSize: Long? = null,
+    val source: TransferSource? = null
+) : IEntity

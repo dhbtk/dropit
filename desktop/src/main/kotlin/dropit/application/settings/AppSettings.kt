@@ -19,7 +19,7 @@ class AppSettings(val jooq: DSLContext) {
             }
         }
 
-    private fun createDefaultSettings(): Settings {
+    fun createDefaultSettings(): Settings {
         if (jooq.fetchOne(SETTINGS) == null) {
             val settings = dropit.domain.entity.Settings(
                 computerName = getDefaultComputerName(),

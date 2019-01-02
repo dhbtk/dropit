@@ -4,12 +4,14 @@ import com.zaxxer.hikari.HikariDataSource
 import dagger.Module
 import dagger.Provides
 import dropit.APP_NAME
+import dropit.infrastructure.db.CrudListener
 import dropit.infrastructure.db.RecordMapperProvider
 import dropit.infrastructure.db.RecordUnmapperProvider
 import dropit.infrastructure.fs.ConfigFolderProvider
 import org.flywaydb.core.Flyway
 import org.jooq.SQLDialect
 import org.jooq.impl.DefaultConfiguration
+import org.jooq.impl.DefaultRecordListenerProvider
 import java.io.File
 import javax.inject.Singleton
 import javax.sql.DataSource
@@ -45,6 +47,7 @@ class DatabaseModule {
         .set(SQLDialect.SQLITE)
         .set(RecordMapperProvider())
         .set(RecordUnmapperProvider(DefaultConfiguration().set(SQLDialect.SQLITE)))
+        .set(DefaultRecordListenerProvider(CrudListener()))
 
     @Provides
     @Singleton

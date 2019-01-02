@@ -4,16 +4,22 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import dropit.application.dto.DownloadStatus
 import dropit.application.dto.SentFileId
 import dropit.application.dto.TokenStatus
+import dropit.application.settings.AppSettings
+import dropit.domain.entity.ClipboardLog
 import dropit.domain.entity.Phone
+import dropit.domain.entity.TransferSource
 import dropit.infrastructure.event.AppEvent
 import dropit.infrastructure.event.EventBus
+import dropit.jooq.tables.ClipboardLog.CLIPBOARD_LOG
 import dropit.jooq.tables.Phone.PHONE
+import dropit.jooq.tables.SentFile.SENT_FILE
 import dropit.jooq.tables.records.PhoneRecord
 import io.javalin.websocket.WsSession
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.ByteBuffer
+import java.nio.file.Files
 import java.time.LocalDateTime
 import java.util.*
 import javax.inject.Inject
@@ -23,7 +29,8 @@ import javax.inject.Singleton
 class PhoneSessionManager @Inject constructor(
     val bus: EventBus,
     val jooq: DSLContext,
-    val objectMapper: ObjectMapper
+    val objectMapper: ObjectMapper,
+    val appSettings: AppSettings
 ) {
     class PhoneSession(
         var session: WsSession? = null,
@@ -53,6 +60,10 @@ class PhoneSessionManager @Inject constructor(
         }
         val phone = getPhoneByToken(token)
         if (phone == null) {
+            session.disconnect()
+            return
+        }
+        if (phone.id != appSettings.settings.currentPhoneId) {
             session.disconnect()
             return
         }
@@ -87,6 +98,16 @@ class PhoneSessionManager @Inject constructor(
                 fileDownloadStatus.remove(sentFile)
                 bus.broadcast(DownloadFinishedEvent(sentFile))
                 getPhoneSession(session).files.remove(sentFile)
+                val fileRecord = jooq.newRecord(SENT_FILE, dropit.domain.entity.SentFile(
+                    sentFile.id,
+                    null,
+                    null,
+                    appSettings.settings.currentPhoneId,
+                    sentFile.file.toString(),
+                    Files.probeContentType(sentFile.file.toPath()),
+                    sentFile.size
+                ))
+                jooq.insertInto(SENT_FILE).set(fileRecord).execute()
             } else {
                 fileDownloadStatus[sentFile]?.add(Pair(LocalDateTime.now(), downloaded))
                 bus.broadcast(DownloadProgressEvent(sentFile))
@@ -148,6 +169,15 @@ class PhoneSessionManager @Inject constructor(
         val session = phoneSessions.computeIfAbsent(phoneId) { PhoneSession() }
         session.clipboardData = data
         session.session?.send(data)
+        if (session.session != null && appSettings.settings.logClipboardTransfers) {
+            ClipboardLog(
+                id = UUID.randomUUID(),
+                content = data,
+                source = TransferSource.COMPUTER
+            ).apply {
+                jooq.newRecord(CLIPBOARD_LOG, this).insert()
+            }
+        }
         session.clipboardData = null
     }
 
