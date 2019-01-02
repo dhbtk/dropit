@@ -16,6 +16,8 @@ import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.ServerConnector
 import org.eclipse.jetty.util.ssl.SslContextFactory
 import org.slf4j.LoggerFactory
+import java.nio.file.Files
+import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -48,7 +50,6 @@ class WebServer @Inject constructor(
                 server.connectors = arrayOf(connector)
                 server
             }
-            .start(appSettings.settings.serverPort)
             .routes {
                 get("/") {
                     it.result("0.1")
@@ -84,9 +85,19 @@ class WebServer @Inject constructor(
                     clipboardService.receive(it.bodyAsClass(String::class.java))
                     it.status(201)
                 }
+                get("downloads/:id") {
+                    it.attribute("phone", token.getApprovedPhone(it))
+                    val file = phoneSessionManager.getFileDownload(
+                        it.attribute<Phone>("phone")!!,
+                        UUID.fromString(it.pathParam("id")))
+                    it.header("Content-Type", Files.probeContentType(file.toPath()))
+                    it.header("X-File-Name", file.name)
+                    it.result(file.inputStream())
+                }
             }
             .ws("ws") {
                 it.onConnect(phoneSessionManager::handleNewSession)
+                it.onMessage(phoneSessionManager::handleBinaryMessage)
                 it.onError { session, throwable ->
                     logger.warn("Error on phone session", throwable)
                     phoneSessionManager.closeSession(session)
@@ -96,6 +107,7 @@ class WebServer @Inject constructor(
                     phoneSessionManager.closeSession(session)
                 }
             }
+            .start(appSettings.settings.serverPort)
     }
 
     private fun getSslContextFactory(): SslContextFactory {

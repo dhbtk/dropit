@@ -1,6 +1,7 @@
 package dropit.application.dto
 
 import java.io.Serializable
+import java.util.*
 
 data class TransferRequest(val name: String? = null, val sendToClipboard: Boolean? = false, val files: List<FileRequest> = emptyList()) : Serializable
 
@@ -21,3 +22,7 @@ enum class TransferStatus {
 enum class FileStatus {
     PENDING, FAILED, FINISHED
 }
+
+data class SentFileId(val id: UUID = UUID.randomUUID())
+
+data class DownloadStatus(val id: UUID = UUID.randomUUID(), val bytes: Long = 0L)

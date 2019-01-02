@@ -10,6 +10,7 @@ import okhttp3.*
 import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
 import java.io.InputStream
+import java.util.*
 
 class Client(
     val okHttpClient: OkHttpClient,
@@ -53,9 +54,10 @@ class Client(
                 dropItServer.uploadFile(
                     it,
                     fileRequest.id!!,
-                    MultipartBody.Part.createFormData(
-                        "file",
-                        fileRequest.fileName,
+                    MultipartBody.Part.create(
+                        Headers.Builder().addUnsafeNonAscii(
+                            "Content-Disposition",
+                            "form-data; name=\"file\"; filename=\"${fileRequest.fileName!!.replace("\"", "%22")}\"").build(),
                         body
                     )
                 ).execute().body()
@@ -75,6 +77,23 @@ class Client(
                 .build(),
             listener
         )
+    }
+
+    fun downloadFile(fileId: UUID, listener: ProgressListener): Observable<Response> {
+        return Observable.fromCallable {
+            val tempClient = okHttpClient.newBuilder()
+                .addNetworkInterceptor { chain ->
+                    val originalResponse = chain.proceed(chain.request())
+                    originalResponse.newBuilder().body(
+                        ProgressResponseBody(originalResponse.body()!!, listener)
+                    ).build()
+                }.build()
+            val request = Request.Builder()
+                .url("$host/downloads/$fileId")
+                .header("Authorization", tokenHeader())
+                .build()
+            tempClient.newCall(request).execute()
+        }
     }
 
     private fun tokenHeader() = "Bearer $token"

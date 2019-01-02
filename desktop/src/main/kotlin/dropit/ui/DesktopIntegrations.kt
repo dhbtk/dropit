@@ -1,6 +1,9 @@
 package dropit.ui
 
 import dropit.ui.DesktopIntegrations.OperatingSystem.*
+import dropit.ui.image.LinuxPngTransfer
+import org.eclipse.swt.dnd.ByteArrayTransfer
+import org.eclipse.swt.dnd.ImageTransfer
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -40,4 +43,13 @@ class DesktopIntegrations @Inject constructor() {
             LINUX -> ProcessBuilder("xdg-open", file.toString()).start()
         }
     }
+
+    /**
+     * Workaround for ImageTransfers not working properly on Linux
+     */
+    fun getImageTransfer(): ByteArrayTransfer =
+        when (currentOS) {
+            LINUX -> LinuxPngTransfer.instance
+            else -> ImageTransfer.getInstance()
+        }
 }

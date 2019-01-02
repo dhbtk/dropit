@@ -1,13 +1,16 @@
 package dropit.mobile.infrastructure.db
 
-import android.content.ContentValues
+import android.annotation.SuppressLint
 import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
-import android.database.sqlite.SQLiteOpenHelper
 import dropit.application.discovery.DiscoveryClient
 import dropit.application.dto.TokenStatus
 import dropit.mobile.domain.entity.Computer
+import org.jetbrains.anko.db.ManagedSQLiteOpenHelper
+import org.jetbrains.anko.db.insert
+import org.jetbrains.anko.db.select
+import org.jetbrains.anko.db.update
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.util.*
@@ -22,21 +25,33 @@ const val PORT_COLUMN = "port"
 const val TOKEN_COLUMN = "token"
 const val TOKEN_STATUS_COLUMN = "token_status"
 
-class SQLiteHelper(val context: Context) : SQLiteOpenHelper(context, "DropIt", null, CURRENT_VERSION) {
+class SQLiteHelper(val context: Context) : ManagedSQLiteOpenHelper(context, "DropIt", null, CURRENT_VERSION) {
+    companion object {
+        @SuppressLint("StaticFieldLeak")
+        private var instance: SQLiteHelper? = null
 
-    override fun onCreate(db: SQLiteDatabase?) {
+        @Synchronized
+        fun getInstance(ctx: Context): SQLiteHelper {
+            if (instance == null) {
+                instance = SQLiteHelper(ctx.applicationContext)
+            }
+            return instance!!
+        }
+    }
+
+    override fun onCreate(db: SQLiteDatabase) {
         for (i in 1..CURRENT_VERSION) {
             readExec(db, "db_v$i.sql")
         }
     }
 
-    override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
+    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         for (i in (oldVersion + 1)..newVersion) {
             readExec(db, "db_v$i.sql")
         }
     }
 
-    private fun readExec(db: SQLiteDatabase?, fileName: String) {
+    private fun readExec(db: SQLiteDatabase, fileName: String) {
         context.assets.open(fileName).use {
             InputStreamReader(it).use { isr ->
                 BufferedReader(isr).use { reader ->
@@ -61,74 +76,57 @@ class SQLiteHelper(val context: Context) : SQLiteOpenHelper(context, "DropIt", n
     }
 
     fun getComputers(uuids: Set<UUID>): List<Computer> {
-        return readableDatabase.use {
-            it.query(
-                COMPUTER_TABLE,
-                arrayOf(ID_COLUMN, SECRET_COLUMN, NAME_COLUMN, IP_ADDRESS_COLUMN, PORT_COLUMN, TOKEN_COLUMN, TOKEN_STATUS_COLUMN),
-                "$ID_COLUMN IN (${uuids.joinToString(", ") { "?" }})", uuids.map { it.toString() }.toTypedArray(),
-                null, null,
-                NAME_COLUMN
-            ).use { cursor ->
-                val output = ArrayList<Computer>()
-                while (cursor.moveToNext()) {
-                    output.add(cursorToComputer(cursor))
+        return use {
+            select(COMPUTER_TABLE)
+                .columns(ID_COLUMN, SECRET_COLUMN, NAME_COLUMN, IP_ADDRESS_COLUMN, PORT_COLUMN, TOKEN_COLUMN, TOKEN_STATUS_COLUMN)
+                .whereSimple("$ID_COLUMN IN (${uuids.joinToString(", ") { "?" }})", *uuids.map { it.toString() }.toTypedArray())
+                .orderBy(NAME_COLUMN)
+                .exec {
+                    val output = ArrayList<Computer>()
+                    while (moveToNext()) {
+                        output.add(cursorToComputer(this))
+                    }
+                    output
                 }
-                output
-            }
         }
     }
 
     fun saveFromBroadcast(broadcast: DiscoveryClient.ServerBroadcast): Computer {
-        val exists = readableDatabase.use {
-            it.query(
-                COMPUTER_TABLE,
-                arrayOf(ID_COLUMN),
-                "$ID_COLUMN = ?", arrayOf(broadcast.data.computerId.toString()),
-                null, null, null
-            ).use { it.moveToFirst() }
-        }
-        writableDatabase.use {
+        return use {
+            val exists = select(COMPUTER_TABLE)
+                .column(ID_COLUMN)
+                .whereSimple("$ID_COLUMN = ?", broadcast.data.computerId.toString())
+                .exec { moveToFirst() }
             if (exists) {
-                it.update(
-                    COMPUTER_TABLE,
-                    ContentValues().apply {
-                        put(NAME_COLUMN, broadcast.data.computerName)
-                        put(PORT_COLUMN, broadcast.data.port)
-                        put(IP_ADDRESS_COLUMN, broadcast.ip.hostAddress)
-                    },
-                    "$ID_COLUMN = ?", arrayOf(broadcast.data.computerId.toString())
-                ).toLong()
+                update(COMPUTER_TABLE,
+                    NAME_COLUMN to broadcast.data.computerName,
+                    PORT_COLUMN to broadcast.data.port,
+                    IP_ADDRESS_COLUMN to broadcast.ip.hostAddress)
+                    .whereSimple("$ID_COLUMN = ?", broadcast.data.computerId.toString())
+                    .exec()
             } else {
-                it.insert(
-                    COMPUTER_TABLE,
-                    null,
-                    ContentValues().apply {
-                        put(ID_COLUMN, broadcast.data.computerId.toString())
-                        put(NAME_COLUMN, broadcast.data.computerName)
-                        put(PORT_COLUMN, broadcast.data.port)
-                        put(IP_ADDRESS_COLUMN, broadcast.ip.hostAddress)
-                    }
-                )
+                insert(COMPUTER_TABLE,
+                    ID_COLUMN to broadcast.data.computerId.toString(),
+                    NAME_COLUMN to broadcast.data.computerName,
+                    PORT_COLUMN to broadcast.data.port,
+                    IP_ADDRESS_COLUMN to broadcast.ip.hostAddress)
             }
+            getComputer(broadcast.data.computerId)
         }
-        return getComputer(broadcast.data.computerId)
     }
 
     fun getComputer(id: UUID): Computer {
-        return readableDatabase.use {
-            it.query(
-                COMPUTER_TABLE,
-                arrayOf(ID_COLUMN, SECRET_COLUMN, NAME_COLUMN, IP_ADDRESS_COLUMN, PORT_COLUMN, TOKEN_COLUMN, TOKEN_STATUS_COLUMN),
-                "$ID_COLUMN = ?", arrayOf(id.toString()),
-                null, null,
-                NAME_COLUMN
-            ).use { cursor ->
-                if (cursor.moveToFirst()) {
-                    cursorToComputer(cursor)
-                } else {
-                    throw RuntimeException()
+        return use {
+            select(COMPUTER_TABLE)
+                .columns(ID_COLUMN, SECRET_COLUMN, NAME_COLUMN, IP_ADDRESS_COLUMN, PORT_COLUMN, TOKEN_COLUMN, TOKEN_STATUS_COLUMN)
+                .whereSimple("$ID_COLUMN = ?", id.toString())
+                .exec {
+                    if (moveToFirst()) {
+                        cursorToComputer(this)
+                    } else {
+                        throw RuntimeException("Computer not found: $id")
+                    }
                 }
-            }
         }
     }
 
@@ -145,20 +143,17 @@ class SQLiteHelper(val context: Context) : SQLiteOpenHelper(context, "DropIt", n
     }
 
     fun updateComputer(computer: Computer): Computer {
-        writableDatabase.use {
-            it.update(
-                COMPUTER_TABLE,
-                ContentValues().apply {
-                    put(SECRET_COLUMN, computer.secret.toString())
-                    put(NAME_COLUMN, computer.name)
-                    put(IP_ADDRESS_COLUMN, computer.ipAddress)
-                    put(PORT_COLUMN, computer.port)
-                    put(TOKEN_COLUMN, computer.token?.toString())
-                    put(TOKEN_STATUS_COLUMN, computer.tokenStatus?.ordinal ?: -1)
-                },
-                "$ID_COLUMN = ?", arrayOf(computer.id.toString())
-            )
+        return use {
+            update(COMPUTER_TABLE,
+                SECRET_COLUMN to computer.secret.toString(),
+                NAME_COLUMN to computer.name,
+                IP_ADDRESS_COLUMN to computer.ipAddress,
+                PORT_COLUMN to computer.port,
+                TOKEN_COLUMN to computer.token?.toString(),
+                TOKEN_STATUS_COLUMN to (computer.tokenStatus?.ordinal ?: -1))
+                .whereSimple("$ID_COLUMN = ?", computer.id.toString())
+                .exec()
+            getComputer(computer.id)
         }
-        return getComputer(computer.id)
     }
 }

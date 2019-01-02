@@ -1,4 +1,4 @@
-package dropit.mobile.ui.sending
+package dropit.mobile.ui.configuration
 
 import android.os.AsyncTask
 import com.fasterxml.jackson.databind.ObjectMapper

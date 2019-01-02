@@ -1,6 +1,11 @@
 package dropit.mobile.ui.configuration
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.PersistableBundle
+import android.support.v4.app.ActivityCompat
+import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.DefaultItemAnimator
 import android.support.v7.widget.DividerItemDecoration
@@ -13,10 +18,12 @@ import dropit.mobile.domain.entity.Computer
 import dropit.mobile.infrastructure.db.SQLiteHelper
 import dropit.mobile.infrastructure.preferences.PreferencesHelper
 import dropit.mobile.onMainThread
-import dropit.mobile.ui.sending.PairingDialogFragment
-import dropit.mobile.ui.sending.adapter.ServerListAdapter
+import dropit.mobile.ui.configuration.adapter.ServerListAdapter
+import java9.util.concurrent.CompletableFuture
 import kotlinx.android.synthetic.main.activity_configuration.*
 import java.util.*
+
+const val REQUEST_WRITE_EXTERNAL_STORAGE = 1
 
 class ConfigurationActivity : AppCompatActivity() {
     val eventBus = EventBus()
@@ -41,6 +48,32 @@ class ConfigurationActivity : AppCompatActivity() {
         serverListView.itemAnimator = DefaultItemAnimator()
         serverListView.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
         serverListView.adapter = serverListAdapter
+
+        requestExternalStoragePermission()
+    }
+
+    fun requestExternalStoragePermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
+            PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                ExternalStorageDialogFragment().show(fragmentManager, "t")
+            } else {
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                    REQUEST_WRITE_EXTERNAL_STORAGE)
+            }
+        }
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle?) {
+        super.onRestoreInstanceState(savedInstanceState)
+        savedInstanceState?.getStringArrayList("seenIds")?.forEach { seenComputerIds.add(UUID.fromString(it)) }
+        refreshServerList()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle?, outPersistentState: PersistableBundle?) {
+        super.onSaveInstanceState(outState, outPersistentState)
+        outState?.putStringArrayList("seenIds", ArrayList(seenComputerIds.map(UUID::toString)))
     }
 
     override fun onPause() {
@@ -62,16 +95,46 @@ class ConfigurationActivity : AppCompatActivity() {
      * Runs in background
      */
     private fun handleBroadcast(broadcast: DiscoveryClient.ServerBroadcast) {
-        seenComputerIds.add(broadcast.data.computerId)
-        sqliteHelper.saveFromBroadcast(broadcast)
-        val newList = sqliteHelper.getComputers(seenComputerIds).map {
-            it.copy(default = it.id == preferencesHelper.currentComputerId)
-        }
+        CompletableFuture.supplyAsync {
+            seenComputerIds.add(broadcast.data.computerId)
+            sqliteHelper.saveFromBroadcast(broadcast)
+        }.thenRun { refreshServerList() }
+    }
 
-        onMainThread {
-            serverListAdapter.items.clear()
-            serverListAdapter.items.addAll(newList)
-            serverListAdapter.notifyDataSetChanged()
+    private fun refreshServerList() {
+        CompletableFuture.supplyAsync {
+            sqliteHelper.getComputers(seenComputerIds).map {
+                it.copy(default = it.id == preferencesHelper.currentComputerId)
+            }
+        }.thenAccept { newList ->
+            onMainThread {
+                val oldList = serverListAdapter.items
+                newList.forEach { newComputer ->
+                    if (oldList.isEmpty()) {
+                        oldList.add(newComputer)
+                        serverListAdapter.notifyDataSetChanged()
+                    } else if (!oldList.contains(newComputer)) {
+                        val oldIndex = oldList.find {
+                            it.id == newComputer.id
+                        }.let { oldList.indexOf(it) }
+                        if (oldIndex != -1) {
+                            oldList[oldIndex] = newComputer
+                            serverListAdapter.notifyItemChanged(oldIndex)
+                        } else {
+                            val firstIndex = oldList.find {
+                                it.name > newComputer.name
+                            }.let { oldList.indexOf(it) }
+                            if (firstIndex == -1) {
+                                oldList.add(newComputer)
+                                serverListAdapter.notifyItemInserted(oldList.size - 1)
+                            } else {
+                                oldList.add(firstIndex, newComputer)
+                                serverListAdapter.notifyItemInserted(firstIndex)
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

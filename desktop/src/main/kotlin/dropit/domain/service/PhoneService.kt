@@ -77,9 +77,7 @@ class PhoneService @Inject constructor(
             create.newRecord(PHONE, pendingPhone.copy(updatedAt = LocalDateTime.now(), status = TokenStatus.AUTHORIZED)).update()
             val authorizedPhone = create.fetchOne(PHONE, PHONE.ID.eq(id.toString())).into(Phone::class.java)
             bus.broadcast(PhoneChangedEvent(authorizedPhone))
-            if (appSettings.settings.currentPhoneId == null) {
-                appSettings.settings = appSettings.settings.copy(currentPhoneId = id)
-            }
+            appSettings.settings = appSettings.settings.copy(currentPhoneId = id)
             authorizedPhone
         }
     }

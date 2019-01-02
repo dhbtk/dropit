@@ -36,4 +36,11 @@
     <string name="send_to_computer">Send to computer</string>
     <string name="send_to_clipboard">Send to clipboard</string>
     <string name="pairing_failed">Pairing failed.</string>
+    <string name="receiving_file">Receiving file</string>
+    <string name="external_storage_permission_explanation">This permission is needed to store files sent from your computer. This feature will not work otherwise.</string>
+    <string name="ok">OK</string>
+    <string name="file_received">%1$s received</string>
+    <string name="click_to_open">Click to open</string>
+    <string name="computer_file">File</string>
+    <string name="file_download_failed">File download failed</string>
 </resources>
