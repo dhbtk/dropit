@@ -3,7 +3,7 @@ package dropit
 import dropit.application.client.ClientFactory
 import dropit.application.dto.TokenRequest
 import dropit.application.dto.TokenStatus
-import dropit.domain.service.ClipboardService
+import dropit.domain.service.IncomingService
 import dropit.factories.TransferFactory
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -52,7 +52,7 @@ object WebIntegrationTest : Spek({
 
             val textToSend = "abcde\nfghijk"
             var callbackCalled = false
-            component.eventBus().subscribe(ClipboardService.ClipboardReceiveEvent::class) { (data) ->
+            component.eventBus().subscribe(IncomingService.ClipboardReceiveEvent::class) { (data) ->
                 callbackCalled = true
                 assertEquals(textToSend, data)
             }

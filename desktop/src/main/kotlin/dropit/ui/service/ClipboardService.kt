@@ -1,9 +1,10 @@
-package dropit.ui
+package dropit.ui.service
 
 import dropit.APP_NAME
-import dropit.application.PhoneSessionManager
+import dropit.application.OutgoingService
 import dropit.application.settings.AppSettings
 import dropit.infrastructure.i18n.t
+import dropit.ui.DesktopIntegrations
 import org.eclipse.swt.SWT
 import org.eclipse.swt.dnd.Clipboard
 import org.eclipse.swt.dnd.FileTransfer
@@ -24,11 +25,11 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class SharedOperations @Inject constructor(
+class ClipboardService @Inject constructor(
     private val display: Display,
     private val desktopIntegrations: DesktopIntegrations,
     private val appSettings: AppSettings,
-    private val phoneSessionManager: PhoneSessionManager,
+    private val outgoingService: OutgoingService,
     private val executor: Executor
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -53,14 +54,14 @@ class SharedOperations @Inject constructor(
 
         executor.execute {
             if (imageContents != null) {
-                phoneSessionManager.sendFile(defaultPhoneId, imageClipboardToFile(imageContents))
+                outgoingService.sendFile(defaultPhoneId, imageClipboardToFile(imageContents))
             } else if (fileContents != null) {
                 val files = fileContents.map(::File)
                 files.forEach {
-                    phoneSessionManager.sendFile(defaultPhoneId, it)
+                    outgoingService.sendFile(defaultPhoneId, it)
                 }
             } else if (stringContents != null) {
-                phoneSessionManager.sendClipboard(defaultPhoneId, stringContents)
+                outgoingService.sendClipboard(defaultPhoneId, stringContents)
             }
         }
     }
@@ -77,7 +78,7 @@ class SharedOperations @Inject constructor(
 
         executor.execute {
             files.forEach {
-                phoneSessionManager.sendFile(defaultPhoneId, File(it))
+                outgoingService.sendFile(defaultPhoneId, File(it))
             }
         }
     }

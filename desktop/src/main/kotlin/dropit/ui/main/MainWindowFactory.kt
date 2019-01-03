@@ -1,14 +1,14 @@
 package dropit.ui.main
 
 import dropit.APP_NAME
-import dropit.application.PhoneSessionManager
+import dropit.application.OutgoingService
 import dropit.application.settings.AppSettings
+import dropit.domain.service.IncomingService
 import dropit.domain.service.PhoneService
-import dropit.domain.service.TransferService
 import dropit.infrastructure.event.EventBus
 import dropit.infrastructure.i18n.t
 import dropit.ui.DesktopIntegrations
-import dropit.ui.SharedOperations
+import dropit.ui.service.ClipboardService
 import org.eclipse.swt.SWT
 import org.eclipse.swt.dnd.*
 import org.eclipse.swt.graphics.Image
@@ -27,12 +27,12 @@ import javax.inject.Singleton
 class MainWindowFactory @Inject constructor(
     private val eventBus: EventBus,
     private val phoneService: PhoneService,
-    private val transferService: TransferService,
-    private val phoneSessionManager: PhoneSessionManager,
+    private val incomingService: IncomingService,
+    private val outgoingService: OutgoingService,
     private val executor: Executor,
     private val appSettings: AppSettings,
     private val desktopIntegrations: DesktopIntegrations,
-    private val sharedOperations: SharedOperations,
+    private val clipboardService: ClipboardService,
     private val display: Display
 ) {
     var mainWindow: MainWindow? = null
@@ -56,12 +56,12 @@ class MainWindowFactory @Inject constructor(
         mainWindow = MainWindow(
             eventBus,
             phoneService,
-            transferService,
-            phoneSessionManager,
+            incomingService,
+            outgoingService,
             executor,
             appSettings,
             desktopIntegrations,
-            sharedOperations,
+            clipboardService,
             display
         )
     }
@@ -70,12 +70,12 @@ class MainWindowFactory @Inject constructor(
 class MainWindow(
     private val eventBus: EventBus,
     private val phoneService: PhoneService,
-    private val transferService: TransferService,
-    private val phoneSessionManager: PhoneSessionManager,
+    private val incomingService: IncomingService,
+    private val outgoingService: OutgoingService,
     private val executor: Executor,
     private val appSettings: AppSettings,
     private val desktopIntegrations: DesktopIntegrations,
-    private val sharedOperations: SharedOperations,
+    private val clipboardService: ClipboardService,
     private val display: Display
 ) {
     val window: Shell = Shell(display, SWT.SHELL_TRIM)
@@ -136,7 +136,7 @@ class MainWindow(
                 text = t("mainWindow.dropZone.clickHere")
                 pack()
                 addListener(SWT.Selection) {
-                    sharedOperations.sendClipboardToPhone(window)
+                    clipboardService.sendClipboardToPhone(window)
                 }
             }
         Label(clipboardComposite, SWT.LEFT)
@@ -200,7 +200,7 @@ class MainWindow(
                 if (transferType.isSupportedType(event.currentDataType)) {
                     val files = transferType.nativeToJava(event.currentDataType) as Array<String>?
                     if (files != null) {
-                        sharedOperations.sendFilesToPhone(window, files)
+                        clipboardService.sendFilesToPhone(window, files)
                     }
                 }
             }

@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import dagger.Component
 import dropit.application.WebServer
 import dropit.application.settings.AppSettings
+import dropit.domain.service.IncomingService
 import dropit.domain.service.PhoneService
-import dropit.domain.service.TransferService
 import dropit.infrastructure.discovery.DiscoveryBroadcaster
 import dropit.infrastructure.event.EventBus
 import dropit.ui.GraphicalInterface
@@ -18,7 +18,7 @@ import javax.inject.Singleton
 interface ApplicationComponent {
     fun phoneService(): PhoneService
 
-    fun transferService(): TransferService
+    fun transferService(): IncomingService
 
     fun eventBus(): EventBus
 

@@ -6,9 +6,8 @@ import dropit.application.dto.TransferRequest
 import dropit.application.security.TokenService
 import dropit.application.settings.AppSettings
 import dropit.domain.entity.Phone
-import dropit.domain.service.ClipboardService
+import dropit.domain.service.IncomingService
 import dropit.domain.service.PhoneService
-import dropit.domain.service.TransferService
 import io.javalin.Javalin
 import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.json.JavalinJackson
@@ -25,9 +24,8 @@ import javax.inject.Singleton
 class WebServer @Inject constructor(
     val appSettings: AppSettings,
     val phoneService: PhoneService,
-    val transferService: TransferService,
-    val clipboardService: ClipboardService,
-    val phoneSessionManager: PhoneSessionManager,
+    val incomingService: IncomingService,
+    val outgoingService: OutgoingService,
     val token: TokenService,
     val objectMapper: ObjectMapper
 ) {
@@ -67,13 +65,13 @@ class WebServer @Inject constructor(
                 }
                 post("transfers") {
                     it.attribute("phone", token.getApprovedPhone(it))
-                    it.json(transferService.createTransfer(
+                    it.json(incomingService.createTransfer(
                         it.attribute<Phone>("phone")!!,
                         it.bodyAsClass(TransferRequest::class.java)))
                 }
                 post("files/:id") {
                     it.attribute("phone", token.getApprovedPhone(it))
-                    transferService.receiveFile(
+                    incomingService.receiveFile(
                         it.attribute<Phone>("phone")!!,
                         it.pathParam("id"),
                         it.req
@@ -82,12 +80,12 @@ class WebServer @Inject constructor(
                 }
                 post("clipboard") {
                     it.attribute("phone", token.getApprovedPhone(it))
-                    clipboardService.receive(it.bodyAsClass(String::class.java))
+                    incomingService.receiveClipboard(it.bodyAsClass(String::class.java))
                     it.status(201)
                 }
                 get("downloads/:id") {
                     it.attribute("phone", token.getApprovedPhone(it))
-                    val file = phoneSessionManager.getFileDownload(
+                    val file = outgoingService.getFileDownload(
                         it.attribute<Phone>("phone")!!,
                         UUID.fromString(it.pathParam("id")))
                     it.header("Content-Type", Files.probeContentType(file.toPath()))
@@ -96,15 +94,15 @@ class WebServer @Inject constructor(
                 }
             }
             .ws("ws") {
-                it.onConnect(phoneSessionManager::handleNewSession)
-                it.onMessage(phoneSessionManager::handleBinaryMessage)
+                it.onConnect(outgoingService::openSession)
+                it.onMessage(outgoingService::receiveDownloadStatus)
                 it.onError { session, throwable ->
                     logger.warn("Error on phone session", throwable)
-                    phoneSessionManager.closeSession(session)
+                    outgoingService.closeSession(session)
                 }
                 it.onClose { session, statusCode, reason ->
                     logger.info("Closing session: statusCode = $statusCode, reason: $reason")
-                    phoneSessionManager.closeSession(session)
+                    outgoingService.closeSession(session)
                 }
             }
             .start(appSettings.settings.serverPort)

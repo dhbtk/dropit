@@ -26,13 +26,19 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class PhoneSessionManager @Inject constructor(
+class OutgoingService @Inject constructor(
     val bus: EventBus,
     val jooq: DSLContext,
     val objectMapper: ObjectMapper,
     val appSettings: AppSettings
 ) {
-    class PhoneSession(
+    val fileDownloadStatus = HashMap<SentFile, MutableList<Pair<LocalDateTime, Long>>>()
+
+    private val phoneSessions = HashMap<UUID, PhoneSession>()
+
+    private val logger = LoggerFactory.getLogger(javaClass)
+
+    data class PhoneSession(
         var session: WsSession? = null,
         var clipboardData: String? = null,
         val files: MutableList<SentFile> = mutableListOf()
@@ -48,11 +54,10 @@ class PhoneSessionManager @Inject constructor(
     data class DownloadProgressEvent(override val payload: SentFile) : AppEvent<SentFile>
     data class DownloadFinishedEvent(override val payload: SentFile) : AppEvent<SentFile>
 
-    val fileDownloadStatus = HashMap<SentFile, MutableList<Pair<LocalDateTime, Long>>>()
-
-    private val phoneSessions = HashMap<UUID, PhoneSession>()
-
-    fun handleNewSession(session: WsSession) {
+    /**
+     *
+     */
+    fun openSession(session: WsSession) {
         val token = session.header("Authorization")?.split(" ")?.last()
         if (token == null) {
             session.disconnect()
@@ -86,7 +91,10 @@ class PhoneSessionManager @Inject constructor(
         }
     }
 
-    fun handleBinaryMessage(session: WsSession, data: Array<Byte>, offset: Int, length: Int) {
+    /**
+     *
+     */
+    fun receiveDownloadStatus(session: WsSession, data: Array<Byte>, offset: Int, length: Int) {
         try {
             val (fileId, downloaded) = objectMapper.readValue<DownloadStatus>(
                 data.toByteArray(),
@@ -117,6 +125,9 @@ class PhoneSessionManager @Inject constructor(
         }
     }
 
+    /**
+     *
+     */
     fun closeSession(session: WsSession) {
         phoneSessions.forEach { (_, value) ->
             if (value.session?.id == session.id) {
@@ -141,29 +152,6 @@ class PhoneSessionManager @Inject constructor(
         sendFileList(session)
     }
 
-    private fun sendFileList(session: PhoneSession) {
-        val wsSession = session.session
-        if (wsSession != null) {
-            session.files.forEach {
-                if (fileDownloadStatus[it]!!.isEmpty()) {
-                    sendLogged(wsSession, ByteBuffer.wrap(objectMapper.writeValueAsBytes(SentFileId(it.id))))
-                }
-            }
-        }
-    }
-
-    private val logger = LoggerFactory.getLogger(javaClass)
-
-    private fun sendLogged(session: WsSession, str: String) {
-        logger.info("sending text: $str")
-        session.send(str)
-    }
-
-    private fun sendLogged(session: WsSession, data: ByteBuffer) {
-        logger.info("sending data: $data")
-        session.send(data)
-    }
-
     fun sendClipboard(phoneId: UUID, data: String) {
         getPhoneById(phoneId) ?: return
         val session = phoneSessions.computeIfAbsent(phoneId) { PhoneSession() }
@@ -179,6 +167,17 @@ class PhoneSessionManager @Inject constructor(
             }
         }
         session.clipboardData = null
+    }
+
+    private fun sendFileList(session: PhoneSession) {
+        val wsSession = session.session
+        if (wsSession != null) {
+            session.files.forEach {
+                if (fileDownloadStatus[it]!!.isEmpty()) {
+                    wsSession.send(ByteBuffer.wrap(objectMapper.writeValueAsBytes(SentFileId(it.id))))
+                }
+            }
+        }
     }
 
     private fun getPhoneSession(session: WsSession): PhoneSession {

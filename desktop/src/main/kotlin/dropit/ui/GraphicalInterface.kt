@@ -1,13 +1,12 @@
 package dropit.ui
 
 import dropit.APP_NAME
-import dropit.application.PhoneSessionManager
+import dropit.application.OutgoingService
 import dropit.application.dto.TokenStatus
 import dropit.application.settings.AppSettings
 import dropit.domain.entity.ShowFileAction
-import dropit.domain.service.ClipboardService
+import dropit.domain.service.IncomingService
 import dropit.domain.service.PhoneService
-import dropit.domain.service.TransferService
 import dropit.infrastructure.event.EventBus
 import dropit.infrastructure.i18n.t
 import dropit.ui.main.MainWindowFactory
@@ -28,12 +27,12 @@ import kotlin.math.roundToInt
 class GraphicalInterface @Inject constructor(
     private val eventBus: EventBus,
     private val phoneService: PhoneService,
-    private val transferService: TransferService,
-    private val phoneSessionManager: PhoneSessionManager,
+    private val incomingService: IncomingService,
+    private val outgoingService: OutgoingService,
     private val executor: Executor,
     private val appSettings: AppSettings,
     private val desktopIntegrations: DesktopIntegrations,
-    private val sharedOperations: SharedOperations,
+    private val clipboardService: dropit.ui.service.ClipboardService,
     private val display: Display,
     private val mainWindowFactory: MainWindowFactory
 ) {
@@ -48,7 +47,7 @@ class GraphicalInterface @Inject constructor(
             phoneService.authorizePhone(phone.id!!)
         }
 
-        eventBus.subscribe(ClipboardService.ClipboardReceiveEvent::class) { (data) ->
+        eventBus.subscribe(IncomingService.ClipboardReceiveEvent::class) { (data) ->
             display.asyncExec {
                 receiveClipboardText(data)
             }
@@ -90,9 +89,9 @@ class GraphicalInterface @Inject constructor(
             listOf(
                 PhoneService.NewPhoneRequestEvent::class,
                 PhoneService.PhoneChangedEvent::class,
-                TransferService.FileTransferBeginEvent::class,
-                TransferService.FileTransferReceiveEvent::class,
-                TransferService.FileTransferFinishEvent::class
+                IncomingService.FileTransferBeginEvent::class,
+                IncomingService.FileTransferReceiveEvent::class,
+                IncomingService.FileTransferFinishEvent::class
             ).forEach {
                 eventBus.subscribe(it) {
                     display.asyncExec { refreshTrayIcon() }
@@ -103,7 +102,7 @@ class GraphicalInterface @Inject constructor(
                 display.asyncExec { refreshTrayIcon() }
             }
 
-            eventBus.subscribe(TransferService.TransferCompleteEvent::class) { (completedTransfer) ->
+            eventBus.subscribe(IncomingService.TransferCompleteEvent::class) { (completedTransfer) ->
                 display.asyncExec { notifyTransferFinished(completedTransfer) }
             }
 
@@ -119,7 +118,7 @@ class GraphicalInterface @Inject constructor(
             .apply { text = "Send clipboard contents" }
             .apply {
                 addListener(SWT.Selection) {
-                    sharedOperations.sendClipboardToPhone(shell)
+                    clipboardService.sendClipboardToPhone(shell)
                 }
             }
 
@@ -155,12 +154,12 @@ class GraphicalInterface @Inject constructor(
 
     private fun refreshTrayIcon() {
         val pendingPhone = phoneService.listPhones(false).find { it.status == TokenStatus.PENDING }
-        val transferingFile = transferService.transferTimes.keys.let {
+        val transferingFile = incomingService.transferTimes.keys.let {
             if (it.isEmpty()) {
                 null
             } else {
                 val first = it.first()
-                Pair(first, transferService.transferTimes[first]!!)
+                Pair(first, incomingService.transferTimes[first]!!)
             }
         }
         if (pendingPhone != null) {
@@ -168,7 +167,7 @@ class GraphicalInterface @Inject constructor(
         } else if (transferingFile != null && !transferingFile.second.isEmpty()) {
             val (transferFile, data) = transferingFile
             val percentage = (((data.last().second).toFloat() / transferFile.fileSize!!) * 100).roundToInt()
-            val bytesPerSec = transferService.calculateTransferRate(data)
+            val bytesPerSec = incomingService.calculateTransferRate(data)
             trayIcon?.toolTipText = t("graphicalInterface.trayIcon.tooltip.downloadingFile",
                 APP_NAME,
                 "$percentage%",
@@ -186,7 +185,7 @@ class GraphicalInterface @Inject constructor(
         }
     }
 
-    private fun notifyTransferFinished(completedTransfer: TransferService.CompletedTransfer) {
+    private fun notifyTransferFinished(completedTransfer: IncomingService.CompletedTransfer) {
         val toolTip = ToolTip(shell, SWT.BALLOON or SWT.ICON_INFORMATION)
         if (completedTransfer.transfer.sendToClipboard!! && completedTransfer.locations.size == 1) {
             val path = completedTransfer.locations.values.first().toString()
