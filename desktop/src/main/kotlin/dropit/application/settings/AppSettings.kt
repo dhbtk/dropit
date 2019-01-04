@@ -5,6 +5,7 @@ import dropit.infrastructure.i18n.t
 import dropit.jooq.tables.Settings.SETTINGS
 import org.jooq.DSLContext
 import java.net.InetAddress
+import java.net.UnknownHostException
 import java.nio.file.Files
 import java.nio.file.Paths
 
@@ -39,7 +40,11 @@ class AppSettings(val jooq: DSLContext) {
             folder.toString()
         } else {
             val path = Paths.get(System.getProperty("user.home"), t("appSettings.init.defaultTransferFolder"))
-            (path.toFile().exists() && path.toFile().isDirectory) || path.toFile().mkdirs() || throw RuntimeException("Could not create default transfer folder $path")
+            if (!(path.toFile().exists() && path.toFile().isDirectory)) {
+                if (!path.toFile().mkdirs()) {
+                    throw IllegalStateException("Could not create default transfer folder $path")
+                }
+            }
             return path.toString()
         }
     }
@@ -47,7 +52,7 @@ class AppSettings(val jooq: DSLContext) {
     private fun getDefaultComputerName(): String {
         return try {
             InetAddress.getLocalHost().hostName
-        } catch (e: Exception) {
+        } catch (e: UnknownHostException) {
             t("appSettings.init.defaultComputerName", System.getProperty("user.name"))
         }
     }

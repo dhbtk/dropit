@@ -1,5 +1,7 @@
 package dropit.application
 
+import com.fasterxml.jackson.core.JsonParseException
+import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import dropit.application.dto.DownloadStatus
 import dropit.application.dto.SentFileId
@@ -21,7 +23,9 @@ import java.io.File
 import java.nio.ByteBuffer
 import java.nio.file.Files
 import java.time.LocalDateTime
-import java.util.*
+import java.util.ArrayList
+import java.util.HashMap
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -64,11 +68,7 @@ class OutgoingService @Inject constructor(
             return
         }
         val phone = getPhoneByToken(token)
-        if (phone == null) {
-            session.disconnect()
-            return
-        }
-        if (phone.id != appSettings.settings.currentPhoneId) {
+        if (phone == null || phone.id != appSettings.settings.currentPhoneId) {
             session.disconnect()
             return
         }
@@ -120,8 +120,10 @@ class OutgoingService @Inject constructor(
                 fileDownloadStatus[sentFile]?.add(Pair(LocalDateTime.now(), downloaded))
                 bus.broadcast(DownloadProgressEvent(sentFile))
             }
-        } catch (e: Exception) {
-
+        } catch (e: JsonMappingException) {
+            // nop
+        } catch (e: JsonParseException) {
+            // nop
         }
     }
 
@@ -172,9 +174,9 @@ class OutgoingService @Inject constructor(
     private fun sendFileList(session: PhoneSession) {
         val wsSession = session.session
         if (wsSession != null) {
-            session.files.forEach {
-                if (fileDownloadStatus[it]!!.isEmpty()) {
-                    wsSession.send(ByteBuffer.wrap(objectMapper.writeValueAsBytes(SentFileId(it.id))))
+            session.files.forEach { sentFile ->
+                if (fileDownloadStatus[sentFile]!!.isEmpty()) {
+                    wsSession.send(ByteBuffer.wrap(objectMapper.writeValueAsBytes(SentFileId(sentFile.id))))
                 }
             }
         }

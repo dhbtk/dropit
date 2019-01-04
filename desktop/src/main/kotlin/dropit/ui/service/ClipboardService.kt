@@ -46,9 +46,11 @@ class ClipboardService @Inject constructor(
 
         if (defaultPhoneId == null) {
             MessageBox(shell, SWT.ICON_WARNING or SWT.OK)
-                .apply { text = APP_NAME }
-                .apply { message = t("graphicalInterface.trayIcon.sendClipboard.noPhoneConfigured") }
-                .apply { open() }
+                .apply {
+                    text = APP_NAME
+                    message = t("graphicalInterface.trayIcon.sendClipboard.noPhoneConfigured")
+                    open()
+                }
             return
         }
 

@@ -6,18 +6,26 @@ import dropit.application.dto.TokenRequest
 import dropit.application.dto.TokenResponse
 import dropit.application.dto.TransferRequest
 import io.reactivex.Observable
-import okhttp3.*
+import okhttp3.Headers
+import okhttp3.Interceptor
+import okhttp3.MultipartBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
 import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
 import java.io.InputStream
-import java.util.*
+import java.util.UUID
 
 class Client(
     val okHttpClient: OkHttpClient,
     objectMapper: ObjectMapper,
     val host: String,
     val phoneData: TokenRequest,
-    var token: String?) {
+    var token: String?
+) {
     private var dropItServer = Retrofit.Builder()
         .addConverterFactory(JacksonConverterFactory.create(objectMapper))
         .baseUrl(host)
@@ -33,31 +41,32 @@ class Client(
 
     fun getTokenStatus(): Observable<TokenResponse> {
         return headerObservable()
-            .map {
-                dropItServer.getTokenStatus(it)
+            .map { header ->
+                dropItServer.getTokenStatus(header)
                     .execute().body()
             }
     }
 
     fun createTransfer(request: TransferRequest): Observable<String> {
         return headerObservable()
-            .map {
-                dropItServer.createTransfer(it, request)
+            .map { header ->
+                dropItServer.createTransfer(header, request)
                     .execute().body()
             }
     }
 
     fun uploadFile(fileRequest: FileRequest, inputStream: InputStream, callback: (Long) -> Unit): Observable<Unit> {
         return headerObservable()
-            .map {
+            .map { header ->
                 val body = InputStreamBody(inputStream, fileRequest.fileSize!!, callback)
+                val sanitizedName = fileRequest.fileName!!.replace("\"", "%22")
                 dropItServer.uploadFile(
-                    it,
+                    header,
                     fileRequest.id!!,
                     MultipartBody.Part.create(
                         Headers.Builder().addUnsafeNonAscii(
                             "Content-Disposition",
-                            "form-data; name=\"file\"; filename=\"${fileRequest.fileName!!.replace("\"", "%22")}\"").build(),
+                            "form-data; name=\"file\"; filename=\"$sanitizedName\"").build(),
                         body
                     )
                 ).execute().body()
@@ -112,6 +121,7 @@ class Client(
     class ForbiddenException : DropitClientException()
     class ServerErrorException : DropitClientException()
 
+    @Suppress("MagicNumber")
     class ErrorHandlingInterceptor : Interceptor {
         override fun intercept(chain: Interceptor.Chain): Response {
             val response = chain.proceed(chain.request())
@@ -127,6 +137,5 @@ class Client(
 
             return response
         }
-
     }
 }

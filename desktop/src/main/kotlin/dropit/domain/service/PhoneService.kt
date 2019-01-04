@@ -12,8 +12,7 @@ import dropit.jooq.tables.Phone.PHONE
 import dropit.jooq.tables.Transfer.TRANSFER
 import dropit.jooq.tables.TransferFile.TRANSFER_FILE
 import org.jooq.DSLContext
-import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -21,7 +20,8 @@ import javax.inject.Singleton
 class PhoneService @Inject constructor(
     val create: DSLContext,
     val bus: EventBus,
-    val appSettings: AppSettings) {
+    val appSettings: AppSettings
+) {
     data class NewPhoneRequestEvent(override val payload: Phone) : AppEvent<Phone>
     class PhoneChangedEvent(override val payload: Phone) : AppEvent<Phone>
 
@@ -39,10 +39,14 @@ class PhoneService @Inject constructor(
             if (alreadyExists != null) {
                 alreadyExists.token.toString()
             } else {
-                val phone = Phone(id = UUID.fromString(request.id), name = request.name, token = UUID.randomUUID(), status = TokenStatus.PENDING)
+                val phone = Phone(
+                    id = UUID.fromString(request.id),
+                    name = request.name,
+                    token = UUID.randomUUID(),
+                    status = TokenStatus.PENDING)
                 val inserted = create.newRecord(PHONE, phone).store()
                 if (inserted == 0) {
-                    throw RuntimeException("Could not save phone record")
+                    throw IllegalStateException("Could not save phone record")
                 }
                 bus.broadcast(PhoneChangedEvent(phone))
                 bus.broadcast(NewPhoneRequestEvent(phone))
@@ -73,8 +77,8 @@ class PhoneService @Inject constructor(
     fun authorizePhone(id: UUID): Phone {
         return create.transactionResult { _ ->
             val pendingPhone: Phone = create.fetchOne(PHONE, PHONE.ID.eq(id.toString())).into(Phone::class.java)
-                ?: throw RuntimeException(t("phoneService.common.phoneNotFound", id))
-            create.newRecord(PHONE, pendingPhone.copy(updatedAt = LocalDateTime.now(), status = TokenStatus.AUTHORIZED)).update()
+                ?: throw IllegalStateException(t("phoneService.common.phoneNotFound", id))
+            create.newRecord(PHONE, pendingPhone.copy(status = TokenStatus.AUTHORIZED)).update()
             val authorizedPhone = create.fetchOne(PHONE, PHONE.ID.eq(id.toString())).into(Phone::class.java)
             bus.broadcast(PhoneChangedEvent(authorizedPhone))
             appSettings.settings = appSettings.settings.copy(currentPhoneId = id)
@@ -90,8 +94,8 @@ class PhoneService @Inject constructor(
     fun denyPhone(id: UUID): Phone {
         return create.transactionResult { _ ->
             val pendingPhone: Phone = create.fetchOne(PHONE, PHONE.ID.eq(id.toString())).into(Phone::class.java)
-                ?: throw RuntimeException(t("phoneService.common.phoneNotFound", id))
-            create.newRecord(PHONE, pendingPhone.copy(updatedAt = LocalDateTime.now(), status = TokenStatus.DENIED)).update()
+                ?: throw IllegalStateException(t("phoneService.common.phoneNotFound", id))
+            create.newRecord(PHONE, pendingPhone.copy(status = TokenStatus.DENIED)).update()
             val deniedPhone = create.fetchOne(PHONE, PHONE.ID.eq(id.toString())).into(Phone::class.java)
             bus.broadcast(PhoneChangedEvent(deniedPhone))
             deniedPhone

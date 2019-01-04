@@ -1,6 +1,6 @@
 package dropit.domain.entity
 
-import java.util.*
+import java.util.UUID
 
 data class Settings(
     val computerId: UUID = UUID.randomUUID(),

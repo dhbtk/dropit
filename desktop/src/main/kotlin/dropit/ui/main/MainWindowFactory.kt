@@ -10,18 +10,26 @@ import dropit.infrastructure.i18n.t
 import dropit.ui.DesktopIntegrations
 import dropit.ui.service.ClipboardService
 import org.eclipse.swt.SWT
-import org.eclipse.swt.dnd.*
+import org.eclipse.swt.dnd.DND
+import org.eclipse.swt.dnd.DropTarget
+import org.eclipse.swt.dnd.DropTargetEvent
+import org.eclipse.swt.dnd.DropTargetListener
+import org.eclipse.swt.dnd.FileTransfer
 import org.eclipse.swt.graphics.Image
 import org.eclipse.swt.graphics.Point
 import org.eclipse.swt.layout.GridData
 import org.eclipse.swt.layout.GridLayout
 import org.eclipse.swt.layout.RowLayout
-import org.eclipse.swt.widgets.*
+import org.eclipse.swt.widgets.Button
+import org.eclipse.swt.widgets.Composite
+import org.eclipse.swt.widgets.Display
+import org.eclipse.swt.widgets.Group
+import org.eclipse.swt.widgets.Label
+import org.eclipse.swt.widgets.Shell
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Executor
 import javax.inject.Inject
 import javax.inject.Singleton
-
 
 @Singleton
 class MainWindowFactory @Inject constructor(
@@ -67,6 +75,7 @@ class MainWindowFactory @Inject constructor(
     }
 }
 
+@Suppress("MagicNumber")
 class MainWindow(
     private val eventBus: EventBus,
     private val phoneService: PhoneService,
@@ -152,7 +161,12 @@ class MainWindow(
         val transferType = FileTransfer.getInstance()
         target.setTransfer(transferType)
 
-        target.addDropListener(object : DropTargetListener {
+        target.addDropListener(dropTargetListener(transferType))
+    }
+
+    @Suppress("ComplexMethod")
+    private fun dropTargetListener(transferType: FileTransfer): DropTargetListener {
+        return object : DropTargetListener {
             override fun dragEnter(event: DropTargetEvent) {
                 if (event.detail == DND.DROP_DEFAULT) {
                     if (event.operations and DND.DROP_COPY != 0) {
@@ -175,7 +189,7 @@ class MainWindow(
             }
 
             override fun dragOver(event: DropTargetEvent) {
-                event.feedback = DND.FEEDBACK_SELECT
+                event.feedback = DND.FEEDBACK_INSERT_AFTER
             }
 
             override fun dragOperationChanged(event: DropTargetEvent) {
@@ -204,7 +218,7 @@ class MainWindow(
                     }
                 }
             }
-        })
+        }
     }
 
     private fun buildBottomButtons(parent: Composite) {

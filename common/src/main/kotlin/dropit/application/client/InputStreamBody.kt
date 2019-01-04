@@ -7,7 +7,7 @@ import java.io.InputStream
 
 class InputStreamBody(val inputStream: InputStream, val size: Long, val callback: (Long) -> Unit) : RequestBody() {
     override fun writeTo(sink: BufferedSink) {
-        val buffer = ByteArray(1024 * 1024)
+        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
 
         inputStream.use {
             var read = inputStream.read(buffer)

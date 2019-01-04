@@ -25,6 +25,7 @@ class DiscoveryBroadcaster(appSettings: AppSettings, objectMapper: ObjectMapper)
             try {
                 log.trace("Sending broadcast - $broadcast")
                 socket.send(packet)
+                @Suppress("MagicNumber")
                 Thread.sleep(1000)
             } catch (e: IOException) {
                 log.warn("Could not send broadcast packet")
@@ -41,6 +42,6 @@ class DiscoveryBroadcaster(appSettings: AppSettings, objectMapper: ObjectMapper)
 
     fun stop() {
         running = false
-        senderThread.join(500)
+        senderThread.join()
     }
 }

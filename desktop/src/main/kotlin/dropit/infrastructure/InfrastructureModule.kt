@@ -15,7 +15,8 @@ class InfrastructureModule {
 
     @Provides
     @Singleton
-    fun discoveryBroadcaster(appSettings: AppSettings, objectMapper: ObjectMapper) = DiscoveryBroadcaster(appSettings, objectMapper)
+    fun discoveryBroadcaster(appSettings: AppSettings, objectMapper: ObjectMapper) =
+        DiscoveryBroadcaster(appSettings, objectMapper)
 
     @Provides
     @Singleton

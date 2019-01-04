@@ -9,14 +9,17 @@ import dropit.domain.entity.Phone
 import dropit.domain.service.IncomingService
 import dropit.domain.service.PhoneService
 import io.javalin.Javalin
-import io.javalin.apibuilder.ApiBuilder.*
+import io.javalin.apibuilder.ApiBuilder.get
+import io.javalin.apibuilder.ApiBuilder.path
+import io.javalin.apibuilder.ApiBuilder.post
 import io.javalin.json.JavalinJackson
+import org.eclipse.jetty.http.HttpStatus
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.ServerConnector
 import org.eclipse.jetty.util.ssl.SslContextFactory
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
-import java.util.*
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -49,58 +52,57 @@ class WebServer @Inject constructor(
                 server
             }
             .routes {
-                get("/") {
-                    it.result("0.1")
+                get("/") { context ->
+                    context.result("0.1")
                 }
                 path("token") {
-                    post {
-                        it.json(phoneService.requestToken(it.bodyAsClass(TokenRequest::class.java)))
+                    post { context ->
+                        context.json(phoneService.requestToken(context.bodyAsClass(TokenRequest::class.java)))
                     }
 
-                    get {
-                        it.attribute("phone", token.getPendingPhone(it))
-                        val phone = token.getPendingPhone(it)
-                        it.json(phoneService.getTokenStatus(phone.token.toString()))
+                    get { context ->
+                        context.attribute("phone", token.getPendingPhone(context))
+                        val phone = token.getPendingPhone(context)
+                        context.json(phoneService.getTokenStatus(phone.token.toString()))
                     }
                 }
-                post("transfers") {
-                    it.attribute("phone", token.getApprovedPhone(it))
-                    it.json(incomingService.createTransfer(
-                        it.attribute<Phone>("phone")!!,
-                        it.bodyAsClass(TransferRequest::class.java)))
+                post("transfers") { context ->
+                    context.attribute("phone", token.getApprovedPhone(context))
+                    context.json(incomingService.createTransfer(
+                        context.attribute<Phone>("phone")!!,
+                        context.bodyAsClass(TransferRequest::class.java)))
                 }
-                post("files/:id") {
-                    it.attribute("phone", token.getApprovedPhone(it))
+                post("files/:id") { context ->
+                    context.attribute("phone", token.getApprovedPhone(context))
                     incomingService.receiveFile(
-                        it.attribute<Phone>("phone")!!,
-                        it.pathParam("id"),
-                        it.req
+                        context.pathParam("id"),
+                        context.req
                     )
-                    it.status(201)
+                    context.status(HttpStatus.CREATED_201)
                 }
-                post("clipboard") {
-                    it.attribute("phone", token.getApprovedPhone(it))
-                    incomingService.receiveClipboard(it.bodyAsClass(String::class.java))
-                    it.status(201)
+                post("clipboard") { context ->
+                    context.attribute("phone", token.getApprovedPhone(context))
+                    incomingService.receiveClipboard(context.bodyAsClass(String::class.java))
+                    context.status(HttpStatus.CREATED_201)
                 }
-                get("downloads/:id") {
-                    it.attribute("phone", token.getApprovedPhone(it))
+                get("downloads/:id") { context ->
+                    context.attribute("phone", token.getApprovedPhone(context))
                     val file = outgoingService.getFileDownload(
-                        it.attribute<Phone>("phone")!!,
-                        UUID.fromString(it.pathParam("id")))
-                    it.header("Content-Type", Files.probeContentType(file.toPath()))
-                    it.header("X-File-Name", file.name)
-                    it.result(file.inputStream())
+                        context.attribute<Phone>("phone")!!,
+                        UUID.fromString(context.pathParam("id")))
+                    context.header("Content-Type", Files.probeContentType(file.toPath()))
+                    context.header("X-File-Name", file.name)
+                    context.result(file.inputStream())
                 }
             }
-            .ws("ws") {
-                it.onConnect(outgoingService::openSession)
-                it.onMessage(outgoingService::receiveDownloadStatus)
-                it.onError { session, throwable ->
+            .ws("ws") { wsHandler ->
+                wsHandler.onConnect(outgoingService::openSession)
+                wsHandler.onMessage(outgoingService::receiveDownloadStatus)
+                wsHandler.onError { session, throwable ->
                     logger.warn("Error on phone session", throwable)
                     outgoingService.closeSession(session)
                 }
-                it.onClose { session, statusCode, reason ->
+                wsHandler.onClose { session, statusCode, reason ->
                     logger.info("Closing session: statusCode = $statusCode, reason: $reason")
                     outgoingService.closeSession(session)
                 }

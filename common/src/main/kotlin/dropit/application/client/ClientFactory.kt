@@ -23,6 +23,7 @@ class ClientFactory @Inject constructor(private val objectMapper: ObjectMapper) 
     }.socketFactory
     private val okHttpLogger = HttpLoggingInterceptor()
         .apply { level = HEADERS }
+    @Suppress("MagicNumber")
     private val okHttpClient = OkHttpClient.Builder()
         .sslSocketFactory(sslSocketFactory, trustManager)
         .addInterceptor(okHttpLogger)

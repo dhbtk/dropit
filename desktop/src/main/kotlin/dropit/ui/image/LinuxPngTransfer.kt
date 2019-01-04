@@ -50,7 +50,6 @@ class LinuxPngTransfer private constructor() : ByteArrayTransfer() {
             } catch (e: IOException) {
                 throw UncheckedIOException(e)
             }
-
         }
     }
 
@@ -64,7 +63,6 @@ class LinuxPngTransfer private constructor() : ByteArrayTransfer() {
             } catch (e: IOException) {
                 throw UncheckedIOException(e)
             }
-
         }
 
         return null
@@ -77,5 +75,4 @@ class LinuxPngTransfer private constructor() : ByteArrayTransfer() {
 
         val instance = LinuxPngTransfer()
     }
-
 }

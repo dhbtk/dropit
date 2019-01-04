@@ -2,16 +2,16 @@ package dropit.infrastructure.i18n
 
 import java.io.InputStream
 import java.text.MessageFormat
-import java.util.*
-import kotlin.collections.HashMap
+import java.util.Locale
+import java.util.Properties
 
 class MessageSource(baseNames: Array<String>, locale: Locale, defaultLocale: Locale) {
     private val keys = baseNames
         .map { inputStreamFor(it, locale, defaultLocale) }
         .map { Properties().apply { load(it) }.entries }
-        .let {
+        .let { allProperties ->
             val map = HashMap<String, String>()
-            it.forEach { set ->
+            allProperties.forEach { set ->
                 set.forEach { entry ->
                     if (entry.key is String && entry.value is String) {
                         map[entry.key as String] = entry.value as String
@@ -50,4 +50,5 @@ private val messageSource = MessageSource(
     Locale.ENGLISH
 )
 
+@Suppress("SpreadOperator")
 fun t(str: String, vararg args: Any) = messageSource.get(str, *args)

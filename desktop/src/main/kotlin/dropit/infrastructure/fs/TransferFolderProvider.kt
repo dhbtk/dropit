@@ -7,7 +7,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.text.MessageFormat
 import java.time.ZoneOffset
-import java.util.*
+import java.util.Date
 
 class TransferFolderProvider(val appSettings: AppSettings) {
 
@@ -20,7 +20,11 @@ class TransferFolderProvider(val appSettings: AppSettings) {
             )
             val transferPath = Paths.get(appSettings.settings.rootTransferFolder, folderName)
             val file = transferPath.toFile()
-            (file.exists() && file.isDirectory) || file.mkdirs() || throw RuntimeException(t("transferFolderProvider.getForTransfer.folderCreationFailed"))
+            if (!(file.exists() && file.isDirectory)) {
+                if (!file.mkdirs()) {
+                    throw IllegalStateException(t("transferFolderProvider.getForTransfer.folderCreationFailed"))
+                }
+            }
             transferPath
         } else {
             Paths.get(appSettings.settings.rootTransferFolder)

@@ -14,7 +14,9 @@ import ch.qos.logback.core.spi.ContextAwareBase
 import dropit.APP_NAME
 import dropit.infrastructure.fs.ConfigFolderProvider
 
+@Suppress("ComplexMethod")
 class LogbackConfigurator : ContextAwareBase(), Configurator {
+    val consolePattern = "%d{yyyy-MM-dd HH:mm:ss} [%20.20thread] %highlight(%-5level) %cyan(%-30.30logger{29}) - %msg%n"
     override fun configure(loggerContext: LoggerContext) {
         val useConsole = System.getProperty("dropit.debug") == "true"
         val appender = if (useConsole) {
@@ -49,7 +51,10 @@ class LogbackConfigurator : ContextAwareBase(), Configurator {
                             .apply { start() }
                     }
             }
-            .apply { this.outputStream = ConfigFolderProvider().configFolder.resolve("$APP_NAME.log").toFile().outputStream() }
+            .apply {
+                this.outputStream = ConfigFolderProvider().configFolder
+                    .resolve("$APP_NAME.log").toFile().outputStream()
+            }
             .apply { start() }
     }
 
@@ -62,7 +67,7 @@ class LogbackConfigurator : ContextAwareBase(), Configurator {
                     .apply { this.context = context }
                     .apply {
                         this.layout = PatternLayout()
-                            .apply { this.pattern = "%d{yyyy-MM-dd HH:mm:ss} [%20.20thread] %highlight(%-5level) %cyan(%-30.30logger{29}) - %msg%n" }
+                            .apply { this.pattern = consolePattern }
                             .apply { this.context = context }
                             .apply { start() }
                     }

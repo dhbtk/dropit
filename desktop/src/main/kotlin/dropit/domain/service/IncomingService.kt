@@ -1,7 +1,6 @@
 package dropit.domain.service
 
 import dropit.application.dto.FileStatus
-import dropit.application.dto.TokenStatus
 import dropit.application.dto.TransferRequest
 import dropit.application.dto.TransferStatus
 import dropit.application.settings.AppSettings
@@ -10,7 +9,6 @@ import dropit.infrastructure.event.AppEvent
 import dropit.infrastructure.event.EventBus
 import dropit.infrastructure.fs.TransferFolderProvider
 import dropit.jooq.tables.ClipboardLog
-import dropit.jooq.tables.Phone.PHONE
 import dropit.jooq.tables.Transfer.TRANSFER
 import dropit.jooq.tables.TransferFile.TRANSFER_FILE
 import org.apache.commons.fileupload.ProgressListener
@@ -19,13 +17,15 @@ import org.apache.commons.io.IOUtils
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.io.IOException
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
-import java.util.*
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import javax.servlet.http.HttpServletRequest
-import kotlin.collections.HashMap
+
+const val UPLOAD_PROGRESS_INTERVAL = 500 * 1000 * 1000
 
 @Singleton
 class IncomingService @Inject constructor(
@@ -33,7 +33,8 @@ class IncomingService @Inject constructor(
     val settings: AppSettings,
     val bus: EventBus,
     val appSettings: AppSettings,
-    val transferFolderProvider: TransferFolderProvider) {
+    val transferFolderProvider: TransferFolderProvider
+) {
 
     val logger = LoggerFactory.getLogger(this::class.java)
     val transferTimes = HashMap<TransferFile, List<Pair<LocalDateTime, Long>>>()
@@ -59,7 +60,9 @@ class IncomingService @Inject constructor(
 
     data class NewTransferEvent(override val payload: Transfer) : AppEvent<Transfer>
     data class FileTransferBeginEvent(override val payload: TransferFile) : AppEvent<TransferFile>
-    data class FileTransferReceiveEvent(override val payload: Pair<TransferFile, Long>) : AppEvent<Pair<TransferFile, Long>>
+    data class FileTransferReceiveEvent(override val payload: Pair<TransferFile, Long>)
+        : AppEvent<Pair<TransferFile, Long>>
+
     data class FileTransferFinishEvent(override val payload: CompletedFileTransfer) : AppEvent<CompletedFileTransfer>
     data class TransferCompleteEvent(override val payload: CompletedTransfer) : AppEvent<CompletedTransfer>
     data class ClipboardReceiveEvent(override val payload: String) : AppEvent<String>
@@ -80,19 +83,23 @@ class IncomingService @Inject constructor(
                     phoneId = phone.id,
                     status = TransferStatus.PENDING
                 ))).execute()
-            count == 0 && throw RuntimeException("Could not save transfer")
-            request.files.forEach {
+            count == 0 && throw IllegalStateException("Could not save transfer")
+            request.files.forEach { fileRequest ->
                 val record = jooq.newRecord(TRANSFER_FILE, TransferFile(
-                    id = UUID.fromString(it.id),
+                    id = UUID.fromString(fileRequest.id),
                     transferId = transferId,
-                    fileName = it.fileName,
-                    mimeType = it.mimeType,
-                    fileSize = it.fileSize,
+                    fileName = fileRequest.fileName,
+                    mimeType = fileRequest.mimeType,
+                    fileSize = fileRequest.fileSize,
                     status = FileStatus.PENDING
                 ))
-                jooq.insertInto(TRANSFER_FILE).set(record).execute() == 0 && throw RuntimeException("Could not save transfer file")
+                if (jooq.insertInto(TRANSFER_FILE).set(record).execute() == 0) {
+                    throw IllegalStateException("Could not save transfer file")
+                }
             }
-            val transfer = jooq.fetchOne(TRANSFER, TRANSFER.ID.eq(transferId.toString())).into(Transfer::class.java).copy(phone = phone)
+            val transfer = jooq.fetchOne(
+                TRANSFER, TRANSFER.ID.eq(transferId.toString())
+            ).into(Transfer::class.java).copy(phone = phone)
             bus.broadcast(NewTransferEvent(transfer))
             transferId.toString()
         }
@@ -103,47 +110,31 @@ class IncomingService @Inject constructor(
      *
      * uploads a file, notifying the UI of progress.
      */
-    fun receiveFile(phone: Phone, fileId: String, request: HttpServletRequest) {
-        val transferFile = jooq.select().from(TRANSFER_FILE)
-            .join(TRANSFER).on(TRANSFER_FILE.TRANSFER_ID.eq(TRANSFER.ID))
-            .join(PHONE).on(TRANSFER.PHONE_ID.eq(PHONE.ID))
-            .where(PHONE.ID.eq(phone.id.toString()))
-            .and(PHONE.STATUS.eq(TokenStatus.AUTHORIZED.name))
-            .and(TRANSFER.STATUS.eq(TransferStatus.PENDING.name))
-            .and(TRANSFER_FILE.STATUS.ne(FileStatus.FINISHED.name))
-            .and(TRANSFER_FILE.ID.eq(fileId))
-            .fetchOneInto(TRANSFER_FILE).into(TransferFile::class.java)
+    fun receiveFile(fileId: String, request: HttpServletRequest) {
+        val transferFile = jooq.fetchOne(TRANSFER_FILE, TRANSFER_FILE.ID.eq(fileId)).into(TransferFile::class.java)
+            .let { file ->
+                file.copy(transfer =
+                jooq.fetchOne(TRANSFER, TRANSFER.ID.eq(file.transferId?.toString())).into(Transfer::class.java))
+            }
         val record = jooq.newRecord(TRANSFER_FILE)
-        val transfer = jooq.fetchOne(TRANSFER, TRANSFER.ID.eq(transferFile.transferId.toString())).into(Transfer::class.java)
+        val transfer = transferFile.transfer!!
         val transferFolder = transferFolderProvider.getForTransfer(transfer).toFile()
         val tempFile = transferFolder.toPath().resolve(transferFile.fileName + ".part").toFile()
         !tempFile.exists() || (tempFile.delete() && tempFile.createNewFile())
-        val displayTransferFile = transferFile.copy(transfer = transfer)
-        bus.broadcast(FileTransferBeginEvent(displayTransferFile))
+        bus.broadcast(FileTransferBeginEvent(transferFile))
         val transferList = mutableListOf(Pair(LocalDateTime.now(), 0L))
-        transferTimes[displayTransferFile] = transferList
+        transferTimes[transferFile] = transferList
         try {
             val upload = ServletFileUpload()
             var lastNanoTime = System.nanoTime()
             upload.progressListener = ProgressListener { pBytesRead, pContentLength, pItems ->
-                if (System.nanoTime() - lastNanoTime >= (500 * 1000 * 1000) || pBytesRead == pContentLength) {
-                    bus.broadcast(FileTransferReceiveEvent(Pair(displayTransferFile, pBytesRead)))
+                if (System.nanoTime() - lastNanoTime >= (UPLOAD_PROGRESS_INTERVAL) || pBytesRead == pContentLength) {
+                    bus.broadcast(FileTransferReceiveEvent(Pair(transferFile, pBytesRead)))
                     transferList += Pair(LocalDateTime.now(), pBytesRead)
                     lastNanoTime = System.nanoTime()
                 }
             }
-            tempFile.outputStream().use { outputStream ->
-                val iterator = upload.getItemIterator(request)
-                var foundBody = false
-                while (iterator.hasNext()) {
-                    val item = iterator.next()
-                    if (item.fieldName == "file") {
-                        IOUtils.copy(item.openStream(), outputStream)
-                        foundBody = true
-                    }
-                }
-                !foundBody && throw IllegalArgumentException("No file upload")
-            }
+            saveFileUpload(tempFile, upload, request)
 
             val actualFile = transferFolder.toPath().resolve(transferFile.fileName).toFile()
             actualFile.exists() && actualFile.delete()
@@ -155,29 +146,49 @@ class IncomingService @Inject constructor(
                 transferFolder,
                 actualFile
             )))
-            transferTimes.remove(displayTransferFile)
+            transferTimes.remove(transferFile)
 
-            val (count) = jooq.selectCount().from(TRANSFER_FILE).where(TRANSFER_FILE.TRANSFER_ID.eq(transferFile.transferId.toString()))
-                .and(TRANSFER_FILE.STATUS.ne(FileStatus.FINISHED.name)).fetchOne()
-            if (count == 0) {
-                val transferRecord = jooq.newRecord(TRANSFER)
-                transferRecord.from(transfer.copy(status = TransferStatus.FINISHED))
-                transferRecord.update()
-                val files = jooq.selectFrom(TRANSFER_FILE).where(TRANSFER_FILE.TRANSFER_ID.eq(transfer.id.toString()))
-                    .fetchInto(TransferFile::class.java)
-                val locations = files.map {
-                    it.id!! to transferFolder.resolve(it.fileName!!)
-                }.toMap()
-                bus.broadcast(TransferCompleteEvent(CompletedTransfer(
-                    transferRecord.into(Transfer::class.java).copy(files = files),
-                    transferFolder,
-                    locations
-                )))
-            }
-        } catch (exception: Exception) {
+            notifyTransferFinished(transferFile, transfer, transferFolder)
+        } catch (exception: IOException) {
             logger.error("Failure receiving file: ${exception.message}", exception)
             record.from(transferFile.copy(status = FileStatus.PENDING))
             record.update()
+        }
+    }
+
+    private fun notifyTransferFinished(transferFile: TransferFile, transfer: Transfer, transferFolder: File) {
+        val (count) = jooq.selectCount().from(TRANSFER_FILE)
+            .where(TRANSFER_FILE.TRANSFER_ID.eq(transferFile.transferId.toString()))
+            .and(TRANSFER_FILE.STATUS.ne(FileStatus.FINISHED.name)).fetchOne()
+        if (count == 0) {
+            val transferRecord = jooq.newRecord(TRANSFER)
+            transferRecord.from(transfer.copy(status = TransferStatus.FINISHED))
+            transferRecord.update()
+            val files = jooq.selectFrom(TRANSFER_FILE).where(TRANSFER_FILE.TRANSFER_ID.eq(transfer.id.toString()))
+                .fetchInto(TransferFile::class.java)
+            val locations = files.map {
+                it.id!! to transferFolder.resolve(it.fileName!!)
+            }.toMap()
+            bus.broadcast(TransferCompleteEvent(CompletedTransfer(
+                transferRecord.into(Transfer::class.java).copy(files = files),
+                transferFolder,
+                locations
+            )))
+        }
+    }
+
+    private fun saveFileUpload(tempFile: File, upload: ServletFileUpload, request: HttpServletRequest) {
+        tempFile.outputStream().use { outputStream ->
+            val iterator = upload.getItemIterator(request)
+            var foundBody = false
+            while (iterator.hasNext()) {
+                val item = iterator.next()
+                if (item.fieldName == "file") {
+                    IOUtils.copy(item.openStream(), outputStream)
+                    foundBody = true
+                }
+            }
+            !foundBody && throw IllegalArgumentException("No file upload")
         }
     }
 
@@ -203,15 +214,20 @@ class IncomingService @Inject constructor(
      * Returns in B/s
      */
     fun calculateTransferRate(points: List<Pair<LocalDateTime, Long>>): Long {
-        val interval = 5 // 5 seconds to calc
         return try {
             val currentData = points.last()
-            val filteredData = points.filter { ChronoUnit.SECONDS.between(it.first, currentData.first) < interval }
+            val filteredData = points.filter {
+                ChronoUnit.SECONDS.between(it.first, currentData.first) < TRANSFER_CALC_INTERVAL
+            }
             val secondsDiff = ChronoUnit.SECONDS.between(filteredData.first().first, currentData.first)
             val dataDiff = currentData.second - filteredData.first().second
             (dataDiff.toDouble() / secondsDiff).toLong()
-        } catch (e: Exception) {
+        } catch (e: NoSuchElementException) {
             0L
         }
+    }
+
+    companion object {
+        const val TRANSFER_CALC_INTERVAL = 5
     }
 }

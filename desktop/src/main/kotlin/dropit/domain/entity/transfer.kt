@@ -3,7 +3,7 @@ package dropit.domain.entity
 import dropit.application.dto.FileStatus
 import dropit.application.dto.TransferStatus
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 data class Transfer(
     override val id: UUID? = null,
@@ -18,15 +18,15 @@ data class Transfer(
 ) : IEntity
 
 data class TransferFile(
-        override val id: UUID? = null,
-        override val createdAt: LocalDateTime? = null,
-        override val updatedAt: LocalDateTime? = null,
-        val transferId: UUID? = null,
-        val fileName: String? = null,
-        val mimeType: String? = null,
-        val fileSize: Long? = null,
-        val status: FileStatus? = null,
-        val transfer: Transfer? = null
+    override val id: UUID? = null,
+    override val createdAt: LocalDateTime? = null,
+    override val updatedAt: LocalDateTime? = null,
+    val transferId: UUID? = null,
+    val fileName: String? = null,
+    val mimeType: String? = null,
+    val fileSize: Long? = null,
+    val status: FileStatus? = null,
+    val transfer: Transfer? = null
 ) : IEntity
 
 data class SentFile(

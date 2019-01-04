@@ -6,7 +6,8 @@ import dropit.domain.service.IncomingService
 import dropit.infrastructure.event.EventBus
 import org.jooq.DSLContext
 import java.nio.file.Files
-import java.util.*
+import java.util.ArrayList
+import java.util.UUID
 import javax.inject.Singleton
 import kotlin.math.roundToInt
 
@@ -40,8 +41,7 @@ class TransferStatusService(
                 0L,
                 TransferSource.PHONE
             ).apply { currentTransfers.add(this) }
-            displayTransfer.progress = (100 * (times.lastOrNull()?.second?.toDouble() ?: 0.0
-            / displayTransfer.size)).roundToInt()
+            displayTransfer.progress = percent(times.lastOrNull()?.second, displayTransfer.size)
             displayTransfer.speedBytes = incomingService.calculateTransferRate(times)
         }
         outgoingService.fileDownloadStatus.forEach { upload, times ->
@@ -54,12 +54,18 @@ class TransferStatusService(
                 0L,
                 TransferSource.COMPUTER
             ).apply { currentTransfers.add(this) }
-            displayTransfer.progress = (100 * (times.lastOrNull()?.second?.toDouble() ?: 0.0
-            / displayTransfer.size)).roundToInt()
+            displayTransfer.progress = percent(times.lastOrNull()?.second, displayTransfer.size)
             displayTransfer.speedBytes = incomingService.calculateTransferRate(times)
         }
-        val currentIds = incomingService.transferTimes.keys.map { it.id!! } union outgoingService.fileDownloadStatus.keys.map { it.id }
+        val currentIds = incomingService.transferTimes.keys.map {
+            it.id!!
+        } union outgoingService.fileDownloadStatus.keys.map { it.id }
         currentTransfers.removeIf { it.id !in currentIds }
+    }
+
+    @Suppress("MagicNumber")
+    private fun percent(first: Long?, second: Long): Int {
+        return (100 * ((first?.toDouble() ?: 0.0) / second)).roundToInt()
     }
 }
 

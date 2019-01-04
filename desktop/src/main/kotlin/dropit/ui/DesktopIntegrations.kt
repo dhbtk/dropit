@@ -1,6 +1,8 @@
 package dropit.ui
 
-import dropit.ui.DesktopIntegrations.OperatingSystem.*
+import dropit.ui.DesktopIntegrations.OperatingSystem.LINUX
+import dropit.ui.DesktopIntegrations.OperatingSystem.MACOSX
+import dropit.ui.DesktopIntegrations.OperatingSystem.WINDOWS
 import dropit.ui.image.LinuxPngTransfer
 import org.eclipse.swt.dnd.ByteArrayTransfer
 import org.eclipse.swt.dnd.ImageTransfer
