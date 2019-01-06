@@ -59,11 +59,11 @@ class IncomingService @Inject constructor(
     )
 
     data class NewTransferEvent(override val payload: Transfer) : AppEvent<Transfer>
-    data class FileTransferBeginEvent(override val payload: TransferFile) : AppEvent<TransferFile>
-    data class FileTransferReceiveEvent(override val payload: Pair<TransferFile, Long>)
+    data class DownloadStartedEvent(override val payload: TransferFile) : AppEvent<TransferFile>
+    data class DownloadProgressEvent(override val payload: Pair<TransferFile, Long>)
         : AppEvent<Pair<TransferFile, Long>>
 
-    data class FileTransferFinishEvent(override val payload: CompletedFileTransfer) : AppEvent<CompletedFileTransfer>
+    data class DownloadFinishEvent(override val payload: CompletedFileTransfer) : AppEvent<CompletedFileTransfer>
     data class TransferCompleteEvent(override val payload: CompletedTransfer) : AppEvent<CompletedTransfer>
     data class ClipboardReceiveEvent(override val payload: String) : AppEvent<String>
 
@@ -121,7 +121,7 @@ class IncomingService @Inject constructor(
         val transferFolder = transferFolderProvider.getForTransfer(transfer).toFile()
         val tempFile = transferFolder.toPath().resolve(transferFile.fileName + ".part").toFile()
         !tempFile.exists() || (tempFile.delete() && tempFile.createNewFile())
-        bus.broadcast(FileTransferBeginEvent(transferFile))
+        bus.broadcast(DownloadStartedEvent(transferFile))
         val transferList = mutableListOf(Pair(LocalDateTime.now(), 0L))
         transferTimes[transferFile] = transferList
         try {
@@ -129,7 +129,7 @@ class IncomingService @Inject constructor(
             var lastNanoTime = System.nanoTime()
             upload.progressListener = ProgressListener { pBytesRead, pContentLength, pItems ->
                 if (System.nanoTime() - lastNanoTime >= (UPLOAD_PROGRESS_INTERVAL) || pBytesRead == pContentLength) {
-                    bus.broadcast(FileTransferReceiveEvent(Pair(transferFile, pBytesRead)))
+                    bus.broadcast(DownloadProgressEvent(Pair(transferFile, pBytesRead)))
                     transferList += Pair(LocalDateTime.now(), pBytesRead)
                     lastNanoTime = System.nanoTime()
                 }
@@ -141,13 +141,13 @@ class IncomingService @Inject constructor(
             tempFile.renameTo(actualFile)
             record.from(transferFile.copy(status = FileStatus.FINISHED))
             record.update()
-            bus.broadcast(FileTransferFinishEvent(CompletedFileTransfer(
+            transferTimes.remove(transferFile)
+
+            bus.broadcast(DownloadFinishEvent(CompletedFileTransfer(
                 record.into(TransferFile::class.java).copy(transfer = transfer),
                 transferFolder,
                 actualFile
             )))
-            transferTimes.remove(transferFile)
-
             notifyTransferFinished(transferFile, transfer, transferFolder)
         } catch (exception: IOException) {
             logger.error("Failure receiving file: ${exception.message}", exception)

@@ -20,7 +20,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import dropit.application.client.Client
 import dropit.application.client.ClientFactory
 import dropit.application.dto.DownloadStatus
-import dropit.application.dto.SentFileId
+import dropit.application.dto.SentFileInfo
 import dropit.mobile.R
 import dropit.mobile.infrastructure.db.SQLiteHelper
 import dropit.mobile.infrastructure.preferences.PreferencesHelper
@@ -31,7 +31,7 @@ import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import okio.ByteString
 import java.io.File
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -85,8 +85,8 @@ class ServerConnectionService : JobIntentService() {
 
             override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
                 try {
-                    val (id) = objectMapper.readValue<SentFileId>(bytes.toByteArray())
-                    fileDownloader.queue.put(id)
+                    val data = objectMapper.readValue<SentFileInfo>(bytes.toByteArray())
+                    fileDownloader.queue.put(data)
                 } catch (e: Exception) {
 
                 }
@@ -105,7 +105,7 @@ class ServerConnectionService : JobIntentService() {
         enqueueWork(this, Intent())
     }
 
-    class FileDownloader(val context: Context, val queue: BlockingQueue<UUID>, val client: Client) {
+    class FileDownloader(val context: Context, val queue: BlockingQueue<SentFileInfo>, val client: Client) {
         var running = true
         var downloadNotificationId = 1000
         val notificationManager = NotificationManagerCompat.from(context)
@@ -114,6 +114,7 @@ class ServerConnectionService : JobIntentService() {
             while (running) {
                 val nextFileId = queue.poll(500, TimeUnit.MILLISECONDS)
                 if (nextFileId != null) {
+                    val (fileId, totalSize) = nextFileId
                     downloadNotificationId += 1
                     try {
                         val progressBuilder = downloadProgressBuilder()
@@ -121,8 +122,8 @@ class ServerConnectionService : JobIntentService() {
 
                         var currentPercentage = 0
                         var nanoTime = 0L
-                        val response = client.downloadFile(nextFileId) { read: Long, total: Long ->
-                            val newPercentage = ((read.toDouble() / total) * 100).roundToInt()
+                        val response = client.downloadFile(fileId) { read: Long, _: Long ->
+                            val newPercentage = ((read.toDouble() / totalSize) * 100).roundToInt()
                             if (newPercentage > currentPercentage) {
                                 currentPercentage = newPercentage
                                 progressBuilder
@@ -131,7 +132,7 @@ class ServerConnectionService : JobIntentService() {
                                 notificationManager.notify(downloadNotificationId, progressBuilder.build())
 
                             }
-                            nanoTime = notifyBytes(nextFileId, read, total, nanoTime)
+                            nanoTime = notifyBytes(fileId, read, totalSize, nanoTime)
                         }.blockingFirst()
 
                         val fileName = response.header("X-File-Name")!!
@@ -149,6 +150,7 @@ class ServerConnectionService : JobIntentService() {
                         }
                         downloadDoneNotification(file, response)
                             .apply { notificationManager.notify(downloadNotificationId, this) }
+                        notifyBytes(fileId, totalSize, totalSize, 0L)
                     } catch (e: Exception) {
                         e.printStackTrace()
                         NotificationCompat.Builder(context)
@@ -174,7 +176,7 @@ class ServerConnectionService : JobIntentService() {
 
         private fun notifyBytes(id: UUID, bytes: Long, total: Long, nanoTime: Long): Long {
             val currentTime = System.nanoTime()
-            if (currentTime - nanoTime >= (200 * 1000 * 1000) || bytes == total) {
+            if (currentTime - nanoTime >= (750 * 1000 * 1000) || bytes == total) {
                 webSocket.send(ByteString.of(*jacksonObjectMapper().writeValueAsBytes(DownloadStatus(id, bytes))))
                 return currentTime
             }

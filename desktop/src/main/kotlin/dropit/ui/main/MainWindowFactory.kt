@@ -7,8 +7,10 @@ import dropit.domain.service.IncomingService
 import dropit.domain.service.PhoneService
 import dropit.infrastructure.event.EventBus
 import dropit.infrastructure.i18n.t
+import dropit.infrastructure.ui.MenuBuilder
 import dropit.ui.DesktopIntegrations
 import dropit.ui.service.ClipboardService
+import dropit.ui.service.TransferStatusService
 import org.eclipse.swt.SWT
 import org.eclipse.swt.dnd.DND
 import org.eclipse.swt.dnd.DropTarget
@@ -19,7 +21,6 @@ import org.eclipse.swt.graphics.Image
 import org.eclipse.swt.graphics.Point
 import org.eclipse.swt.layout.GridData
 import org.eclipse.swt.layout.GridLayout
-import org.eclipse.swt.layout.RowLayout
 import org.eclipse.swt.widgets.Button
 import org.eclipse.swt.widgets.Composite
 import org.eclipse.swt.widgets.Display
@@ -41,6 +42,7 @@ class MainWindowFactory @Inject constructor(
     private val appSettings: AppSettings,
     private val desktopIntegrations: DesktopIntegrations,
     private val clipboardService: ClipboardService,
+    private val transferStatusService: TransferStatusService,
     private val display: Display
 ) {
     var mainWindow: MainWindow? = null
@@ -70,6 +72,7 @@ class MainWindowFactory @Inject constructor(
             appSettings,
             desktopIntegrations,
             clipboardService,
+            transferStatusService,
             display
         )
     }
@@ -85,9 +88,11 @@ class MainWindow(
     private val appSettings: AppSettings,
     private val desktopIntegrations: DesktopIntegrations,
     private val clipboardService: ClipboardService,
+    private val transferStatusService: TransferStatusService,
     private val display: Display
 ) {
-    val window: Shell = Shell(display, SWT.SHELL_TRIM)
+    val window: Shell = Shell(display, SWT.SHELL_TRIM or SWT.ON_TOP)
+    val transferTable = TransferTable(eventBus, transferStatusService, display)
     val logger = LoggerFactory.getLogger(javaClass)
 
     init {
@@ -97,14 +102,43 @@ class MainWindow(
         window.minimumSize = Point(440, 600)
         window.layout = GridLayout(1, false)
             .apply {
-                this.marginHeight = 16
-                this.marginWidth = 16
+                this.marginHeight = 8
+                this.marginWidth = 8
             }
+        window.addListener(SWT.Close) {
+            transferTable.dispose()
+        }
 
+        buildWindowMenu()
         buildDropZone(window)
-        buildBottomButtons(window)
+        buildCurrentTransfers(window)
 
         window.open()
+    }
+
+    private fun buildWindowMenu() {
+        MenuBuilder()
+            .menu(
+                t("mainWindow.menus.application"),
+                t("mainWindow.menus.application.sendClipboard") to {
+                    clipboardService.sendClipboardToPhone(window)
+                },
+                t("mainWindow.menus.application.settings") to null,
+                null to null,
+                t("mainWindow.menus.application.exit") to null
+            )
+            .menu(
+                t("mainWindow.menus.view"),
+                t("mainWindow.menus.view.transferLog") to null,
+                t("mainWindow.menus.view.clipboardLog") to null
+            )
+            .menu(
+                t("mainWindow.menus.help"),
+                t("mainWindow.menus.help.onlineManual") to null,
+                t("mainWindow.menus.help.googlePlayLink") to null,
+                t("mainWindow.menus.help.about") to null
+            )
+            .build(window)
     }
 
     private fun buildDropZone(parent: Composite) {
@@ -114,12 +148,12 @@ class MainWindow(
             .apply {
                 minimumHeight = 128
             }
-        val layout = GridLayout(1, false)
+        GridLayout(1, false)
             .apply {
                 marginTop = 32
                 marginBottom = 32
+                group.layout = this
             }
-        group.layout = layout
 
         Label(group, SWT.CENTER)
             .apply {
@@ -162,6 +196,21 @@ class MainWindow(
         target.setTransfer(transferType)
 
         target.addDropListener(dropTargetListener(transferType))
+    }
+
+    private fun buildCurrentTransfers(parent: Composite) {
+        val group = Group(parent, SWT.SHADOW_ETCHED_OUT)
+        group.text = t("mainWindow.currentTransfers.title")
+        group.layoutData = GridData(GridData.FILL_HORIZONTAL)
+            .apply {
+                minimumHeight = 128
+            }
+        GridLayout(1, false)
+            .apply {
+                group.layout = this
+            }
+
+        transferTable.init(group)
     }
 
     @Suppress("ComplexMethod")
@@ -219,29 +268,5 @@ class MainWindow(
                 }
             }
         }
-    }
-
-    private fun buildBottomButtons(parent: Composite) {
-        val group = Group(parent, SWT.SHADOW_ETCHED_OUT)
-        val layout = RowLayout(SWT.HORIZONTAL)
-            .apply {
-                justify = true
-            }
-        group.layout = layout
-        group.layoutData = GridData(GridData.FILL_HORIZONTAL)
-
-        val transferLogButton = Button(group, SWT.PUSH)
-        transferLogButton.text = t("mainWindow.buttons.showTransferLog")
-        transferLogButton.pack()
-
-        val clipboardLogButton = Button(group, SWT.PUSH)
-        clipboardLogButton.text = t("mainWindow.buttons.showClipboardLog")
-        clipboardLogButton.pack()
-
-        val settingsButton = Button(group, SWT.PUSH)
-        settingsButton.text = t("mainWindow.buttons.settings")
-        settingsButton.pack()
-
-        group.pack()
     }
 }

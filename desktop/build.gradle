@@ -30,6 +30,12 @@ launch4j {
     jar = "lib/${project.tasks.shadowJar.archiveName}"
 }
 
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
+
 dependencies {
     compile project(':common')
     compile group: 'org.xerial', name: 'sqlite-jdbc', version: sqlite_version

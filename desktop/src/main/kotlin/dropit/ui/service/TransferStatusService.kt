@@ -3,16 +3,19 @@ package dropit.ui.service
 import dropit.application.OutgoingService
 import dropit.domain.entity.TransferSource
 import dropit.domain.service.IncomingService
+import dropit.infrastructure.event.AppEvent
 import dropit.infrastructure.event.EventBus
 import org.jooq.DSLContext
 import java.nio.file.Files
 import java.util.ArrayList
+import java.util.Locale
 import java.util.UUID
+import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
 
 @Singleton
-class TransferStatusService(
+class TransferStatusService @Inject constructor(
     private val bus: EventBus,
     private val incomingService: IncomingService,
     private val outgoingService: OutgoingService,
@@ -26,9 +29,62 @@ class TransferStatusService(
         var progress: Int,
         var speedBytes: Long,
         val source: TransferSource
-    )
+    ) {
+        fun humanSize() = bytesToHuman(size)
+
+        fun humanSpeed() = bytesToHuman(speedBytes) + "/s"
+
+        @Suppress("MagicNumber")
+        fun humanEta(): String {
+            if (speedBytes == 0L) {
+                return "-"
+            }
+            val totalSeconds = ((size * (progress.toDouble() / 100)) / speedBytes).roundToInt()
+            val hours = totalSeconds / 3600
+            val minutes = (totalSeconds - hours * 3600) / 60
+            val seconds = totalSeconds - hours * 3600 - minutes * 60
+            return if (hours > 0) {
+                String.format("%02d:%02d:%02d", hours, minutes, seconds)
+            } else {
+                String.format("%02d:%02d", minutes, seconds)
+            }
+        }
+
+        @Suppress("MagicNumber")
+        private fun bytesToHuman(bytes: Long): String {
+            return when {
+                bytes > (1024 * 1024 * 1024) -> bytes.let { it.toDouble() / (1024 * 1024 * 1024) }.let {
+                    "${String.format(Locale.getDefault(), "%.1f", it)} GB"
+                }
+                bytes > (1024 * 1024) -> bytes.let { it.toDouble() / (1024 * 1024) }.let {
+                    "${String.format(Locale.getDefault(), "%.1f", it)} MB"
+                }
+                bytes > 1024 -> "${bytes / 1024} kB"
+                else -> "$bytes B"
+            }
+        }
+    }
+
+    data class TransferUpdatedEvent(override val payload: Unit) : AppEvent<Unit>
 
     val currentTransfers = ArrayList<CurrentTransfer>()
+
+    init {
+        arrayOf(
+            IncomingService.DownloadStartedEvent::class,
+            IncomingService.DownloadProgressEvent::class,
+            IncomingService.DownloadFinishEvent::class,
+            IncomingService.TransferCompleteEvent::class,
+            OutgoingService.UploadStartedEvent::class,
+            OutgoingService.UploadProgressEvent::class,
+            OutgoingService.UploadFinishedEvent::class
+        ).forEach { eventClass ->
+            bus.subscribe(eventClass) {
+                updateCurrentTransfers()
+                bus.broadcast(TransferUpdatedEvent(Unit))
+            }
+        }
+    }
 
     private fun updateCurrentTransfers() {
         incomingService.transferTimes.forEach { transfer, times ->
@@ -68,4 +124,3 @@ class TransferStatusService(
         return (100 * ((first?.toDouble() ?: 0.0) / second)).roundToInt()
     }
 }
-

@@ -16,16 +16,6 @@ data class FileRequest(
     val fileSize: Long? = null
 ) : Serializable
 
-data class PendingTransfer(
-    val id: String? = null,
-    val items: List<String> = emptyList()
-) : Serializable
-
-data class TransferInfo(
-    val status: TransferStatus? = null,
-    val files: Map<String, FileStatus> = emptyMap()
-) : Serializable
-
 enum class TransferStatus {
     PENDING, FINISHED
 }
@@ -34,6 +24,6 @@ enum class FileStatus {
     PENDING, FAILED, FINISHED
 }
 
-data class SentFileId(val id: UUID = UUID.randomUUID())
+data class SentFileInfo(val id: UUID = UUID.randomUUID(), val size: Long = 0L)
 
 data class DownloadStatus(val id: UUID = UUID.randomUUID(), val bytes: Long = 0L)

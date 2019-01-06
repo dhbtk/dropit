@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import dropit.application.dto.DownloadStatus
-import dropit.application.dto.SentFileId
+import dropit.application.dto.SentFileInfo
 import dropit.application.dto.TokenStatus
 import dropit.application.settings.AppSettings
 import dropit.domain.entity.ClipboardLog
@@ -36,7 +36,7 @@ class OutgoingService @Inject constructor(
     val objectMapper: ObjectMapper,
     val appSettings: AppSettings
 ) {
-    val fileDownloadStatus = HashMap<SentFile, MutableList<Pair<LocalDateTime, Long>>>()
+    val fileDownloadStatus = HashMap<FileUpload, MutableList<Pair<LocalDateTime, Long>>>()
 
     private val phoneSessions = HashMap<UUID, PhoneSession>()
 
@@ -45,18 +45,18 @@ class OutgoingService @Inject constructor(
     data class PhoneSession(
         var session: WsSession? = null,
         var clipboardData: String? = null,
-        val files: MutableList<SentFile> = mutableListOf()
+        val files: MutableList<FileUpload> = mutableListOf()
     )
 
-    data class SentFile(
+    data class FileUpload(
         val file: File,
         val size: Long,
         val id: UUID = UUID.randomUUID()
     )
 
-    data class DownloadStartedEvent(override val payload: SentFile) : AppEvent<SentFile>
-    data class DownloadProgressEvent(override val payload: SentFile) : AppEvent<SentFile>
-    data class DownloadFinishedEvent(override val payload: SentFile) : AppEvent<SentFile>
+    data class UploadStartedEvent(override val payload: FileUpload) : AppEvent<FileUpload>
+    data class UploadProgressEvent(override val payload: FileUpload) : AppEvent<FileUpload>
+    data class UploadFinishedEvent(override val payload: FileUpload) : AppEvent<FileUpload>
 
     /**
      *
@@ -104,7 +104,7 @@ class OutgoingService @Inject constructor(
             val sentFile = getPhoneSession(session).files.find { it.id == fileId } ?: return
             if (sentFile.size == downloaded) {
                 fileDownloadStatus.remove(sentFile)
-                bus.broadcast(DownloadFinishedEvent(sentFile))
+                bus.broadcast(UploadFinishedEvent(sentFile))
                 getPhoneSession(session).files.remove(sentFile)
                 val fileRecord = jooq.newRecord(SENT_FILE, dropit.domain.entity.SentFile(
                     sentFile.id,
@@ -118,7 +118,7 @@ class OutgoingService @Inject constructor(
                 jooq.insertInto(SENT_FILE).set(fileRecord).execute()
             } else {
                 fileDownloadStatus[sentFile]?.add(Pair(LocalDateTime.now(), downloaded))
-                bus.broadcast(DownloadProgressEvent(sentFile))
+                bus.broadcast(UploadProgressEvent(sentFile))
             }
         } catch (e: JsonMappingException) {
             // nop
@@ -141,14 +141,14 @@ class OutgoingService @Inject constructor(
     fun getFileDownload(phone: Phone, id: UUID): File {
         val file = phoneSessions[phone.id]!!.files.find { it.id == id }!!
         fileDownloadStatus[file] = ArrayList() // reset download data
-        bus.broadcast(DownloadStartedEvent(file))
+        bus.broadcast(UploadStartedEvent(file))
         return file.file
     }
 
     fun sendFile(phoneId: UUID, file: File) {
         getPhoneById(phoneId) ?: return
         val session = phoneSessions.computeIfAbsent(phoneId) { PhoneSession() }
-        val sentFile = SentFile(file, file.length())
+        val sentFile = FileUpload(file, file.length())
         session.files.add(sentFile)
         fileDownloadStatus[sentFile] = ArrayList()
         sendFileList(session)
@@ -176,7 +176,8 @@ class OutgoingService @Inject constructor(
         if (wsSession != null) {
             session.files.forEach { sentFile ->
                 if (fileDownloadStatus[sentFile]!!.isEmpty()) {
-                    wsSession.send(ByteBuffer.wrap(objectMapper.writeValueAsBytes(SentFileId(sentFile.id))))
+                    wsSession.send(ByteBuffer.wrap(objectMapper.writeValueAsBytes(
+                        SentFileInfo(sentFile.id, sentFile.file.length()))))
                 }
             }
         }

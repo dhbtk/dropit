@@ -10,6 +10,7 @@ import dropit.domain.service.PhoneService
 import dropit.infrastructure.event.EventBus
 import dropit.infrastructure.i18n.t
 import dropit.ui.main.MainWindowFactory
+import dropit.ui.service.TransferStatusService
 import org.eclipse.swt.SWT
 import org.eclipse.swt.dnd.Clipboard
 import org.eclipse.swt.dnd.FileTransfer
@@ -24,17 +25,16 @@ import org.eclipse.swt.widgets.ToolTip
 import org.eclipse.swt.widgets.TrayItem
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.util.Locale
 import java.util.concurrent.Executor
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.math.roundToInt
 
 @Singleton
 class GraphicalInterface @Inject constructor(
     private val eventBus: EventBus,
     private val phoneService: PhoneService,
     private val incomingService: IncomingService,
+    private val transferStatusService: TransferStatusService,
     private val outgoingService: OutgoingService,
     private val executor: Executor,
     private val appSettings: AppSettings,
@@ -99,9 +99,7 @@ class GraphicalInterface @Inject constructor(
             listOf(
                 PhoneService.NewPhoneRequestEvent::class,
                 PhoneService.PhoneChangedEvent::class,
-                IncomingService.FileTransferBeginEvent::class,
-                IncomingService.FileTransferReceiveEvent::class,
-                IncomingService.FileTransferFinishEvent::class
+                TransferStatusService.TransferUpdatedEvent::class
             ).forEach { event ->
                 eventBus.subscribe(event) {
                     display.asyncExec { refreshTrayIcon() }
@@ -162,41 +160,19 @@ class GraphicalInterface @Inject constructor(
         return menu
     }
 
-    @Suppress("MagicNumber")
     private fun refreshTrayIcon() {
         val pendingPhone = phoneService.listPhones(false).find { it.status == TokenStatus.PENDING }
-        val transferingFile = incomingService.transferTimes.keys.let { set ->
-            if (set.isEmpty()) {
-                null
-            } else {
-                val first = set.first()
-                Pair(first, incomingService.transferTimes[first]!!)
-            }
-        }
+        val transferingFile = transferStatusService.currentTransfers.firstOrNull()
         if (pendingPhone != null) {
             trayIcon?.toolTipText = t("graphicalInterface.trayIcon.tooltip.pendingPhone",
                 APP_NAME, pendingPhone.name!!)
-        } else if (transferingFile != null && !transferingFile.second.isEmpty()) {
-            val (transferFile, data) = transferingFile
-            val percentage = (((data.last().second).toFloat() / transferFile.fileSize!!) * 100).roundToInt()
-            val bytesPerSec = incomingService.calculateTransferRate(data)
+        } else if (transferingFile != null) {
             trayIcon?.toolTipText = t("graphicalInterface.trayIcon.tooltip.downloadingFile",
                 APP_NAME,
-                "$percentage%",
-                bytesToHuman(bytesPerSec))
+                "${transferingFile.progress}%",
+                transferingFile.humanSpeed())
         } else {
             trayIcon?.toolTipText = APP_NAME
-        }
-    }
-
-    @Suppress("MagicNumber")
-    private fun bytesToHuman(bytes: Long): String {
-        return when {
-            bytes > (1024 * 1024) -> bytes.let { it.toDouble() / (1024 * 1024) }.let {
-                "${String.format(Locale.getDefault(), "%.1f", it)} MB/s"
-            }
-            bytes > 1024 -> "${bytes / 1024} kB/s"
-            else -> "$bytes B/s"
         }
     }
 
