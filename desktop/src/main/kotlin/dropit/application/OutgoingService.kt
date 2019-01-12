@@ -10,6 +10,7 @@ import dropit.application.settings.AppSettings
 import dropit.domain.entity.ClipboardLog
 import dropit.domain.entity.Phone
 import dropit.domain.entity.TransferSource
+import dropit.domain.service.PhoneService
 import dropit.infrastructure.event.AppEvent
 import dropit.infrastructure.event.EventBus
 import dropit.jooq.tables.ClipboardLog.CLIPBOARD_LOG
@@ -38,7 +39,7 @@ class OutgoingService @Inject constructor(
 ) {
     val fileDownloadStatus = HashMap<FileUpload, MutableList<Pair<LocalDateTime, Long>>>()
 
-    private val phoneSessions = HashMap<UUID, PhoneSession>()
+    val phoneSessions = HashMap<UUID, PhoneSession>()
 
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -89,6 +90,8 @@ class OutgoingService @Inject constructor(
                 PhoneSession(session)
             }
         }
+        updatePhoneLastConnected(phone.id)
+        bus.broadcast(PhoneService.PhoneChangedEvent(phone))
     }
 
     /**
@@ -101,11 +104,12 @@ class OutgoingService @Inject constructor(
                 offset,
                 length,
                 DownloadStatus::class.java)
-            val sentFile = getPhoneSession(session).files.find { it.id == fileId } ?: return
+            val phoneSession = phoneSessions.filterValues { it.session?.id == session.id }.values.first()
+            val sentFile = phoneSession.files.find { it.id == fileId } ?: return
             if (sentFile.size == downloaded) {
                 fileDownloadStatus.remove(sentFile)
                 bus.broadcast(UploadFinishedEvent(sentFile))
-                getPhoneSession(session).files.remove(sentFile)
+                phoneSession.files.remove(sentFile)
                 val fileRecord = jooq.newRecord(SENT_FILE, dropit.domain.entity.SentFile(
                     sentFile.id,
                     null,
@@ -131,9 +135,10 @@ class OutgoingService @Inject constructor(
      *
      */
     fun closeSession(session: WsSession) {
-        phoneSessions.forEach { (_, value) ->
+        phoneSessions.forEach { (id, value) ->
             if (value.session?.id == session.id) {
                 value.session = null
+                bus.broadcast(PhoneService.PhoneChangedEvent(getPhoneById(id)!!))
             }
         }
     }
@@ -183,10 +188,6 @@ class OutgoingService @Inject constructor(
         }
     }
 
-    private fun getPhoneSession(session: WsSession): PhoneSession {
-        return phoneSessions.filterValues { it.session?.id == session.id }.values.first()
-    }
-
     private fun getPhoneById(id: UUID): Phone? {
         return jooq.selectFrom<PhoneRecord>(PHONE)
             .where(PHONE.ID.eq(id.toString()))
@@ -199,5 +200,17 @@ class OutgoingService @Inject constructor(
             .where(PHONE.TOKEN.eq(token))
             .and(PHONE.STATUS.eq(TokenStatus.AUTHORIZED.toString()))
             .fetchOptionalInto(Phone::class.java).orElse(null)
+    }
+
+    private fun updatePhoneLastConnected(id: UUID) {
+        jooq.fetchOne(PHONE, PHONE.ID.eq(id.toString())).into(Phone::class.java)
+            .copy(lastConnected = LocalDateTime.now())
+            .let { phone ->
+                jooq.newRecord(PHONE)
+                    .apply {
+                        from(phone)
+                        update()
+                    }
+            }
     }
 }

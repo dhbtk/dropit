@@ -112,8 +112,8 @@ class WebServer @Inject constructor(
 
     private fun getSslContextFactory(): SslContextFactory {
         val sslContextFactory = SslContextFactory()
-        sslContextFactory.keyStorePath = this::class.java.getResource("/ssl/dropit.jks").toExternalForm()
-        sslContextFactory.setKeyStorePassword("""C<9/wg${"$"}uxV2nCBMT""")
+        sslContextFactory.keyStorePath = javaClass.getResource("/ssl/dropit.jks").toExternalForm()
+        sslContextFactory.setKeyStorePassword("C<9/wg${"$"}uxV2nCBMT")
         return sslContextFactory
     }
 }

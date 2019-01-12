@@ -10,5 +10,6 @@ data class Phone(
     override val updatedAt: LocalDateTime? = null,
     val name: String? = null,
     val status: TokenStatus? = null,
-    val token: UUID? = null
+    val token: UUID? = null,
+    val lastConnected: LocalDateTime? = null
 ) : IEntity

@@ -1,7 +1,6 @@
 package dropit.ui
 
 import dropit.APP_NAME
-import dropit.application.OutgoingService
 import dropit.application.dto.TokenStatus
 import dropit.application.settings.AppSettings
 import dropit.domain.entity.ShowFileAction
@@ -25,7 +24,6 @@ import org.eclipse.swt.widgets.ToolTip
 import org.eclipse.swt.widgets.TrayItem
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.util.concurrent.Executor
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -33,10 +31,7 @@ import javax.inject.Singleton
 class GraphicalInterface @Inject constructor(
     private val eventBus: EventBus,
     private val phoneService: PhoneService,
-    private val incomingService: IncomingService,
     private val transferStatusService: TransferStatusService,
-    private val outgoingService: OutgoingService,
-    private val executor: Executor,
     private val appSettings: AppSettings,
     private val desktopIntegrations: DesktopIntegrations,
     private val clipboardService: dropit.ui.service.ClipboardService,
@@ -49,11 +44,6 @@ class GraphicalInterface @Inject constructor(
     private val trayIcon = setupTrayIcon()
 
     init {
-        eventBus.subscribe(PhoneService.NewPhoneRequestEvent::class) { (phone) ->
-            logger.info("Auto approving phone $phone")
-            phoneService.authorizePhone(phone.id!!)
-        }
-
         eventBus.subscribe(IncomingService.ClipboardReceiveEvent::class) { (data) ->
             display.asyncExec {
                 receiveClipboardText(data)

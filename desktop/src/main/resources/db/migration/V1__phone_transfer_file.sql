@@ -1,12 +1,13 @@
 PRAGMA FOREIGN_KEYS = ON;
 
 CREATE TABLE phone (
-  id         varchar(40) PRIMARY KEY,
-  created_at datetime     NOT NULL DEFAULT current_timestamp,
-  updated_at datetime     NOT NULL DEFAULT current_timestamp,
-  name       varchar(255) NOT NULL,
-  status     varchar(255) NOT NULL,
-  token      varchar(40) UNIQUE
+  id             varchar(40) PRIMARY KEY,
+  created_at     datetime     NOT NULL DEFAULT current_timestamp,
+  updated_at     datetime     NOT NULL DEFAULT current_timestamp,
+  name           varchar(255) NOT NULL,
+  status         varchar(255) NOT NULL,
+  token          varchar(40) UNIQUE,
+  last_connected datetime
 );
 
 CREATE TABLE transfer (

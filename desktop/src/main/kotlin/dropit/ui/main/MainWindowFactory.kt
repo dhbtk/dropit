@@ -93,6 +93,7 @@ class MainWindow(
 ) {
     val window: Shell = Shell(display, SWT.SHELL_TRIM or SWT.ON_TOP)
     val transferTable = TransferTable(eventBus, transferStatusService, display)
+    val phoneTable = PhoneTable(window, eventBus, phoneService, display, appSettings, outgoingService)
     val logger = LoggerFactory.getLogger(javaClass)
 
     init {
@@ -107,11 +108,13 @@ class MainWindow(
             }
         window.addListener(SWT.Close) {
             transferTable.dispose()
+            phoneTable.dispose()
         }
 
         buildWindowMenu()
         buildDropZone(window)
         buildCurrentTransfers(window)
+        buildPhoneDetails(window)
 
         window.open()
     }
@@ -211,6 +214,21 @@ class MainWindow(
             }
 
         transferTable.init(group)
+    }
+
+    private fun buildPhoneDetails(parent: Composite) {
+        val group = Group(parent, SWT.SHADOW_ETCHED_OUT)
+        group.text = t("mainWindow.phoneDetails.title")
+        group.layoutData = GridData(GridData.FILL_HORIZONTAL)
+            .apply {
+                minimumHeight = 128
+            }
+        GridLayout(1, false)
+            .apply {
+                group.layout = this
+            }
+
+        phoneTable.init(group)
     }
 
     @Suppress("ComplexMethod")
