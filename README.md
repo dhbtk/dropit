@@ -38,6 +38,6 @@ will not work over 3G/4G at all.
 
 ## Screenshots
 
-![image](https://user-images.githubusercontent.com/92917/51067549-71659200-15fa-11e9-8780-b4e19b4b5625.png)
+<p align="center"><img width="426" alt="Windows screenshot" src="https://user-images.githubusercontent.com/92917/51067549-71659200-15fa-11e9-8780-b4e19b4b5625.png"></p>
 
-![image](https://user-images.githubusercontent.com/92917/51067576-a70a7b00-15fa-11e9-942d-d09cce07e369.png)
+<p align="center"><img width="442" alt="Linux screenshot" src="https://user-images.githubusercontent.com/92917/51067576-a70a7b00-15fa-11e9-942d-d09cce07e369.png"></p>
