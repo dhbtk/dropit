@@ -36,3 +36,8 @@ Since the data is transferred over LAN, your computer and phone must be on the s
 problem if you use it in your home, but there might be some issues with corporate networks. This also means that the app
 will not work over 3G/4G at all.
 
+## Screenshots
+
+![image](https://user-images.githubusercontent.com/92917/51067549-71659200-15fa-11e9-8780-b4e19b4b5625.png)
+
+![image](https://user-images.githubusercontent.com/92917/51067576-a70a7b00-15fa-11e9-942d-d09cce07e369.png)
