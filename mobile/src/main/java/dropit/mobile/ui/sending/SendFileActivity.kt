@@ -1,5 +1,7 @@
 package dropit.mobile.ui.sending
 
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -16,7 +18,7 @@ import dropit.mobile.infrastructure.db.SQLiteHelper
 import dropit.mobile.infrastructure.preferences.PreferencesHelper
 import dropit.mobile.ui.configuration.ConfigurationActivity
 import kotlinx.android.synthetic.main.activity_send_file.*
-import java.util.*
+import java.util.ArrayList
 
 open class SendFileActivity : AppCompatActivity() {
     lateinit var sqliteHelper: SQLiteHelper
@@ -67,6 +69,21 @@ open class SendFileActivity : AppCompatActivity() {
                     this::startTransfer
                 ).execute(*uris.toTypedArray())
             }
+        } else if (intent.getBooleanExtra("sendClipboard", false)) {
+            val clipText = (getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager)
+                .primaryClip.let { if (it.itemCount == 0) null else it.getItemAt(0).text.toString() }
+            if (clipText != null) {
+                SendClipboardTask(
+                    computer,
+                    preferencesHelper.tokenRequest,
+                    this::showTransferError,
+                    this::showClipboardSuccess
+                ).execute(clipText)
+            } else {
+                Toast.makeText(this, R.string.clipboard_is_empty, Toast.LENGTH_LONG).show()
+                finish()
+            }
+
         } else {
             finish()
         }

@@ -8,7 +8,7 @@ multi-platform, working on Windows, Linux and macOS, and the phone app is curren
 From your phone, you can:
 
 * Send files and text to your computer in one click using the Android "Share" button
-* Easily send text to the computer clipboard through a home screen widget (TODO!)
+* Easily send text to the computer clipboard through a home screen widget
 * One-click camera: take a picture and instantly send it to your computer (TODO!)
 
 From your computer, you can:
