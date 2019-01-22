@@ -80,7 +80,7 @@ class PhoneTable(
                 val item = TableItem(phoneTable, SWT.NONE)
                 item.setText(0, phone.name)
                 if (phone.lastConnected != null) {
-                    item.setText(1, phone.lastConnected.format(
+                    item.setText(1, phone.lastConnected?.format(
                         DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)))
                 } else {
                     item.setText(1, "-")

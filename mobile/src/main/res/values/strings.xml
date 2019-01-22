@@ -44,4 +44,6 @@
     <string name="computer_file">File</string>
     <string name="file_download_failed">File download failed</string>
     <string name="clipboard_is_empty">The clipboard is empty.</string>
+    <string name="dropit_camera">DropIt Camera</string>
+    <string name="switch_cameras">Switch cameras</string>
 </resources>

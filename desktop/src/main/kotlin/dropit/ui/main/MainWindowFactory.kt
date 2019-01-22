@@ -19,6 +19,8 @@ import org.eclipse.swt.dnd.DropTargetListener
 import org.eclipse.swt.dnd.FileTransfer
 import org.eclipse.swt.graphics.Image
 import org.eclipse.swt.graphics.Point
+import org.eclipse.swt.internal.cocoa.NSApplication
+import org.eclipse.swt.internal.cocoa.OS
 import org.eclipse.swt.layout.GridData
 import org.eclipse.swt.layout.GridLayout
 import org.eclipse.swt.widgets.Button
@@ -63,6 +65,7 @@ class MainWindowFactory @Inject constructor(
     }
 
     private fun createMainWindow() {
+        NSApplication.sharedApplication().setActivationPolicy(OS.NSApplicationActivationPolicyRegular.toLong())
         mainWindow = MainWindow(
             eventBus,
             phoneService,
@@ -75,6 +78,7 @@ class MainWindowFactory @Inject constructor(
             transferStatusService,
             display
         )
+        display.asyncExec { mainWindow?.window?.forceActive() }
     }
 }
 
@@ -109,6 +113,7 @@ class MainWindow(
         window.addListener(SWT.Close) {
             transferTable.dispose()
             phoneTable.dispose()
+            display.asyncExec { NSApplication.sharedApplication().setActivationPolicy(2L) }
         }
 
         buildWindowMenu()

@@ -15,6 +15,7 @@ import org.eclipse.swt.dnd.Clipboard
 import org.eclipse.swt.dnd.FileTransfer
 import org.eclipse.swt.dnd.TextTransfer
 import org.eclipse.swt.graphics.Image
+import org.eclipse.swt.internal.cocoa.NSApplication
 import org.eclipse.swt.widgets.Display
 import org.eclipse.swt.widgets.Menu
 import org.eclipse.swt.widgets.MenuItem
@@ -48,6 +49,12 @@ class GraphicalInterface @Inject constructor(
             display.asyncExec {
                 receiveClipboardText(data)
             }
+        }
+
+        if(appSettings.firstStart) {
+            mainWindowFactory.open()
+        } else {
+            NSApplication.sharedApplication().setActivationPolicy(2L)
         }
     }
 

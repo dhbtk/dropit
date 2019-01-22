@@ -2,8 +2,6 @@ package dropit
 
 import org.slf4j.bridge.SLF4JBridgeHandler
 
-const val APP_NAME = "DropIt"
-
 fun main(args: Array<String>) {
     SLF4JBridgeHandler.removeHandlersForRootLogger()
     SLF4JBridgeHandler.install()
@@ -14,8 +12,13 @@ fun main(args: Array<String>) {
     component.discoveryBroadcaster()
     val display = component.display()
     while (!display.isDisposed) {
-        if (!display.readAndDispatch()) {
-            display.sleep()
+        try {
+            if (!display.readAndDispatch()) {
+                display.sleep()
+            }
+        } catch(e: NullPointerException) {
+            // Cocoa Command-Q
+            break
         }
     }
     component.webServer().javalin.stop()

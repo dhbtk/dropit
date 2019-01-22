@@ -78,7 +78,6 @@ class TransferTable(
     }
 
     private fun createColumns() {
-        println("Table width: ${transferTable.size.x}")
         TableColumn(transferTable, SWT.NONE)
             .apply {
                 text = " "

@@ -16,11 +16,17 @@ class DesktopIntegrations @Inject constructor() {
         WINDOWS, LINUX, MACOSX
     }
 
-    val currentOS = when (System.getProperty("os.name").toLowerCase()) {
-        in "win" -> WINDOWS
-        in "mac" -> MACOSX
-        else -> LINUX
+    val currentOS = System.getProperty("os.name").toLowerCase().let { os ->
+        if (os.contains("win")) {
+            WINDOWS
+        } else if (os.contains("mac os")) {
+            MACOSX
+        } else {
+            LINUX
+        }
     }
+
+    fun isMac() = currentOS == MACOSX
 
     fun openFolderSelectFile(file: File) {
         when (currentOS) {
@@ -50,8 +56,8 @@ class DesktopIntegrations @Inject constructor() {
      * Workaround for ImageTransfers not working properly on Linux
      */
     fun getImageTransfer(): ByteArrayTransfer =
-        when (currentOS) {
-            LINUX -> LinuxPngTransfer.instance
-            else -> ImageTransfer.getInstance()
-        }
+            when (currentOS) {
+                LINUX -> LinuxPngTransfer.instance
+                else -> ImageTransfer.getInstance()
+            }
 }

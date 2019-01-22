@@ -24,7 +24,7 @@ allprojects {
     ext.kotlin_version = rootProject.ext.kotlin_version
     ext.dagger_version = '2.19'
     ext.junit_jupiter_version = '5.3.2'
-    ext.spek_version = '2.0.0-alpha.2'
+    ext.spek_version = '2.0.0-rc.1'
 
     // desktop - server
     ext.sqlite_version = rootProject.ext.sqlite_version
@@ -59,8 +59,21 @@ static def getSwtArtifact() {
             return "win32.win32.x86_64"
         case "osx":
             return "cocoa.macosx.x86_64"
-        default:
+        case "linux":
             return "gtk.linux.x86_64"
+        default:
+            return getDefaultSwtRuntime()
+    }
+}
+
+static def getDefaultSwtRuntime() {
+    def osName = System.getProperty("os.name").toLowerCase()
+    if(osName.contains("mac os")) {
+        return "cocoa.macosx.x86_64"
+    } else if(osName.contains("windows")) {
+        return "win32.win32.x86_64"
+    } else {
+        return "gtk.linux.x86_64"
     }
 }
 
@@ -76,7 +89,7 @@ static def getDesktopClassifier() {
 }
 
 static def isWindowsBuild() {
-    return System.getProperty("desktop.platform") == "win32"
+    return getSwtArtifact() == "win32.win32.x86_64"
 }
 
 buildscript {
@@ -97,6 +110,9 @@ buildscript {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath "io.gitlab.arturbosch.detekt:detekt-gradle-plugin:$detekt_version"
         classpath group: 'org.xerial', name: 'sqlite-jdbc', version: sqlite_version
+
+        // jooq workaround
+        classpath 'org.glassfish.jaxb:jaxb-runtime:2.3.1'
     }
 }
 

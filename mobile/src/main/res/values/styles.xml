@@ -20,4 +20,8 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
+    <style name="CameraTheme" parent="NoTopBar">
+        <item name="android:windowTranslucentStatus">true</item>
+    </style>
+
 </resources>
