@@ -8,10 +8,11 @@ import dropit.application.settings.AppSettings
 import dropit.domain.entity.Phone
 import dropit.domain.service.IncomingService
 import dropit.domain.service.PhoneService
+import dropit.infrastructure.event.AppEvent
+import dropit.infrastructure.event.EventBus
 import io.javalin.Javalin
-import io.javalin.apibuilder.ApiBuilder.get
-import io.javalin.apibuilder.ApiBuilder.path
-import io.javalin.apibuilder.ApiBuilder.post
+import io.javalin.JavalinEvent
+import io.javalin.apibuilder.ApiBuilder.*
 import io.javalin.json.JavalinJackson
 import org.eclipse.jetty.http.HttpStatus
 import org.eclipse.jetty.server.Server
@@ -19,7 +20,7 @@ import org.eclipse.jetty.server.ServerConnector
 import org.eclipse.jetty.util.ssl.SslContextFactory
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
-import java.util.UUID
+import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -30,8 +31,11 @@ class WebServer @Inject constructor(
     val incomingService: IncomingService,
     val outgoingService: OutgoingService,
     val token: TokenService,
-    val objectMapper: ObjectMapper
+    val objectMapper: ObjectMapper,
+    val bus: EventBus
 ) {
+    data class ServerStartFailedEvent(override val payload: Unit) : AppEvent<Unit>
+
     val logger = LoggerFactory.getLogger(this::class.java)
     val javalin: Javalin
 
@@ -106,6 +110,9 @@ class WebServer @Inject constructor(
                     logger.info("Closing session: statusCode = $statusCode, reason: $reason")
                     outgoingService.closeSession(session)
                 }
+            }
+            .event(JavalinEvent.SERVER_START_FAILED) {
+                bus.broadcast(ServerStartFailedEvent(Unit))
             }
             .start(appSettings.settings.serverPort)
     }

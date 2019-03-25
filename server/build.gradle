@@ -22,7 +22,7 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
 dependencies {
     compile project(':common')
 
-    compile group: 'org.xerial', name: 'sqlite-jdbc', version: sqlite_version
+    api group: 'org.xerial', name: 'sqlite-jdbc', version: sqlite_version
     jooqRuntime group: 'org.xerial', name: 'sqlite-jdbc', version: sqlite_version
     jooqRuntime group: 'org.glassfish.jaxb', name: 'jaxb-runtime', version: '2.3.1'
     jooqRuntime group: 'com.sun.activation', name: 'javax.activation', version: '1.2.0'

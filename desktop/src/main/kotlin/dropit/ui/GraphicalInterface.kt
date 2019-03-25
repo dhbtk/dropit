@@ -8,6 +8,7 @@ import dropit.domain.service.IncomingService
 import dropit.domain.service.PhoneService
 import dropit.infrastructure.event.EventBus
 import dropit.infrastructure.i18n.t
+import dropit.infrastructure.ui.GuiIntegrations
 import dropit.ui.main.MainWindowFactory
 import dropit.ui.service.TransferStatusService
 import org.eclipse.swt.SWT
@@ -15,14 +16,7 @@ import org.eclipse.swt.dnd.Clipboard
 import org.eclipse.swt.dnd.FileTransfer
 import org.eclipse.swt.dnd.TextTransfer
 import org.eclipse.swt.graphics.Image
-import org.eclipse.swt.internal.cocoa.NSApplication
-import org.eclipse.swt.widgets.Display
-import org.eclipse.swt.widgets.Menu
-import org.eclipse.swt.widgets.MenuItem
-import org.eclipse.swt.widgets.MessageBox
-import org.eclipse.swt.widgets.Shell
-import org.eclipse.swt.widgets.ToolTip
-import org.eclipse.swt.widgets.TrayItem
+import org.eclipse.swt.widgets.*
 import org.slf4j.LoggerFactory
 import java.io.File
 import javax.inject.Inject
@@ -37,7 +31,8 @@ class GraphicalInterface @Inject constructor(
     private val desktopIntegrations: DesktopIntegrations,
     private val clipboardService: dropit.ui.service.ClipboardService,
     private val display: Display,
-    private val mainWindowFactory: MainWindowFactory
+    private val mainWindowFactory: MainWindowFactory,
+    private val guiIntegrations: GuiIntegrations
 ) {
     val logger = LoggerFactory.getLogger(javaClass)
     private val shell = Shell(display)
@@ -51,11 +46,9 @@ class GraphicalInterface @Inject constructor(
             }
         }
 
-        if(appSettings.firstStart) {
-            mainWindowFactory.open()
-        } else {
-            NSApplication.sharedApplication().setActivationPolicy(2L)
-        }
+        guiIntegrations.afterDisplayInit()
+        mainWindowFactory.open()
+        guiIntegrations.onGuiInit(appSettings.firstStart)
     }
 
     fun confirmExit() {
@@ -89,7 +82,6 @@ class GraphicalInterface @Inject constructor(
             }
 
             trayIcon.addListener(SWT.DefaultSelection) {
-                logger.info("Default selected")
                 mainWindowFactory.open()
             }
 

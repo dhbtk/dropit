@@ -1,12 +1,14 @@
 package dropit.ui
 
-import dropit.ui.DesktopIntegrations.OperatingSystem.LINUX
-import dropit.ui.DesktopIntegrations.OperatingSystem.MACOSX
-import dropit.ui.DesktopIntegrations.OperatingSystem.WINDOWS
+import dropit.infrastructure.ui.CocoaIntegration
+import dropit.infrastructure.ui.GuiIntegrations
+import dropit.ui.DesktopIntegrations.OperatingSystem.*
 import dropit.ui.image.LinuxPngTransfer
 import org.eclipse.swt.dnd.ByteArrayTransfer
 import org.eclipse.swt.dnd.ImageTransfer
+import java.awt.Desktop
 import java.io.File
+import java.net.URI
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -27,6 +29,12 @@ class DesktopIntegrations @Inject constructor() {
     }
 
     fun isMac() = currentOS == MACOSX
+
+    fun buildGuiIntegrations(): GuiIntegrations =
+        when (currentOS) {
+            MACOSX -> CocoaIntegration()
+            else -> GuiIntegrations.Default()
+        }
 
     fun openFolderSelectFile(file: File) {
         when (currentOS) {
@@ -50,6 +58,10 @@ class DesktopIntegrations @Inject constructor() {
             MACOSX -> ProcessBuilder("open", file.toString()).start()
             LINUX -> ProcessBuilder("xdg-open", file.toString()).start()
         }
+    }
+
+    fun openUrl(url: String) {
+        Desktop.getDesktop().browse(URI(url))
     }
 
     /**

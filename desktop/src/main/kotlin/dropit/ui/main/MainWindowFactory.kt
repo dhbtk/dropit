@@ -7,28 +7,18 @@ import dropit.domain.service.IncomingService
 import dropit.domain.service.PhoneService
 import dropit.infrastructure.event.EventBus
 import dropit.infrastructure.i18n.t
+import dropit.infrastructure.ui.GuiIntegrations
 import dropit.infrastructure.ui.MenuBuilder
 import dropit.ui.DesktopIntegrations
 import dropit.ui.service.ClipboardService
 import dropit.ui.service.TransferStatusService
 import org.eclipse.swt.SWT
-import org.eclipse.swt.dnd.DND
-import org.eclipse.swt.dnd.DropTarget
-import org.eclipse.swt.dnd.DropTargetEvent
-import org.eclipse.swt.dnd.DropTargetListener
-import org.eclipse.swt.dnd.FileTransfer
+import org.eclipse.swt.dnd.*
 import org.eclipse.swt.graphics.Image
 import org.eclipse.swt.graphics.Point
-import org.eclipse.swt.internal.cocoa.NSApplication
-import org.eclipse.swt.internal.cocoa.OS
 import org.eclipse.swt.layout.GridData
 import org.eclipse.swt.layout.GridLayout
-import org.eclipse.swt.widgets.Button
-import org.eclipse.swt.widgets.Composite
-import org.eclipse.swt.widgets.Display
-import org.eclipse.swt.widgets.Group
-import org.eclipse.swt.widgets.Label
-import org.eclipse.swt.widgets.Shell
+import org.eclipse.swt.widgets.*
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Executor
 import javax.inject.Inject
@@ -45,6 +35,7 @@ class MainWindowFactory @Inject constructor(
     private val desktopIntegrations: DesktopIntegrations,
     private val clipboardService: ClipboardService,
     private val transferStatusService: TransferStatusService,
+    private val guiIntegrations: GuiIntegrations,
     private val display: Display
 ) {
     var mainWindow: MainWindow? = null
@@ -65,7 +56,7 @@ class MainWindowFactory @Inject constructor(
     }
 
     private fun createMainWindow() {
-        NSApplication.sharedApplication().setActivationPolicy(OS.NSApplicationActivationPolicyRegular.toLong())
+        guiIntegrations.beforeMainWindowOpen()
         mainWindow = MainWindow(
             eventBus,
             phoneService,
@@ -76,6 +67,7 @@ class MainWindowFactory @Inject constructor(
             desktopIntegrations,
             clipboardService,
             transferStatusService,
+            guiIntegrations,
             display
         )
         display.asyncExec { mainWindow?.window?.forceActive() }
@@ -93,6 +85,7 @@ class MainWindow(
     private val desktopIntegrations: DesktopIntegrations,
     private val clipboardService: ClipboardService,
     private val transferStatusService: TransferStatusService,
+    private val guiIntegrations: GuiIntegrations,
     private val display: Display
 ) {
     val window: Shell = Shell(display, SWT.SHELL_TRIM or SWT.ON_TOP)
@@ -113,7 +106,7 @@ class MainWindow(
         window.addListener(SWT.Close) {
             transferTable.dispose()
             phoneTable.dispose()
-            display.asyncExec { NSApplication.sharedApplication().setActivationPolicy(2L) }
+            display.asyncExec { guiIntegrations.afterMainWindowClose() }
         }
 
         buildWindowMenu()

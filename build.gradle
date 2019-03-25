@@ -51,6 +51,9 @@ allprojects {
     ext.anko_version = '0.10.8'
     ext.retrofuture_version = '1.7.0'
 
+    ext.desktopClassifier = getDesktopClassifier()
+    ext.isWindowsBuild = isWindowsBuild()
+    ext.isMacBuild = isMacBuild()
 }
 
 static def getSwtArtifact() {
@@ -90,6 +93,10 @@ static def getDesktopClassifier() {
 
 static def isWindowsBuild() {
     return getSwtArtifact() == "win32.win32.x86_64"
+}
+
+static def isMacBuild() {
+    return getSwtArtifact() == "cocoa.macosx.x86_64"
 }
 
 buildscript {
