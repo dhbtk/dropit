@@ -47,7 +47,9 @@ class GraphicalInterface @Inject constructor(
         }
 
         guiIntegrations.afterDisplayInit()
-        mainWindowFactory.open()
+        if (appSettings.firstStart) {
+            mainWindowFactory.open()
+        }
         guiIntegrations.onGuiInit(appSettings.firstStart)
     }
 

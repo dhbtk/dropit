@@ -3,6 +3,7 @@ package dropit.infrastructure.ui
 val nullCallback = {}
 
 interface GuiIntegrations {
+    var quitCallback: () -> Unit
     var aboutCallback: () -> Unit
     var preferencesCallback: () -> Unit
 
@@ -15,6 +16,7 @@ interface GuiIntegrations {
     fun afterMainWindowClose()
 
     class Default : GuiIntegrations {
+        override var quitCallback = nullCallback
         override var aboutCallback = nullCallback
         override var preferencesCallback = nullCallback
 

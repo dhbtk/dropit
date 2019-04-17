@@ -1,16 +1,14 @@
 package dropit.infrastructure.ui
 
-import dropit.APP_NAME
-import org.eclipse.swt.widgets.Display
 import java.lang.reflect.Method
 
 const val ACTIVATION_POLICY_REGULAR = 0L
 const val ACTIVATION_POLICY_PROHIBITED = 2L
 
 class CocoaIntegration : GuiIntegrations {
+    override var quitCallback = nullCallback
     override var aboutCallback = nullCallback
     override var preferencesCallback = nullCallback
-    private val cocoaUIEnhancer = CocoaUIEnhancer(APP_NAME)
     private val nsApplication: Any
     private val setActivationPolicy: Method
 
@@ -23,18 +21,6 @@ class CocoaIntegration : GuiIntegrations {
     }
 
     override fun afterDisplayInit() {
-        cocoaUIEnhancer.hookApplicationMenu(
-            Display.getDefault(),
-            {
-                // todo
-            },
-            {
-                aboutCallback()
-            },
-            {
-                preferencesCallback()
-            }
-        )
     }
 
     override fun onGuiInit(isFirstStart: Boolean) {

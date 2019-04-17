@@ -2,6 +2,7 @@ package dropit.ui
 
 import dagger.Module
 import dagger.Provides
+import dropit.APP_NAME
 import dropit.infrastructure.ui.GuiIntegrations
 import org.eclipse.swt.widgets.Display
 import javax.inject.Singleton
@@ -10,7 +11,12 @@ import javax.inject.Singleton
 class UIModule {
     @Provides
     @Singleton
-    fun display() = Display.getDefault()
+    fun display(guiIntegrations: GuiIntegrations): Display {
+        Display.setAppName(APP_NAME)
+        return Display.getDefault().apply {
+            guiIntegrations.afterDisplayInit()
+        }
+    }
 
     @Provides
     @Singleton

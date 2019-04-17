@@ -114,30 +114,33 @@ class MainWindow(
         buildCurrentTransfers(window)
         buildPhoneDetails(window)
 
+        window.addListener(SWT.Show) {
+            Display.setAppName(APP_NAME)
+        }
         window.open()
     }
 
     private fun buildWindowMenu() {
-        MenuBuilder()
+        MenuBuilder(display)
             .menu(
                 t("mainWindow.menus.application"),
-                t("mainWindow.menus.application.sendClipboard") to {
+                Triple(t("mainWindow.menus.application.sendClipboard"), {
                     clipboardService.sendClipboardToPhone(window)
-                },
-                t("mainWindow.menus.application.settings") to null,
-                null to null,
-                t("mainWindow.menus.application.exit") to null
+                }, null),
+                Triple(t("mainWindow.menus.application.settings"), null, SWT.ID_PREFERENCES),
+                Triple(null, null, null),
+                Triple(t("mainWindow.menus.application.exit"), null, SWT.ID_QUIT)
             )
             .menu(
                 t("mainWindow.menus.view"),
-                t("mainWindow.menus.view.transferLog") to null,
-                t("mainWindow.menus.view.clipboardLog") to null
+                Triple(t("mainWindow.menus.view.transferLog"), null, null),
+                Triple(t("mainWindow.menus.view.clipboardLog"), null, null)
             )
             .menu(
                 t("mainWindow.menus.help"),
-                t("mainWindow.menus.help.onlineManual") to null,
-                t("mainWindow.menus.help.googlePlayLink") to null,
-                t("mainWindow.menus.help.about") to null
+                Triple(t("mainWindow.menus.help.onlineManual"), null, null),
+                Triple(t("mainWindow.menus.help.googlePlayLink"), null, null),
+                Triple(t("mainWindow.menus.help.about"), null, SWT.ID_ABOUT)
             )
             .build(window)
     }
