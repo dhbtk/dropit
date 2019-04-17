@@ -7,3 +7,5 @@ target/
 build/
 /captures
 .externalNativeBuild
+jre/*/
+jre/*.zip

@@ -40,7 +40,7 @@ allprojects {
 
     // desktop - UI
     ext.swt_artifact = getSwtArtifact()
-    ext.swt_version = '3.109.0'
+    ext.swt_version = '3.108.0'
 
     // client
     ext.retrofit_version = '2.5.0'
@@ -57,9 +57,9 @@ allprojects {
 }
 
 static def getSwtArtifact() {
-    switch (System.getProperty("desktop.platform")) {
+    switch (System.getProperty("targetPlatform")) {
         case "win32":
-            return "win32.win32.x86_64"
+            return "win32.win32.x86"
         case "osx":
             return "cocoa.macosx.x86_64"
         case "linux":
