@@ -21,6 +21,7 @@ import kotlin.math.roundToInt
 const val FILE_LIST = "fileList"
 const val COMPUTER = "computer"
 const val TOKEN_REQUEST = "tokenRequest"
+const val UPLOAD_FINISHED = "dropit.mobile.FILE_UPLOAD_FINISHED"
 
 class FileUploadService : JobIntentService() {
     companion object {
@@ -79,7 +80,7 @@ class FileUploadService : JobIntentService() {
 
         }
 
-
+        sendBroadcast(Intent(UPLOAD_FINISHED))
         stopForeground(true)
 
         NotificationCompat.Builder(this)

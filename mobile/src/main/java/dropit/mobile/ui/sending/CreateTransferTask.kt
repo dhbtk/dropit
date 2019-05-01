@@ -21,9 +21,14 @@ class CreateTransferTask(
     val computer: Computer,
     val tokenRequest: TokenRequest,
     val sendToClipboard: Boolean,
+    val onStart: () -> Unit,
     val onError: () -> Unit,
     val onSuccess: (list: List<Pair<FileRequest, String>>) -> Unit
 ) : AsyncTask<Uri, Unit, List<Pair<FileRequest, String>>>() {
+    override fun onPreExecute() {
+        onStart()
+    }
+
     override fun doInBackground(vararg params: Uri): List<Pair<FileRequest, String>> {
         val fileRequests = params.map { Pair(extractUriData(it), it.toString()) }
 

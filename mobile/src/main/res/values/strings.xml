@@ -46,4 +46,5 @@
     <string name="clipboard_is_empty">The clipboard is empty.</string>
     <string name="dropit_camera">DropIt Camera</string>
     <string name="switch_cameras">Switch cameras</string>
+    <string name="keep_upload_activity_open_notice">Don\'t force-close the app until the transfer is complete.</string>
 </resources>

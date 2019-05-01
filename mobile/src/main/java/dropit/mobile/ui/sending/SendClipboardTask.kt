@@ -10,9 +10,14 @@ import dropit.mobile.onMainThread
 class SendClipboardTask(
     val computer: Computer,
     val tokenRequest: TokenRequest,
+    val onStart: () -> Unit,
     val onError: () -> Unit,
     val onSuccess: () -> Unit
 ) : AsyncTask<String, Unit, Boolean>() {
+    override fun onPreExecute() {
+        onStart()
+    }
+
     override fun doInBackground(vararg params: String?): Boolean {
         val client = ClientFactory(ObjectMapper().apply { this.findAndRegisterModules() })
             .create(computer.url, tokenRequest, null)
