@@ -47,4 +47,8 @@
     <string name="dropit_camera">DropIt Camera</string>
     <string name="switch_cameras">Switch cameras</string>
     <string name="keep_upload_activity_open_notice">Don\'t force-close the app until the transfer is complete.</string>
+
+    <string name="paired_to_computer">Paired to %1$s</string>
+    <string name="sent_to_clipboard">Sent to computer clipboard.</string>
+    <string name="sent_to_computer">Sent to the computer.</string>
 </resources>

@@ -76,8 +76,10 @@ class CreateTransferTask(
                 val fileSize = if (fileNameAccessible) {
                     File(cursor.getString(cursor.getColumnIndex(MediaStore.MediaColumns.DATA))).length()
                 } else {
-                    FileInputStream(contentResolver.openFileDescriptor(uri, "r").fileDescriptor).use {
-                        it.channel.size()
+                    contentResolver.openFileDescriptor(uri, "r").use { parcelDescriptor ->
+                        FileInputStream(parcelDescriptor.fileDescriptor).use {
+                            it.channel.size()
+                        }
                     }
                 }
                 val extension = MimeTypeMap.getFileExtensionFromUrl(uri.toString())

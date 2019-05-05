@@ -7,6 +7,7 @@ import android.net.Uri
 import android.support.v4.app.JobIntentService
 import android.support.v4.app.NotificationCompat
 import android.support.v4.app.NotificationManagerCompat
+import android.widget.Toast
 import com.fasterxml.jackson.databind.ObjectMapper
 import dropit.application.client.Client
 import dropit.application.client.ClientFactory
@@ -72,8 +73,15 @@ class FileUploadService : JobIntentService() {
                     }
                 }.blockingFirst()
             }
-        } catch (e: Client.DropitClientException) {
+        } catch (e: RuntimeException) {
+            sendBroadcast(Intent(UPLOAD_FINISHED))
+            stopForeground(true)
 
+            e.printStackTrace()
+
+            Toast.makeText(this, "Upload failed: ${e.message}", Toast.LENGTH_LONG).show()
+
+            return
         } catch (e: IOException) {
 
         } catch (e: SocketTimeoutException) {

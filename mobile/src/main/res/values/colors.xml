@@ -8,4 +8,6 @@
     <color name="materialGreen">#388E3C</color>
     <color name="listGray">#616161</color>
     <color name="white">#FFFFFF</color>
+    <color name="whiteText">#FFFFFF</color>
+    <color name="blackShadow">#7F000000</color>
 </resources>

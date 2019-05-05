@@ -20,8 +20,17 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
-    <style name="CameraTheme" parent="NoTopBar">
-        <item name="android:windowTranslucentStatus">true</item>
+    <style name="Theme.AppCompat.Light.NoActionBar.FullScreen" parent="@style/Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+    </style>
+
+    <style name="CameraTheme" parent="Theme.AppCompat.Light.NoActionBar.FullScreen">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
     </style>
 
 </resources>
