@@ -11,9 +11,9 @@ interface GuiIntegrations {
 
     fun onGuiInit(isFirstStart: Boolean)
 
-    fun beforeMainWindowOpen()
+    fun beforeWindowOpen()
 
-    fun afterMainWindowClose()
+    fun afterWindowClose()
 
     class Default : GuiIntegrations {
         override var quitCallback = nullCallback
@@ -28,11 +28,11 @@ interface GuiIntegrations {
 
         }
 
-        override fun beforeMainWindowOpen() {
+        override fun beforeWindowOpen() {
 
         }
 
-        override fun afterMainWindowClose() {
+        override fun afterWindowClose() {
 
         }
 

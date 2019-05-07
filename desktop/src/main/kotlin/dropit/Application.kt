@@ -18,7 +18,7 @@ import java.io.PrintWriter
 
 val rootLogger = LoggerFactory.getLogger("dropit")
 
-fun main(args: Array<String>) {
+fun main() {
     SLF4JBridgeHandler.removeHandlersForRootLogger()
     SLF4JBridgeHandler.install()
 
@@ -26,7 +26,11 @@ fun main(args: Array<String>) {
     component.eventBus().subscribe(WebServer.ServerStartFailedEvent::class) {
         reportError("Failed to start the server component. Is the application running already?")
     }
-    component.webServer()
+    try {
+        component.webServer()
+    } catch (e: Throwable) {
+        reportError(e)
+    }
     try {
         component.graphicalInterface()
     } catch (e: Throwable) {

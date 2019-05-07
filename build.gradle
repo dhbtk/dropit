@@ -9,6 +9,8 @@ allprojects {
         google()
         jcenter()
         mavenLocal()
+        maven { url "https://dl.bintray.com/arrow-kt/arrow-kt/" }
+        maven { url 'https://oss.jfrog.org/artifactory/oss-snapshot-local/' }
     }
 
     detekt {
@@ -37,6 +39,7 @@ allprojects {
     ext.jackson_version = '2.9.8'
     ext.lang3_version = '3.8.1'
     ext.fileupload_version = '1.3.3'
+    ext.arrow_version = '0.9.0'
 
     // desktop - UI
     ext.swt_artifact = getSwtArtifact()

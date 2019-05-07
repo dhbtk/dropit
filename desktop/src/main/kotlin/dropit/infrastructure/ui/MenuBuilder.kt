@@ -38,7 +38,6 @@ class MenuBuilder(val display: Display) {
                     val systemMenu = display.systemMenu?.items?.find { it.id == id }
                     if (systemMenu != null) {
                         systemMenu.addListener(SWT.Selection) {
-                            LoggerFactory.getLogger(this::class.java).info("System menu clicked - ${systemMenu.id}")
                             if (action != null) {
                                 action()
                             }

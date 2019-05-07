@@ -11,6 +11,7 @@ import dropit.infrastructure.i18n.t
 import dropit.infrastructure.ui.GuiIntegrations
 import dropit.ui.main.MainWindowFactory
 import dropit.ui.service.TransferStatusService
+import dropit.ui.settings.SettingsWindowFactory
 import org.eclipse.swt.SWT
 import org.eclipse.swt.dnd.Clipboard
 import org.eclipse.swt.dnd.FileTransfer
@@ -32,6 +33,7 @@ class GraphicalInterface @Inject constructor(
     private val clipboardService: dropit.ui.service.ClipboardService,
     private val display: Display,
     private val mainWindowFactory: MainWindowFactory,
+    private val settingsWindowFactory: SettingsWindowFactory,
     private val guiIntegrations: GuiIntegrations
 ) {
     val logger = LoggerFactory.getLogger(javaClass)
@@ -69,7 +71,7 @@ class GraphicalInterface @Inject constructor(
             trayIcon.toolTipText = APP_NAME
             trayIcon.image = trayImage
 
-            val menu = buildTrayMenu(trayIcon)
+            val menu = buildTrayMenu()
             trayIcon.addListener(SWT.MenuDetect) {
                 menu.visible = true
             }
@@ -110,7 +112,7 @@ class GraphicalInterface @Inject constructor(
         return null
     }
 
-    private fun buildTrayMenu(trayItem: TrayItem): Menu {
+    private fun buildTrayMenu(): Menu {
         val menu = Menu(shell, SWT.POP_UP)
 
         MenuItem(menu, SWT.PUSH)
@@ -134,7 +136,7 @@ class GraphicalInterface @Inject constructor(
             .apply {
                 text = t("graphicalInterface.trayIcon.settings")
                 addListener(SWT.Selection) {
-                    logger.info("TODO show settings")
+                    settingsWindowFactory.open()
                 }
             }
 

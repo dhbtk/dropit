@@ -1,5 +1,7 @@
 package dropit.infrastructure.ui
 
+import org.eclipse.swt.internal.cocoa.NSApplication
+import org.slf4j.LoggerFactory
 import java.lang.reflect.Method
 
 const val ACTIVATION_POLICY_REGULAR = 0L
@@ -11,6 +13,7 @@ class CocoaIntegration : GuiIntegrations {
     override var preferencesCallback = nullCallback
     private val nsApplication: Any
     private val setActivationPolicy: Method
+    var openWindows = 0
 
     init {
         // we don't care if any of these fail because that means we have serious classpath issues
@@ -29,11 +32,15 @@ class CocoaIntegration : GuiIntegrations {
         }
     }
 
-    override fun beforeMainWindowOpen() {
+    override fun beforeWindowOpen() {
+        openWindows++
         setActivationPolicy.invoke(nsApplication, ACTIVATION_POLICY_REGULAR)
     }
 
-    override fun afterMainWindowClose() {
-        setActivationPolicy.invoke(nsApplication, ACTIVATION_POLICY_PROHIBITED)
+    override fun afterWindowClose() {
+        openWindows--
+        if(openWindows == 0) {
+            setActivationPolicy.invoke(nsApplication, ACTIVATION_POLICY_PROHIBITED)
+        }
     }
 }

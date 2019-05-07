@@ -12,6 +12,7 @@ import dropit.infrastructure.ui.MenuBuilder
 import dropit.ui.DesktopIntegrations
 import dropit.ui.service.ClipboardService
 import dropit.ui.service.TransferStatusService
+import dropit.ui.settings.SettingsWindowFactory
 import org.eclipse.swt.SWT
 import org.eclipse.swt.dnd.*
 import org.eclipse.swt.graphics.Image
@@ -36,6 +37,7 @@ class MainWindowFactory @Inject constructor(
     private val clipboardService: ClipboardService,
     private val transferStatusService: TransferStatusService,
     private val guiIntegrations: GuiIntegrations,
+    private val settingsWindowFactory: SettingsWindowFactory,
     private val display: Display
 ) {
     var mainWindow: MainWindow? = null
@@ -56,7 +58,7 @@ class MainWindowFactory @Inject constructor(
     }
 
     private fun createMainWindow() {
-        guiIntegrations.beforeMainWindowOpen()
+        guiIntegrations.beforeWindowOpen()
         mainWindow = MainWindow(
             eventBus,
             phoneService,
@@ -68,6 +70,7 @@ class MainWindowFactory @Inject constructor(
             clipboardService,
             transferStatusService,
             guiIntegrations,
+            settingsWindowFactory,
             display
         )
         display.asyncExec { mainWindow?.window?.forceActive() }
@@ -86,9 +89,15 @@ class MainWindow(
     private val clipboardService: ClipboardService,
     private val transferStatusService: TransferStatusService,
     private val guiIntegrations: GuiIntegrations,
+    private val settingsWindowFactory: SettingsWindowFactory,
     private val display: Display
 ) {
-    val window: Shell = Shell(display, SWT.SHELL_TRIM or SWT.ON_TOP)
+    private val windowOpts = if(appSettings.settings.keepWindowOnTop) {
+        SWT.SHELL_TRIM or SWT.ON_TOP
+    } else {
+        SWT.SHELL_TRIM
+    }
+    val window: Shell = Shell(display, windowOpts)
     val transferTable = TransferTable(eventBus, transferStatusService, display)
     val phoneTable = PhoneTable(window, eventBus, phoneService, display, appSettings, outgoingService)
     val logger = LoggerFactory.getLogger(javaClass)
@@ -96,8 +105,6 @@ class MainWindow(
     init {
         window.text = APP_NAME
         window.image = Image(display, javaClass.getResourceAsStream("/ui/icon.png"))
-        window.size = Point(440, 600)
-        window.minimumSize = Point(440, 600)
         window.layout = GridLayout(1, false)
             .apply {
                 this.marginHeight = 8
@@ -106,17 +113,15 @@ class MainWindow(
         window.addListener(SWT.Close) {
             transferTable.dispose()
             phoneTable.dispose()
-            display.asyncExec { guiIntegrations.afterMainWindowClose() }
+            display.asyncExec { guiIntegrations.afterWindowClose() }
         }
 
         buildWindowMenu()
         buildDropZone(window)
         buildCurrentTransfers(window)
         buildPhoneDetails(window)
-
-        window.addListener(SWT.Show) {
-            Display.setAppName(APP_NAME)
-        }
+        window.pack()
+        window.minimumSize = window.size.apply { x = 440 }
         window.open()
     }
 
@@ -127,7 +132,9 @@ class MainWindow(
                 Triple(t("mainWindow.menus.application.sendClipboard"), {
                     clipboardService.sendClipboardToPhone(window)
                 }, null),
-                Triple(t("mainWindow.menus.application.settings"), null, SWT.ID_PREFERENCES),
+                Triple(t("mainWindow.menus.application.settings"), {
+                    settingsWindowFactory.open()
+                }, SWT.ID_PREFERENCES),
                 Triple(null, null, null),
                 Triple(t("mainWindow.menus.application.exit"), null, SWT.ID_QUIT)
             )

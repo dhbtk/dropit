@@ -42,7 +42,8 @@ CREATE TABLE settings (
   separate_transfer_folders   integer      NOT NULL,
   open_transfer_on_completion integer      NOT NULL,
   show_transfer_action        varchar(255) NOT NULL,
-  log_clipboard_transfers     integer      NOT NULL
+  log_clipboard_transfers     integer      NOT NULL,
+  keep_window_on_top          integer      NOT NULL
 );
 
 CREATE TABLE file_type_settings (

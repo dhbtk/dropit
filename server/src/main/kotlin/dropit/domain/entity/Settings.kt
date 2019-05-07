@@ -14,7 +14,8 @@ data class Settings(
     val separateTransferFolders: Boolean = true,
     val openTransferOnCompletion: Boolean = true,
     val showTransferAction: ShowFileAction = ShowFileAction.OPEN_FILE,
-    val logClipboardTransfers: Boolean = true
+    val logClipboardTransfers: Boolean = true,
+    val keepWindowOnTop: Boolean = false
 )
 
 data class FileTypeSettings(
