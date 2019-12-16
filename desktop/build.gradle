@@ -7,6 +7,8 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '4.0.3'
     id 'application'
     id 'edu.sc.seis.launch4j' version '2.4.4'
+    id "edu.sc.seis.macAppBundle" version "2.3.0"
+    id 'idea'
 }
 
 description = ''
@@ -16,10 +18,12 @@ targetCompatibility = 1.8
 
 mainClassName = 'dropit.ApplicationKt'
 applicationName = 'DropIt'
+
 shadowJar {
     baseName = 'dropit-desktop'
     classifier = project.ext.desktopClassifier
 }
+
 launch4j {
     icon = "${projectDir}/desktop.ico"
     outfile = "${project.applicationName}.exe"
@@ -29,9 +33,23 @@ launch4j {
     bundledJrePath = "jre"
 }
 
+macAppBundle {
+    javaExtras.put("-XstartOnFirstThread", null)
+    javaExtras.put("-d64", null)
+    mainClassName = 'dropit.ApplicationKt'
+    appName = applicationName
+}
+
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
     kotlinOptions {
         jvmTarget = "1.8"
+    }
+}
+
+idea {
+    module {
+        sourceDirs += files('build/generated/source/kapt/main')
+        generatedSourceDirs += files('build/generated/source/kapt/main')
     }
 }
 

@@ -25,8 +25,6 @@ import javax.inject.Singleton
 
 @Singleton
 class SettingsWindowFactory @Inject constructor(
-    private val eventBus: EventBus,
-    private val executor: Executor,
     private val appSettings: AppSettings,
     private val guiIntegrations: GuiIntegrations,
     private val display: Display
@@ -50,7 +48,7 @@ class SettingsWindowFactory @Inject constructor(
 
     private fun openWindow() {
         guiIntegrations.beforeWindowOpen()
-        settingsWindow = SettingsWindow(eventBus, executor, appSettings, guiIntegrations, display)
+        settingsWindow = SettingsWindow(appSettings, guiIntegrations, display)
         display.asyncExec { settingsWindow?.window?.forceActive() }
     }
 }
@@ -58,8 +56,6 @@ class SettingsWindowFactory @Inject constructor(
 typealias SaveCallback = () -> Either<String, Unit>
 
 class SettingsWindow(
-    private val eventBus: EventBus,
-    private val executor: Executor,
     private val appSettings: AppSettings,
     private val guiIntegrations: GuiIntegrations,
     private val display: Display
@@ -267,7 +263,7 @@ class SettingsWindow(
             }
 
             addListener(SWT.Selection) {
-                when(selectionIndex) {
+                when (selectionIndex) {
                     1 -> {
                         appSettings.settings = appSettings.settings.copy(
                             showTransferAction = ShowFileAction.OPEN_FOLDER,

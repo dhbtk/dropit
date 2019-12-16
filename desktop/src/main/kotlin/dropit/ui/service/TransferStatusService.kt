@@ -104,7 +104,7 @@ class TransferStatusService @Inject constructor(
             val displayTransfer = currentTransfers.find { it.id == upload.id } ?: CurrentTransfer(
                 upload.id,
                 upload.file.name,
-                Files.probeContentType(upload.file.toPath()),
+                Files.probeContentType(upload.file.toPath()) ?: "application/octet-stream",
                 upload.size,
                 0,
                 0L,

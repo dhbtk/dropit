@@ -73,6 +73,7 @@ class OutgoingService @Inject constructor(
             session.disconnect()
             return
         }
+        session.idleTimeout = 0
         phoneSessions.compute(phone.id!!) { _, phoneSession ->
             if (phoneSession != null) {
                 if (phoneSession.session != null) {

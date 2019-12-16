@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory
 import org.slf4j.bridge.SLF4JBridgeHandler
 import java.io.CharArrayWriter
 import java.io.PrintWriter
+import kotlin.system.exitProcess
 
 val rootLogger = LoggerFactory.getLogger("dropit")
 
@@ -54,7 +55,7 @@ fun main() {
 
 fun reportError(message: String) {
     rootLogger.error(message)
-    System.exit(1)
+    exitProcess(1)
 }
 
 fun reportError(exception: Throwable) {
@@ -107,5 +108,5 @@ fun reportError(exception: Throwable) {
         }
     }
 
-    System.exit(1)
+    exitProcess(1)
 }
