@@ -1,7 +1,5 @@
 package dropit.infrastructure.ui
 
-import org.eclipse.swt.internal.cocoa.NSApplication
-import org.slf4j.LoggerFactory
 import java.lang.reflect.Method
 
 const val ACTIVATION_POLICY_REGULAR = 0L

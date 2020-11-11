@@ -3,8 +3,8 @@ package dropit.mobile.ui.sending
 import android.content.*
 import android.net.Uri
 import android.os.Bundle
-import android.support.v4.content.LocalBroadcastManager
-import android.support.v7.app.AppCompatActivity
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.appcompat.app.AppCompatActivity
 import android.widget.Toast
 import dropit.application.dto.FileRequest
 import dropit.application.dto.TokenRequest
@@ -69,9 +69,9 @@ open class SendFileActivity : AppCompatActivity() {
                 ).execute(intent.getStringExtra(Intent.EXTRA_TEXT))
             } else {
                 val uris = if (action == Intent.ACTION_SEND) {
-                    listOf(intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
+                    listOf(intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))!!
                 } else {
-                    intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)
+                    intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)!!
                 }
 
                 CreateTransferTask(
@@ -86,7 +86,7 @@ open class SendFileActivity : AppCompatActivity() {
             }
         } else if (intent.getBooleanExtra("sendClipboard", false)) {
             val clipText = (getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager)
-                .primaryClip.let { if (it.itemCount == 0) null else it.getItemAt(0).text.toString() }
+                .primaryClip!!.let { if (it.itemCount == 0) null else it.getItemAt(0).text.toString() }
             if (clipText != null) {
                 SendClipboardTask(
                     computer,
@@ -144,7 +144,7 @@ open class SendFileActivity : AppCompatActivity() {
                 preferencesHelper.phoneId,
                 preferencesHelper.phoneName
             ))
-        FileUploadService.enqueueWork(this, intent)
+        startForegroundService(intent)
         connectionStatus.text = getString(R.string.keep_upload_activity_open_notice)
         moveTaskToBack(true)
     }

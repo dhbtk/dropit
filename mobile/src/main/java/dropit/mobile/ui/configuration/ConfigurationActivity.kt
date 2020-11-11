@@ -1,26 +1,32 @@
 package dropit.mobile.ui.configuration
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.TrafficStats
+import android.net.Uri
 import android.os.Bundle
 import android.os.PersistableBundle
-import android.support.v4.app.ActivityCompat
-import android.support.v4.content.ContextCompat
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.DefaultItemAnimator
-import android.support.v7.widget.DividerItemDecoration
-import android.support.v7.widget.LinearLayoutManager
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.DefaultItemAnimator
+import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.fasterxml.jackson.databind.ObjectMapper
 import dropit.application.discovery.DiscoveryClient
+import dropit.application.dto.BroadcastMessage
 import dropit.infrastructure.event.EventBus
 import dropit.mobile.R
 import dropit.mobile.domain.entity.Computer
+import dropit.mobile.domain.service.ServerConnectionService
 import dropit.mobile.infrastructure.db.SQLiteHelper
 import dropit.mobile.infrastructure.preferences.PreferencesHelper
 import dropit.mobile.onMainThread
 import dropit.mobile.ui.configuration.adapter.ServerListAdapter
 import java9.util.concurrent.CompletableFuture
 import kotlinx.android.synthetic.main.activity_configuration.*
+import java.net.InetAddress
 import java.util.*
 
 const val REQUEST_WRITE_EXTERNAL_STORAGE = 1
@@ -41,6 +47,7 @@ class ConfigurationActivity : AppCompatActivity() {
         eventBus.subscribe(DiscoveryClient.DiscoveryEvent::class) { (broadcast) ->
             handleBroadcast(broadcast)
         }
+        TrafficStats.setThreadStatsTag(1)
         discoveryClient = DiscoveryClient(objectMapper, eventBus)
 
         setContentView(R.layout.activity_configuration)
@@ -50,6 +57,31 @@ class ConfigurationActivity : AppCompatActivity() {
         serverListView.adapter = serverListAdapter
 
         requestExternalStoragePermission()
+
+        if (intent.dataString != null) pairFromIntentUrl()
+
+        refreshServerList()
+        ServerConnectionService.enqueueWork(this, Intent())
+    }
+
+    private fun pairFromIntentUrl() {
+        val uri = Uri.parse(intent.dataString)
+        if (uri.host != "pair") return
+
+        val computerName = uri.getQueryParameter("computerName")
+        val computerId = uri.getQueryParameter("computerId")?.let { UUID.fromString(it) }
+        val serverPort = uri.getQueryParameter("serverPort")?.toInt()
+        val ipAddress = uri.getQueryParameter("ipAddress")
+        if (computerName == null || computerId == null || serverPort == null || ipAddress == null) return
+
+        val broadcast = DiscoveryClient.ServerBroadcast(
+                BroadcastMessage(computerName, computerId, serverPort),
+                InetAddress.getByName(ipAddress)
+        )
+        seenComputerIds.add(computerId)
+        val computer = sqliteHelper.saveFromBroadcast(broadcast)
+        refreshServerList()
+        PairingDialogFragment.create(computer).show(supportFragmentManager, "t")
     }
 
     fun requestExternalStoragePermission() {
@@ -65,15 +97,15 @@ class ConfigurationActivity : AppCompatActivity() {
         }
     }
 
-    override fun onRestoreInstanceState(savedInstanceState: Bundle?) {
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
-        savedInstanceState?.getStringArrayList("seenIds")?.forEach { seenComputerIds.add(UUID.fromString(it)) }
+        savedInstanceState.getStringArrayList("seenIds")?.forEach { seenComputerIds.add(UUID.fromString(it)) }
         refreshServerList()
     }
 
-    override fun onSaveInstanceState(outState: Bundle?, outPersistentState: PersistableBundle?) {
+    override fun onSaveInstanceState(outState: Bundle, outPersistentState: PersistableBundle) {
         super.onSaveInstanceState(outState, outPersistentState)
-        outState?.putStringArrayList("seenIds", ArrayList(seenComputerIds.map(UUID::toString)))
+        outState.putStringArrayList("seenIds", ArrayList(seenComputerIds.map(UUID::toString)))
     }
 
     override fun onPause() {

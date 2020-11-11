@@ -3,7 +3,7 @@ package dropit.mobile.ui.configuration
 import android.app.Dialog
 import android.app.DialogFragment
 import android.os.Bundle
-import android.support.v7.app.AlertDialog
+import androidx.appcompat.app.AlertDialog
 import dropit.mobile.R
 
 class ExternalStorageDialogFragment : DialogFragment() {

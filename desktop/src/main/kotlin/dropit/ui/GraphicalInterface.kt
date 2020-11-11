@@ -1,6 +1,7 @@
 package dropit.ui
 
 import dropit.APP_NAME
+import dropit.application.OutgoingService
 import dropit.application.dto.TokenStatus
 import dropit.application.settings.AppSettings
 import dropit.domain.entity.ShowFileAction
@@ -34,11 +35,14 @@ class GraphicalInterface @Inject constructor(
     private val display: Display,
     private val mainWindowFactory: MainWindowFactory,
     private val settingsWindowFactory: SettingsWindowFactory,
-    private val guiIntegrations: GuiIntegrations
+    private val guiIntegrations: GuiIntegrations,
+    private val outgoingService: OutgoingService
 ) {
     val logger = LoggerFactory.getLogger(javaClass)
     private val shell = Shell(display)
     private val trayImage = Image(display, javaClass.getResourceAsStream("/ui/icon.png"))
+    private val trayImageConnected = Image(display, javaClass.getResourceAsStream("/ui/icon-connected.png"))
+    private val trayImageDisconnected = Image(display, javaClass.getResourceAsStream("/ui/icon-disconnected.png"))
     private val trayIcon = setupTrayIcon()
 
     init {
@@ -166,6 +170,18 @@ class GraphicalInterface @Inject constructor(
                 transferingFile.humanSpeed())
         } else {
             trayIcon?.toolTipText = APP_NAME
+        }
+        val defaultPhone = appSettings.settings.currentPhoneId?.let {
+            id -> phoneService.listPhones(true).find { it.id == id }
+        }
+        if (defaultPhone != null) {
+            if (outgoingService.phoneSessions[defaultPhone.id]?.session != null) {
+                trayIcon?.image = trayImageConnected
+            } else {
+                trayIcon?.image = trayImageDisconnected
+            }
+        } else {
+            trayIcon?.image = trayImage
         }
     }
 

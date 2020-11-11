@@ -64,7 +64,7 @@ class CreateTransferTask(
             arrayOf(MediaStore.MediaColumns.DATA, MediaStore.MediaColumns.DISPLAY_NAME),
             null, null, null)
             .use { cursor ->
-                val dataColumn = cursor.getColumnIndex(MediaStore.MediaColumns.DATA)
+                val dataColumn = cursor!!.getColumnIndex(MediaStore.MediaColumns.DATA)
                 val displayColumn = cursor.getColumnIndex(MediaStore.MediaColumns.DISPLAY_NAME)
                 cursor.moveToFirst()
                 val fileNameAccessible = dataColumn != -1
@@ -77,7 +77,7 @@ class CreateTransferTask(
                     File(cursor.getString(cursor.getColumnIndex(MediaStore.MediaColumns.DATA))).length()
                 } else {
                     contentResolver.openFileDescriptor(uri, "r").use { parcelDescriptor ->
-                        FileInputStream(parcelDescriptor.fileDescriptor).use {
+                        FileInputStream(parcelDescriptor!!.fileDescriptor).use {
                             it.channel.size()
                         }
                     }

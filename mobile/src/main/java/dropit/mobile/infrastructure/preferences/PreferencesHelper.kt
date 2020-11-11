@@ -13,10 +13,10 @@ class PreferencesHelper(context: Context) {
     private val sharedPreferences = context.getSharedPreferences("dropit.mobile.Preferences", Context.MODE_PRIVATE)
 
     val phoneId: String
-        get() = sharedPreferences.getString(PHONE_ID, "")
+        get() = sharedPreferences.getString(PHONE_ID, "")!!
 
     val phoneName: String
-        get() = sharedPreferences.getString(PHONE_NAME, "")
+        get() = sharedPreferences.getString(PHONE_NAME, "")!!
 
     val tokenRequest
         get() = TokenRequest(phoneId, phoneName)

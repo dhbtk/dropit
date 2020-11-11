@@ -3,9 +3,9 @@ package dropit.mobile.ui.shared.view
 import android.content.Context
 import android.graphics.drawable.Animatable
 import android.graphics.drawable.Drawable
-import android.support.graphics.drawable.Animatable2Compat
-import android.support.graphics.drawable.AnimatedVectorDrawableCompat
-import android.support.v7.widget.AppCompatImageView
+import androidx.vectordrawable.graphics.drawable.Animatable2Compat
+import androidx.vectordrawable.graphics.drawable.AnimatedVectorDrawableCompat
+import androidx.appcompat.widget.AppCompatImageView
 import android.util.AttributeSet
 import dropit.mobile.R
 

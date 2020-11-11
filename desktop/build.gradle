@@ -80,6 +80,7 @@ dependencies {
     compile("org.eclipse.platform:org.eclipse.swt:$swt_version") {
         exclude group: 'org.eclipse.platform'
     }
+    compile 'com.github.kenglxn.QRGen:javase:2.6.0'
 
     kapt group: 'com.google.dagger', name: 'dagger-compiler', version: dagger_version
 }

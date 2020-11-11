@@ -4,8 +4,8 @@ import android.app.Dialog
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.support.v4.app.DialogFragment
-import android.support.v7.app.AlertDialog
+import androidx.fragment.app.DialogFragment
+import androidx.appcompat.app.AlertDialog
 import android.widget.Toast
 import dropit.application.dto.TokenRequest
 import dropit.mobile.R
@@ -31,9 +31,9 @@ class PairingDialogFragment : DialogFragment() {
         }
     }
 
-    override fun onAttach(context: Context?) {
+    override fun onAttach(context: Context) {
         super.onAttach(context)
-        sqLiteHelper = SQLiteHelper(context!!)
+        sqLiteHelper = SQLiteHelper(context)
         preferencesHelper = PreferencesHelper(context)
     }
 

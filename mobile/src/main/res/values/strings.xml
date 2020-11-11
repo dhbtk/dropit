@@ -51,4 +51,6 @@
     <string name="paired_to_computer">Paired to %1$s</string>
     <string name="sent_to_clipboard">Sent to computer clipboard.</string>
     <string name="sent_to_computer">Sent to the computer.</string>
+    <string name="channel_name">App notifications</string>
+    <string name="channel_description">Connection status and transfers</string>
 </resources>
