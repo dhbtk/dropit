@@ -36,6 +36,7 @@ class DatabaseModule {
     @Provides
     @Singleton
     fun flyway(dataSource: DataSource) = Flyway.configure()
+            .mixed(true)
         .dataSource(dataSource)
         .load()
         .apply { migrate() }
@@ -51,5 +52,5 @@ class DatabaseModule {
 
     @Provides
     @Singleton
-    fun create(jooqConfiguration: org.jooq.Configuration) = jooqConfiguration.dsl()
+    fun create(jooqConfiguration: org.jooq.Configuration): org.jooq.DSLContext = jooqConfiguration.dsl()
 }

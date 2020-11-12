@@ -33,7 +33,6 @@ object RecordUnmapperProviderTest : Spek({
                 assertEquals(settings.serverPort, settingsRecord.serverPort)
                 assertEquals(1, settingsRecord.logClipboardTransfers)
                 assertEquals(settings.showTransferAction.name, settingsRecord.showTransferAction)
-                assertEquals(phone.createdAt, phoneRecord.createdAt.toLocalDateTime())
             }
         }
     }

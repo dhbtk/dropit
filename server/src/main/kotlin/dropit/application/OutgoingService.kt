@@ -203,9 +203,9 @@ class OutgoingService @Inject constructor(
     }
 
     private fun updatePhoneLastConnected(id: UUID) {
-        jooq.fetchOne(PHONE, PHONE.ID.eq(id.toString())).into(Phone::class.java)
-            .copy(lastConnected = LocalDateTime.now())
-            .let { phone ->
+        jooq.fetchOne(PHONE, PHONE.ID.eq(id.toString()))?.into(Phone::class.java)
+            ?.copy(lastConnected = LocalDateTime.now())
+            ?.let { phone ->
                 jooq.newRecord(PHONE)
                     .apply {
                         from(phone)

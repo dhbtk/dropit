@@ -5,14 +5,13 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
+import android.widget.Toast
 import androidx.core.app.JobIntentService
 import androidx.core.app.NotificationCompat
-import android.widget.Toast
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import dropit.application.client.ClientFactory
 import dropit.application.dto.SentFileInfo
-import dropit.mobile.CHANNEL_ID
 import dropit.mobile.CONNECTION_CHANNEL_ID
 import dropit.mobile.R
 import dropit.mobile.domain.entity.Computer

@@ -27,8 +27,7 @@ val TYPE_BRIDGES = arrayOf(
     SameToSameTypeBridge(),
     NumberToBooleanTypeBridge(),
     StringToUUIDTypeBridge(),
-    StringToEnumTypeBridge(),
-    TimestampToLocalDateTimeTypeBridge()
+    StringToEnumTypeBridge()
 )
 
 class SameToSameTypeBridge : TypeBridge {
@@ -88,22 +87,5 @@ class StringToEnumTypeBridge : TypeBridge {
         return value?.let {
             parameter.type.jvmErasure.java.getMethod("valueOf", String::class.java).invoke(null, it)
         }
-    }
-}
-
-class TimestampToLocalDateTimeTypeBridge : TypeBridge {
-    override fun matches(sourcePropertyClass: Class<*>, recordFieldClass: Class<*>): Boolean {
-        return recordFieldClass == Timestamp::class.java && sourcePropertyClass == LocalDateTime::class.java
-    }
-
-    override fun convertToRecord(source: Any, sourceProperty: KProperty<*>, record: Record, recordField: Field<*>) {
-        val value = sourceProperty.getter.call(source) as LocalDateTime?
-        if (value != null) {
-            record.set(recordField as Field<Timestamp?>, Timestamp.valueOf(value))
-        }
-    }
-
-    override fun convertToEntity(parameter: KParameter, property: PropertyDescriptor, value: Any?): Any? {
-        return value?.let { it as Timestamp }?.toLocalDateTime()
     }
 }

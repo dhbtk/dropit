@@ -20,10 +20,11 @@ import java.io.File
 import java.io.IOException
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
-import java.util.UUID
+import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
 import javax.servlet.http.HttpServletRequest
+import kotlin.NoSuchElementException
 
 const val UPLOAD_PROGRESS_INTERVAL = 500 * 1000 * 1000
 
@@ -99,7 +100,7 @@ class IncomingService @Inject constructor(
             }
             val transfer = jooq.fetchOne(
                 TRANSFER, TRANSFER.ID.eq(transferId.toString())
-            ).into(Transfer::class.java).copy(phone = phone)
+            )!!.into(Transfer::class.java).copy(phone = phone)
             bus.broadcast(NewTransferEvent(transfer))
             transferId.toString()
         }
@@ -111,10 +112,10 @@ class IncomingService @Inject constructor(
      * uploads a file, notifying the UI of progress.
      */
     fun receiveFile(fileId: String, request: HttpServletRequest) {
-        val transferFile = jooq.fetchOne(TRANSFER_FILE, TRANSFER_FILE.ID.eq(fileId)).into(TransferFile::class.java)
+        val transferFile = jooq.fetchOne(TRANSFER_FILE, TRANSFER_FILE.ID.eq(fileId))!!.into(TransferFile::class.java)
             .let { file ->
                 file.copy(transfer =
-                jooq.fetchOne(TRANSFER, TRANSFER.ID.eq(file.transferId?.toString())).into(Transfer::class.java))
+                jooq.fetchOne(TRANSFER, TRANSFER.ID.eq(file.transferId?.toString()))!!.into(Transfer::class.java))
             }
         val record = jooq.newRecord(TRANSFER_FILE)
         val transfer = transferFile.transfer!!
@@ -159,7 +160,7 @@ class IncomingService @Inject constructor(
     private fun notifyTransferFinished(transferFile: TransferFile, transfer: Transfer, transferFolder: File) {
         val (count) = jooq.selectCount().from(TRANSFER_FILE)
             .where(TRANSFER_FILE.TRANSFER_ID.eq(transferFile.transferId.toString()))
-            .and(TRANSFER_FILE.STATUS.ne(FileStatus.FINISHED.name)).fetchOne()
+            .and(TRANSFER_FILE.STATUS.ne(FileStatus.FINISHED.name)).fetchOne()!!
         if (count == 0) {
             val transferRecord = jooq.newRecord(TRANSFER)
             transferRecord.from(transfer.copy(status = TransferStatus.FINISHED))

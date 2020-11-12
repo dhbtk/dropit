@@ -76,10 +76,10 @@ class PhoneService @Inject constructor(
      */
     fun authorizePhone(id: UUID): Phone {
         return create.transactionResult { _ ->
-            val pendingPhone: Phone = create.fetchOne(PHONE, PHONE.ID.eq(id.toString())).into(Phone::class.java)
+            val pendingPhone: Phone = create.fetchOne(PHONE, PHONE.ID.eq(id.toString()))?.into(Phone::class.java)
                 ?: throw IllegalStateException(t("phoneService.common.phoneNotFound", id))
             create.newRecord(PHONE, pendingPhone.copy(status = TokenStatus.AUTHORIZED)).update()
-            val authorizedPhone = create.fetchOne(PHONE, PHONE.ID.eq(id.toString())).into(Phone::class.java)
+            val authorizedPhone = create.fetchOne(PHONE, PHONE.ID.eq(id.toString()))!!.into(Phone::class.java)
             bus.broadcast(PhoneChangedEvent(authorizedPhone))
             appSettings.settings = appSettings.settings.copy(currentPhoneId = id)
             authorizedPhone
@@ -93,10 +93,10 @@ class PhoneService @Inject constructor(
      */
     fun denyPhone(id: UUID): Phone {
         return create.transactionResult { _ ->
-            val pendingPhone: Phone = create.fetchOne(PHONE, PHONE.ID.eq(id.toString())).into(Phone::class.java)
+            val pendingPhone: Phone = create.fetchOne(PHONE, PHONE.ID.eq(id.toString()))?.into(Phone::class.java)
                 ?: throw IllegalStateException(t("phoneService.common.phoneNotFound", id))
             create.newRecord(PHONE, pendingPhone.copy(status = TokenStatus.DENIED)).update()
-            val deniedPhone = create.fetchOne(PHONE, PHONE.ID.eq(id.toString())).into(Phone::class.java)
+            val deniedPhone = create.fetchOne(PHONE, PHONE.ID.eq(id.toString()))!!.into(Phone::class.java)
             bus.broadcast(PhoneChangedEvent(deniedPhone))
             deniedPhone
         }

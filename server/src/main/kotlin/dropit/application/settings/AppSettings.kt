@@ -16,7 +16,7 @@ class AppSettings(val jooq: DSLContext) {
         set(value) {
             field = jooq.transactionResult { _ ->
                 jooq.update(SETTINGS).set(jooq.newRecord(SETTINGS, value)).execute()
-                jooq.selectFrom(SETTINGS).fetchOneInto(Settings::class.java)
+                jooq.selectFrom(SETTINGS).fetchOneInto(Settings::class.java)!!
             }
         }
 
@@ -30,7 +30,7 @@ class AppSettings(val jooq: DSLContext) {
             jooq.newRecord(SETTINGS, settings).insert()
             firstStart = true
         }
-        return jooq.selectFrom(SETTINGS).fetchOneInto(Settings::class.java)
+        return jooq.selectFrom(SETTINGS).fetchOneInto(Settings::class.java)!!
     }
 
     private fun getDefaultTransferFolder(): String {

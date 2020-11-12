@@ -26,7 +26,7 @@ object RecordMapperProviderTest : Spek({
             .apply {
                 content = "content"
             }
-        val entity = recordMapper.map(record)
+        val entity = recordMapper.map(record)!!
         it("works correctly") {
             assertEquals(record.content, entity.content)
         }
@@ -38,7 +38,7 @@ object RecordMapperProviderTest : Spek({
             .apply {
                 fileSize = 500
             }
-        val entity = recordMapper.map(record)
+        val entity = recordMapper.map(record)!!
         it("works correctly") {
             assertEquals(record.fileSize, entity.fileSize)
         }
@@ -50,7 +50,7 @@ object RecordMapperProviderTest : Spek({
             .apply {
                 id = UUID.randomUUID().toString()
             }
-        val entity = recordMapper.map(record)
+        val entity = recordMapper.map(record)!!
         it("works correctly") {
             assertEquals(UUID.fromString(record.id), entity.id)
         }
@@ -63,7 +63,7 @@ object RecordMapperProviderTest : Spek({
                 .apply {
                     source = null
                 }
-            val entity = recordMapper.map(record)
+            val entity = recordMapper.map(record)!!
             it("works correctly") {
                 assertNull(entity.source)
             }
@@ -73,24 +73,9 @@ object RecordMapperProviderTest : Spek({
                 .apply {
                     source = "COMPUTER"
                 }
-            val entity = recordMapper.map(record)
+            val entity = recordMapper.map(record)!!
             it("works correctly") {
                 assertEquals(TransferSource.COMPUTER, entity.source)
-            }
-        }
-    }
-    describe("mapping Timestamp to LocalDateTime") {
-        val recordMapper = RecordMapperProvider().provide(
-            null as RecordType<ClipboardLogRecord>?, ClipboardLog::class.java)
-        context("when is not null") {
-            val now = LocalDateTime.now()
-            val record = ClipboardLogRecord()
-                .apply {
-                    createdAt = Timestamp.valueOf(now)
-                }
-            val entity = recordMapper.map(record)
-            it("works correctly") {
-                assertEquals(now, entity.createdAt)
             }
         }
     }
@@ -103,7 +88,7 @@ object RecordMapperProviderTest : Spek({
                 .apply {
                     sendToClipboard = 0
                 }
-            val entity = recordMapper.map(record)
+            val entity = recordMapper.map(record)!!
             it("equals false") {
                 assertFalse(entity.sendToClipboard!!)
             }
@@ -114,7 +99,7 @@ object RecordMapperProviderTest : Spek({
                 .apply {
                     sendToClipboard = 1
                 }
-            val entity = recordMapper.map(record)
+            val entity = recordMapper.map(record)!!
             it("equals true") {
                 assertTrue(entity.sendToClipboard!!)
             }

@@ -71,11 +71,11 @@ CREATE TABLE sent_file (
 );
 
 CREATE VIEW file_transfer_log AS
-  SELECT id, created_at, updated_at, phone_id, file_name, mime_type, file_size, 'COMPUTER' AS source
+  SELECT sent_file.id, sent_file.created_at, sent_file.updated_at, sent_file.phone_id, sent_file.file_name, sent_file.mime_type, sent_file.file_size, 'COMPUTER' AS source
   FROM sent_file
   UNION
   SELECT transfer_file.id, transfer_file.created_at, transfer_file.updated_at, transfer.phone_id,
-         file_name, mime_type, file_size, 'PHONE' AS source
+         transfer_file.file_name, transfer_file.mime_type, transfer_file.file_size, 'PHONE' AS source
   FROM transfer_file
          JOIN transfer ON transfer_file.transfer_id = transfer.id
   WHERE transfer.status = 'FINISHED' AND transfer_file.status = 'FINISHED';
