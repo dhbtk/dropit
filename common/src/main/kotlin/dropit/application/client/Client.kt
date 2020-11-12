@@ -69,7 +69,7 @@ class Client(
                             "form-data; name=\"file\"; filename=\"$sanitizedName\"").build(),
                         body
                     )
-                ).execute().body()
+                ).execute().body()!!
             }
     }
 
@@ -94,7 +94,7 @@ class Client(
                 .addNetworkInterceptor { chain ->
                     val originalResponse = chain.proceed(chain.request())
                     originalResponse.newBuilder().body(
-                        ProgressResponseBody(originalResponse.body()!!, listener)
+                        ProgressResponseBody(originalResponse.body!!, listener)
                     ).build()
                 }.build()
             val request = Request.Builder()
@@ -126,7 +126,7 @@ class Client(
         override fun intercept(chain: Interceptor.Chain): Response {
             val response = chain.proceed(chain.request())
 
-            val exception = when (response.code()) {
+            val exception = when (response.code) {
                 401 -> UnauthorizedException()
                 403 -> ForbiddenException()
                 500 -> ServerErrorException()

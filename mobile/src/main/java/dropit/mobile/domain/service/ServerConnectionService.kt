@@ -1,21 +1,19 @@
 package dropit.mobile.domain.service
 
-import android.app.Service
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
-import android.os.IBinder
 import androidx.core.app.JobIntentService
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import android.widget.Toast
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import dropit.application.client.ClientFactory
 import dropit.application.dto.SentFileInfo
 import dropit.mobile.CHANNEL_ID
+import dropit.mobile.CONNECTION_CHANNEL_ID
 import dropit.mobile.R
 import dropit.mobile.domain.entity.Computer
 import dropit.mobile.infrastructure.db.SQLiteHelper
@@ -32,14 +30,19 @@ class ServerConnectionService : JobIntentService() {
     override fun onHandleWork(intent: Intent) {
         val preferencesHelper = PreferencesHelper(this)
         val sqLiteHelper = SQLiteHelper(this)
-        val computerId = preferencesHelper.currentComputerId ?: return
+        val computerId = preferencesHelper.currentComputerId
+        if (computerId == null) {
+            requeue()
+            return
+        }
+
         val computer = sqLiteHelper.getComputer(computerId)
         val tokenRequest = preferencesHelper.tokenRequest
         val objectMapper = ObjectMapper().apply { findAndRegisterModules() }
         val client = ClientFactory(objectMapper)
             .create(computer.url, tokenRequest, computer.token?.toString())
         val completableFuture = CompletableFuture<Boolean>()
-        val notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
+        val notificationBuilder = NotificationCompat.Builder(this, CONNECTION_CHANNEL_ID)
             .setContentTitle(String.format(getText(R.string.connected_to_computer).toString(), computer.name))
             .setContentText(getText(R.string.ready_to_receive_data))
             .setTicker(getText(R.string.ready_to_receive_data))
@@ -55,6 +58,13 @@ class ServerConnectionService : JobIntentService() {
         completableFuture.get()
         stopForeground(NOTIFICATION_ID)
         fileDownloader.stop()
+
+        requeue()
+    }
+
+    private fun requeue() {
+        Thread.sleep(5000)
+        enqueueWork(applicationContext, Intent())
     }
 
     class ServerWebSocketListener(private val context: Context, private val fileDownloader: ServerFileDownloader, private val completableFuture: CompletableFuture<Boolean>, private val computer: Computer, private val objectMapper: ObjectMapper) : WebSocketListener() {

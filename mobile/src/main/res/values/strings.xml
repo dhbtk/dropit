@@ -53,4 +53,6 @@
     <string name="sent_to_computer">Sent to the computer.</string>
     <string name="channel_name">App notifications</string>
     <string name="channel_description">Connection status and transfers</string>
+    <string name="connection_channel_name">Connection</string>
+    <string name="connection_channel_description">Status of the connection to your computer</string>
 </resources>

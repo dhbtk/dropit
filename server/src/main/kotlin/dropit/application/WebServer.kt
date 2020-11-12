@@ -11,9 +11,8 @@ import dropit.domain.service.PhoneService
 import dropit.infrastructure.event.AppEvent
 import dropit.infrastructure.event.EventBus
 import io.javalin.Javalin
-import io.javalin.JavalinEvent
 import io.javalin.apibuilder.ApiBuilder.*
-import io.javalin.json.JavalinJackson
+import io.javalin.plugin.json.JavalinJackson
 import org.eclipse.jetty.http.HttpStatus
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.ServerConnector
@@ -41,13 +40,12 @@ class WebServer @Inject constructor(
 
     init {
         JavalinJackson.configure(objectMapper)
-        javalin = Javalin.create()
-            .disableStartupBanner()
-            .requestLogger { ctx, ms ->
+        javalin = Javalin.create { config ->
+            config.requestLogger { ctx, ms ->
                 val phone = ctx.attribute<Phone>("phone")
                 logger.info("[${phone?.name}] ${ctx.method()} ${ctx.path()} took $ms ms")
             }
-            .server {
+            config.server {
                 val server = Server()
                 val connector = ServerConnector(server, getSslContextFactory())
                 connector.port = appSettings.settings.serverPort
@@ -55,6 +53,7 @@ class WebServer @Inject constructor(
                 server.connectors = arrayOf(connector)
                 server
             }
+        }
             .routes {
                 get("/") { context ->
                     context.result("0.1")
@@ -102,18 +101,18 @@ class WebServer @Inject constructor(
             .ws("ws") { wsHandler ->
                 wsHandler.onConnect(outgoingService::openSession)
                 wsHandler.onMessage(outgoingService::receiveDownloadStatus)
-                wsHandler.onError { session, throwable ->
-                    logger.warn("Error on phone session", throwable)
+                wsHandler.onError { session ->
+                    logger.warn("Error on phone session with ID ${session.sessionId}", session.error())
                     outgoingService.closeSession(session)
                 }
-                wsHandler.onClose { session, statusCode, reason ->
-                    logger.info("Closing session: statusCode = $statusCode, reason: $reason")
+                wsHandler.onClose { session ->
+                    logger.info("Closing session: id = ${session.sessionId} statusCode = ${session.status()}, reason: ${session.reason()}")
                     outgoingService.closeSession(session)
                 }
             }
-            .event(JavalinEvent.SERVER_START_FAILED) {
-                bus.broadcast(ServerStartFailedEvent(Unit))
-            }
+                .events { event ->
+                    event.serverStartFailed { bus.broadcast(ServerStartFailedEvent(Unit)) }
+                }
             .start(appSettings.settings.serverPort)
     }
 

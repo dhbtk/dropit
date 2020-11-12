@@ -40,7 +40,7 @@ class CreateTransferTask(
                 "Transfer",
                 sendToClipboard,
                 fileRequests.map { it.first }
-            )).blockingFirst()
+            )).ignoreElements().blockingAwait()
 
             fileRequests
         } catch (e: Exception) {
@@ -67,7 +67,7 @@ class CreateTransferTask(
                 val dataColumn = cursor!!.getColumnIndex(MediaStore.MediaColumns.DATA)
                 val displayColumn = cursor.getColumnIndex(MediaStore.MediaColumns.DISPLAY_NAME)
                 cursor.moveToFirst()
-                val fileNameAccessible = dataColumn != -1
+                val fileNameAccessible = dataColumn != -1 && cursor.getString(dataColumn) != null
                 val fileName = when {
                     fileNameAccessible -> File(cursor.getString(dataColumn)).name
                     displayColumn != -1 -> cursor.getString(displayColumn)

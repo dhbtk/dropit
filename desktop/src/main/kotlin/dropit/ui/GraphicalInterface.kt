@@ -64,7 +64,10 @@ class GraphicalInterface @Inject constructor(
         dialog.text = t("graphicalInterface.confirmExit.title", APP_NAME)
         dialog.message = t("graphicalInterface.confirmExit.message", APP_NAME)
         if (dialog.open() == SWT.OK) {
-            display.dispose()
+            trayIcon?.visible = false
+            display.asyncExec {
+                display.dispose()
+            }
         }
     }
 
@@ -159,15 +162,15 @@ class GraphicalInterface @Inject constructor(
 
     private fun refreshTrayIcon() {
         val pendingPhone = phoneService.listPhones(false).find { it.status == TokenStatus.PENDING }
-        val transferingFile = transferStatusService.currentTransfers.firstOrNull()
+        val transferringFile = transferStatusService.currentTransfers.firstOrNull()
         if (pendingPhone != null) {
             trayIcon?.toolTipText = t("graphicalInterface.trayIcon.tooltip.pendingPhone",
                 APP_NAME, pendingPhone.name!!)
-        } else if (transferingFile != null) {
+        } else if (transferringFile != null) {
             trayIcon?.toolTipText = t("graphicalInterface.trayIcon.tooltip.downloadingFile",
                 APP_NAME,
-                "${transferingFile.progress}%",
-                transferingFile.humanSpeed())
+                "${transferringFile.progress}%",
+                transferringFile.humanSpeed())
         } else {
             trayIcon?.toolTipText = APP_NAME
         }

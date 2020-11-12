@@ -2,11 +2,7 @@ package dropit.application.client
 
 import okhttp3.MediaType
 import okhttp3.ResponseBody
-import okio.Buffer
-import okio.BufferedSource
-import okio.ForwardingSource
-import okio.Okio
-import okio.Source
+import okio.*
 
 typealias ProgressListener = (read: Long, total: Long) -> Unit
 
@@ -14,7 +10,7 @@ class ProgressResponseBody(
     private val responseBody: ResponseBody,
     val progressListener: ProgressListener
 ) : ResponseBody() {
-    private val bufferedSource = Okio.buffer(createSource(responseBody.source()))
+    private val bufferedSource = createSource(responseBody.source()).buffer()
 
     override fun contentLength(): Long {
         return responseBody.contentLength()

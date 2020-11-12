@@ -1,13 +1,14 @@
 package dropit.application.client
 
 import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody
 import okio.BufferedSink
 import java.io.InputStream
 
-class InputStreamBody(val inputStream: InputStream, val size: Long, val callback: (Long) -> Unit) : RequestBody() {
+class InputStreamBody(private val inputStream: InputStream, val size: Long, private val callback: (Long) -> Unit) : RequestBody() {
     override fun writeTo(sink: BufferedSink) {
-        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        val buffer = ByteArray(8 * 1024)
 
         inputStream.use {
             var read = inputStream.read(buffer)
@@ -24,6 +25,6 @@ class InputStreamBody(val inputStream: InputStream, val size: Long, val callback
     }
 
     override fun contentType(): MediaType? {
-        return MediaType.get("application/octet-stream")
+        return "application/octet-stream".toMediaType()
     }
 }

@@ -24,30 +24,31 @@ allprojects {
 
     // core
     ext.kotlin_version = rootProject.ext.kotlin_version
-    ext.dagger_version = '2.19'
+    ext.dagger_version = '2.29.1'
     ext.junit_jupiter_version = '5.3.2'
     ext.spek_version = '2.0.13'
 
     // desktop - server
     ext.sqlite_version = rootProject.ext.sqlite_version
-    ext.flyway_version = '5.2.4'
+    ext.flyway_version = '7.2.0'
     ext.jooq_plugin_version = '3.0.2'
-    ext.hikari_version = '2.7.8'
-    ext.slf4j_version = '1.7.22'
+    ext.hikari_version = '3.4.5'
+    ext.slf4j_version = '1.7.30'
     ext.logback_version = '1.2.3'
-    ext.javalin_version = '2.4.0'
-    ext.jackson_version = '2.9.8'
-    ext.lang3_version = '3.8.1'
-    ext.fileupload_version = '1.3.3'
-    ext.arrow_version = '0.9.0'
+    ext.javalin_version = '3.11.0'
+    ext.jackson_version = '2.11.3'
+    ext.lang3_version = '3.11'
+    ext.fileupload_version = '1.4'
+    ext.arrow_version = '0.11.0'
 
     // desktop - UI
     ext.swt_artifact = getSwtArtifact()
     ext.swt_version = '3.108.0'
 
     // client
-    ext.retrofit_version = '2.5.0'
+    ext.retrofit_version = '2.9.0'
     ext.rxjava_version = '2.2.4'
+    ext.okhttp_version = '4.9.0'
 
     // android
     ext.support_version = '27.1.1'
@@ -103,7 +104,7 @@ static def isMacBuild() {
 }
 
 buildscript {
-    ext.kotlin_version = '1.3.41'
+    ext.kotlin_version = '1.4.10'
     ext.sqlite_version = '3.21.0.1'
     ext.detekt_version = '1.14.2'
 

@@ -9,6 +9,7 @@ import android.os.Looper
 import android.os.StrictMode
 
 const val CHANNEL_ID = "main"
+const val CONNECTION_CHANNEL_ID = "connection"
 
 class Application : Application() {
     override fun onCreate() {
@@ -17,16 +18,24 @@ class Application : Application() {
             .detectAll()
             .penaltyLog().build())
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            // Create the NotificationChannel
-            val name = getString(R.string.channel_name)
-            val descriptionText = getString(R.string.channel_description)
-            val importance = NotificationManager.IMPORTANCE_DEFAULT
-            val mChannel = NotificationChannel(CHANNEL_ID, name, importance)
-            mChannel.description = descriptionText
             val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(mChannel)
+            NotificationChannel(
+                    CHANNEL_ID,
+                    getString(R.string.channel_name),
+                    NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = getString(R.string.channel_description)
+                notificationManager.createNotificationChannel(this)
+            }
+            NotificationChannel(
+                    CONNECTION_CHANNEL_ID,
+                    getString(R.string.connection_channel_name),
+                    NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = getString(R.string.connection_channel_description)
+                notificationManager.createNotificationChannel(this)
+            }
         }
-
     }
 }
 

@@ -3,9 +3,9 @@ package dropit.application.security
 import dropit.application.dto.TokenStatus
 import dropit.domain.entity.Phone
 import dropit.jooq.tables.Phone.PHONE
-import io.javalin.Context
-import io.javalin.ForbiddenResponse
-import io.javalin.UnauthorizedResponse
+import io.javalin.http.Context
+import io.javalin.http.ForbiddenResponse
+import io.javalin.http.UnauthorizedResponse
 import org.jooq.DSLContext
 import javax.inject.Inject
 
