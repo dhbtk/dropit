@@ -15,7 +15,6 @@ allprojects {
     // versions
 
     // core
-    extra["kotlin_version"] = rootProject.extra["kotlin_version"]
     extra["dagger_version"] = "2.19"
     extra["junit_jupiter_version"] = "5.3.2"
     extra["spek_version"] = "2.0.13"
@@ -104,7 +103,6 @@ fun isMacBuild(): Boolean {
 }
 
 buildscript {
-    rootProject.extra["kotlin_version"] = "1.4.10"
     rootProject.extra["sqlite_version"] = "3.21.0.1"
     rootProject.extra["detekt_version"] = "1.14.2"
 
@@ -115,8 +113,6 @@ buildscript {
     }
 
     dependencies {
-        classpath(Deps.Plugins.androidGradle)
-        classpath(kotlin("gradle-plugin", version = Deps.Plugins.KOTLIN))
         classpath(Deps.Plugins.sqliteJdbc)
 
         // jooq workaround

@@ -2,8 +2,8 @@ import java.nio.file.Files
 import com.rohanprabhu.gradle.plugins.kdjooq.*
 
 plugins {
-    id("org.jetbrains.kotlin.jvm")
-    id("org.jetbrains.kotlin.kapt")
+    kotlin("jvm")
+    kotlin("kapt")
     id("org.flywaydb.flyway") version "5.2.4"
     id("com.rohanprabhu.kotlin-dsl-jooq") version "0.4.6"
 }
@@ -30,8 +30,6 @@ dependencies {
     api("com.fasterxml.jackson.module:jackson-module-kotlin:${project.extra["jackson_version"]}")
     api("org.apache.commons:commons-lang3:${project.extra["lang3_version"]}")
     api("commons-fileupload:commons-fileupload:${project.extra["fileupload_version"]}")
-    implementation(kotlin("stdlib", Deps.Plugins.KOTLIN))
-    implementation(kotlin("reflect",Deps.Plugins.KOTLIN))
     api("javax.annotation:javax.annotation-api:1.3.2")
 }
 

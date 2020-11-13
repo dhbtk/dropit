@@ -8,13 +8,21 @@ import dropit.application.settings.AppSettings
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.net.DatagramPacket
+import java.net.InetSocketAddress
 import java.net.MulticastSocket
+import java.net.NetworkInterface
+import kotlin.streams.toList
 
 class DiscoveryBroadcaster(appSettings: AppSettings, objectMapper: ObjectMapper) {
     val log = LoggerFactory.getLogger(this::class.java)
     val broadcastPort = DISCOVERY_PORT
     val group = DISCOVERY_GROUP
-    val socket = MulticastSocket(broadcastPort)
+    val sockets =
+            NetworkInterface
+                    .networkInterfaces().filter { it.isUp && !it.isLoopback }
+                    .map {
+                        MulticastSocket(broadcastPort).apply { joinGroup(InetSocketAddress(group, broadcastPort), it) }
+                    }.toList()
     private var running = true
     val senderThread = Thread {
         while (running) {
@@ -24,7 +32,7 @@ class DiscoveryBroadcaster(appSettings: AppSettings, objectMapper: ObjectMapper)
             val packet = DatagramPacket(message, message.size, group, broadcastPort)
             try {
                 log.trace("Sending broadcast - $broadcast")
-                socket.send(packet)
+                sockets.forEach { socket -> socket.send(packet) }
                 @Suppress("MagicNumber")
                 Thread.sleep(1000)
             } catch (e: IOException) {
@@ -36,7 +44,6 @@ class DiscoveryBroadcaster(appSettings: AppSettings, objectMapper: ObjectMapper)
 
     init {
         log.info("Starting discovery broadcaster on port $broadcastPort")
-        socket.joinGroup(group)
         senderThread.start()
     }
 

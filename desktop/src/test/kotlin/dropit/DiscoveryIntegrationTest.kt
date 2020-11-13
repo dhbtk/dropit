@@ -8,11 +8,12 @@ import org.spekframework.spek2.style.specification.describe
 object DiscoveryIntegrationTest : Spek({
     val component = TestHelper.createComponent()
     val eventBus by memoized { component.eventBus() }
-    val discoveryBroadcaster = component.discoveryBroadcaster()
-    val discoveryClient = DiscoveryClient(component.objectMapper(), eventBus)
+    val discoveryBroadcaster by memoized { component.discoveryBroadcaster() }
+    val discoveryClient by memoized { DiscoveryClient(component.objectMapper(), eventBus) }
 
     describe("DiscoveryBroadcaster and DiscoveryClient") {
         it("broadcasts and receives correctly") {
+            discoveryBroadcaster.toString()
             var client: DiscoveryClient.ServerBroadcast? = null
             eventBus.subscribe(DiscoveryClient.DiscoveryEvent::class) { (data) -> client = data }
             var tries = 0

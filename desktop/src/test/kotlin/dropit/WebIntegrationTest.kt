@@ -29,7 +29,7 @@ object WebIntegrationTest : Spek({
 
     describe("sending a file and sending clipboard text") {
         it("works as expected") {
-            webServer.javalin.start()
+//            webServer.javalin.start()
             val token = dropItClient.requestToken().blockingFirst()
             assertNotNull(token)
 

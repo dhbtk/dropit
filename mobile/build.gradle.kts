@@ -2,8 +2,8 @@ import org.jetbrains.kotlin.config.KotlinCompilerVersion
 
 plugins {
     id("com.android.application")
-    id("kotlin-android")
-    id("kotlin-android-extensions")
+    kotlin("android")
+    kotlin("android.extensions")
 }
 
 android {
@@ -32,7 +32,6 @@ android {
 }
 
 dependencies {
-    implementation(kotlin("stdlib", Deps.Plugins.KOTLIN))
     // project libs
     implementation(project(":common"))
     // support libs

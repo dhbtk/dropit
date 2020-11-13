@@ -64,32 +64,33 @@ class OutgoingService @Inject constructor(
     /**
      *
      */
-    fun openSession(session: WsContext) {
-        val token = session.header("Authorization")?.split(" ")?.last()
+    fun openSession(context: WsContext) {
+        val token = context.header("Authorization")?.split(" ")?.last()
         if (token == null) {
-            session.session.close()
+            context.session.close()
             return
         }
         val phone = getPhoneByToken(token)
         if (phone == null || phone.id != appSettings.settings.currentPhoneId) {
-            session.session.close()
+            context.session.close()
             return
         }
+        context.session.idleTimeout = Long.MAX_VALUE
         phoneSessions.compute(phone.id!!) { _, phoneSession ->
             if (phoneSession != null) {
                 if (phoneSession.session != null) {
-                    session.session.close()
+                    context.session.close()
                 } else {
-                    phoneSession.session = session
+                    phoneSession.session = context
                     if (phoneSession.clipboardData != null) {
-                        session.send(phoneSession.clipboardData!!)
+                        context.send(phoneSession.clipboardData!!)
                         phoneSession.clipboardData = null
                     }
                     sendFileList(phoneSession)
                 }
                 phoneSession
             } else {
-                PhoneSession(session)
+                PhoneSession(context)
             }
         }
         updatePhoneLastConnected(phone.id)

@@ -9,7 +9,9 @@ import java.security.KeyStore
 import java.security.SecureRandom
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import javax.net.ssl.HostnameVerifier
 import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLSession
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 
@@ -26,10 +28,17 @@ class ClientFactory @Inject constructor(private val objectMapper: ObjectMapper) 
     @Suppress("MagicNumber")
     private val okHttpClient = OkHttpClient.Builder()
         .sslSocketFactory(sslSocketFactory, trustManager)
-        .addInterceptor(okHttpLogger)
+            .apply {
+                try {
+                    Class.forName("android.os.Build")
+                    addInterceptor(okHttpLogger)
+                } catch (e: ClassNotFoundException) {
+
+                }
+            }
         .addInterceptor(Client.ErrorHandlingInterceptor())
         .connectTimeout(5, TimeUnit.SECONDS)
-        .hostnameVerifier { _, _ -> true }
+        .hostnameVerifier(HostnameVerifier { _, _ -> true })
         .build()
 
     fun create(host: String, phoneData: TokenRequest, token: String?): Client = Client(

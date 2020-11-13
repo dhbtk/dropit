@@ -6,12 +6,10 @@ plugins {
 description = ""
 
 dependencies {
-    implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8", version = project.extra["kotlin_version"] as String)
-    implementation(group = "org.jetbrains.kotlin", name = "kotlin-reflect", version = project.extra["kotlin_version"] as String)
-    testImplementation(group = "org.jetbrains.kotlin", name = "kotlin-test-junit5", version = project.extra["kotlin_version"] as String)
+    testImplementation(kotlin("test-junit5"))
     testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-engine", version = "5.3.2")
 
-    implementation(group = "com.google.dagger", name = "dagger", version = project.extra["dagger_version"] as String)
+    api(group = "com.google.dagger", name = "dagger", version = project.extra["dagger_version"] as String)
     api(group = "com.fasterxml.jackson.core", name = "jackson-databind", version = project.extra["jackson_version"] as String)
     api(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version = project.extra["jackson_version"] as String)
     api("com.squareup.retrofit2:retrofit:${project.extra["retrofit_version"]}")

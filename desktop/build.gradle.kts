@@ -9,7 +9,7 @@ plugins {
     id("application")
     id("edu.sc.seis.launch4j") version "2.4.4"
     id("edu.sc.seis.macAppBundle") version "2.3.0"
-    id("idea")
+//    id("idea")
 }
 
 description = ""
@@ -43,12 +43,12 @@ macAppBundle {
 
 
 
-idea {
-    module {
-        sourceDirs.addAll(files("build/generated/source/kapt/main"))
-        generatedSourceDirs.addAll(files("build/generated/source/kapt/main"))
-    }
-}
+//idea {
+//    module {
+//        sourceDirs.addAll(files("build/generated/source/kapt/main"))
+//        generatedSourceDirs.addAll(files("build/generated/source/kapt/main"))
+//    }
+//}
 
 dependencies {
     api(project(":server"))
@@ -56,12 +56,10 @@ dependencies {
     implementation("com.google.dagger:dagger:${project.extra["dagger_version"]}")
     implementation("io.arrow-kt:arrow-core-data:${project.extra["arrow_version"]}")
 //    implementation("io.arrow-kt:arrow-core-extensions:$arrow_version")
-    implementation(kotlin("stdlib", Deps.Plugins.KOTLIN))
-    implementation(kotlin("reflect", Deps.Plugins.KOTLIN))
     implementation("javax.annotation:javax.annotation-api:1.3.2")
 
     testImplementation("org.junit.jupiter:junit-jupiter-engine:${project.extra["junit_jupiter_version"]}")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:${Deps.Plugins.KOTLIN}")
+    testImplementation(kotlin("test-junit5"))
     testImplementation("org.spekframework.spek2:spek-dsl-jvm:${project.extra["spek_version"]}")  {
         exclude(group = "org.jetbrains.kotlin")
     }
