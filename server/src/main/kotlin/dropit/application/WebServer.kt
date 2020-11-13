@@ -99,8 +99,8 @@ class WebServer @Inject constructor(
                 }
             }
             .ws("ws") { wsHandler ->
-                wsHandler.onConnect(outgoingService::openSession)
-                wsHandler.onMessage(outgoingService::receiveDownloadStatus)
+                wsHandler.onConnect { outgoingService.openSession(it) }
+                wsHandler.onMessage { outgoingService.receiveDownloadStatus(it) }
                 wsHandler.onError { session ->
                     logger.warn("Error on phone session with ID ${session.sessionId}", session.error())
                     outgoingService.closeSession(session)

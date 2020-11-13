@@ -1,6 +1,4 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import org.jetbrains.kotlin.config.KotlinCompilerVersion
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
@@ -15,7 +13,7 @@ plugins {
 description = ""
 
 application {
-    mainClassName = "dropit.ApplicationKt"
+    mainClass.set("dropit.ApplicationKt")
     applicationName = "DropIt"
 }
 
@@ -35,13 +33,11 @@ launch4j {
 }
 
 macAppBundle {
-    javaExtras.put("-XstartOnFirstThread", null)
-    javaExtras.put("-d64", null)
+    javaExtras["-XstartOnFirstThread"] = null
+    javaExtras["-d64"] = null
     mainClassName = "dropit.ApplicationKt"
     appName = "DropIt"
 }
-
-
 
 //idea {
 //    module {
@@ -75,6 +71,7 @@ dependencies {
         exclude( group = "org.eclipse.platform")
     }
     implementation("com.github.kenglxn.QRGen:javase:2.6.0")
+    implementation("io.arrow-kt:arrow-core:0.10.5")
 
     kapt("com.google.dagger:dagger-compiler:${project.extra["dagger_version"]}")
 }

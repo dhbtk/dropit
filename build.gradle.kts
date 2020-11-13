@@ -26,7 +26,7 @@ allprojects {
     extra["hikari_version"] = "3.4.5"
     extra["slf4j_version"] = "1.7.30"
     extra["logback_version"] = "1.2.3"
-    extra["javalin_version"] = "3.10.1"
+    extra["javalin_version"] = "3.11.0"
     extra["jackson_version"] = "2.11.3"
     extra["lang3_version"] = "3.11"
     extra["fileupload_version"] = "1.4"
@@ -39,7 +39,7 @@ allprojects {
     // client
     extra["retrofit_version"] = "2.9.0"
     extra["rxjava_version"] = "2.2.4"
-    extra["okhttp_version"] = "4.8.1"
+    extra["okhttp_version"] = "4.9.0"
 
     // android
     extra["support_version"] = "27.1.1"
@@ -114,9 +114,7 @@ buildscript {
 
     dependencies {
         classpath(Deps.Plugins.sqliteJdbc)
-
-        // jooq workaround
-//        classpath("org.glassfish.jaxb:jaxb-runtime:2.3.1")
+        classpath(Deps.Plugins.androidGradle)
     }
 }
 
@@ -135,10 +133,21 @@ subprojects {
 
     configurations.all {
         resolutionStrategy {
-            force("org.jetbrains.kotlin:kotlin-stdlib-common:1.3.72")
-            force("org.jetbrains.kotlin:kotlin-stdlib:1.3.72")
-            force("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.3.72")
-            force("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.3.72")
+            force("org.jetbrains.kotlin:kotlin-stdlib-common:${Deps.Plugins.KOTLIN}")
+            force("org.jetbrains.kotlin:kotlin-stdlib:${Deps.Plugins.KOTLIN}")
+            force("org.jetbrains.kotlin:kotlin-stdlib-jdk7:${Deps.Plugins.KOTLIN}")
+            force("org.jetbrains.kotlin:kotlin-stdlib-jdk8:${Deps.Plugins.KOTLIN}")
+            force("org.jetbrains.kotlin:kotlin-reflect:${Deps.Plugins.KOTLIN}")
         }
+    }
+
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+        kotlinOptions.apiVersion = "1.4"
+        kotlinOptions.jvmTarget = "1.8"
+    }
+
+    tasks.withType<JavaCompile>().configureEach {
+        sourceCompatibility = "1.8"
+        targetCompatibility = "1.8"
     }
 }
