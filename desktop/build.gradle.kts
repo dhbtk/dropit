@@ -1,13 +1,12 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
-    id("org.jetbrains.kotlin.jvm")
-    id("org.jetbrains.kotlin.kapt")
-    id("com.github.johnrengelman.shadow") version "4.0.4"
+    use(Deps.Plugins.kotlinJvm)
+    use(Deps.Plugins.kotlinKapt)
+    use(Deps.Plugins.shadow)
+    use(Deps.Plugins.launch4j)
+    use(Deps.Plugins.macAppBundle)
     id("application")
-    id("edu.sc.seis.launch4j") version "2.4.4"
-    id("edu.sc.seis.macAppBundle") version "2.3.0"
-//    id("idea")
 }
 
 description = ""
@@ -19,7 +18,7 @@ application {
 
 tasks.named<ShadowJar>("shadowJar") {
     archiveBaseName.set("dropit-desktop")
-    archiveClassifier.set(project.extra["desktopClassifier"] as String)
+    archiveClassifier.set(BuildPlatform.current.desktopClassifier)
 }
 
 launch4j {
@@ -39,41 +38,34 @@ macAppBundle {
     appName = "DropIt"
 }
 
-//idea {
-//    module {
-//        sourceDirs.addAll(files("build/generated/source/kapt/main"))
-//        generatedSourceDirs.addAll(files("build/generated/source/kapt/main"))
-//    }
-//}
-
 dependencies {
     api(project(":server"))
-    implementation("ch.qos.logback:logback-classic:${project.extra["logback_version"]}")
-    implementation("com.google.dagger:dagger:${project.extra["dagger_version"]}")
+    implementation(Deps.logbackClassic)
+    implementation(Deps.dagger)
 //    implementation("io.arrow-kt:arrow-core-extensions:$arrow_version")
-    implementation("javax.annotation:javax.annotation-api:1.3.2")
+    implementation(Deps.javaxAnnotationApi)
 
-    testImplementation("org.junit.jupiter:junit-jupiter-engine:${project.extra["junit_jupiter_version"]}")
+    testImplementation(Deps.junitJupiterEngine)
     testImplementation(kotlin("test-junit5"))
-    testImplementation("org.spekframework.spek2:spek-dsl-jvm:${project.extra["spek_version"]}")  {
+    testImplementation(Deps.spekDslJvm)  {
         exclude(group = "org.jetbrains.kotlin")
     }
-    testRuntimeOnly ("org.spekframework.spek2:spek-runner-junit5:${project.extra["spek_version"]}") {
+    testRuntimeOnly (Deps.spekRunnerJunit5) {
         exclude(group = "org.junit.platform")
         exclude(group = "org.jetbrains.kotlin")
     }
 
     // UI
-    implementation("org.eclipse.platform:org.eclipse.swt.${project.extra["swt_artifact"]}:${project.extra["swt_version"]}") {
+    implementation(Deps.swtRuntime) {
         exclude( group = "org.eclipse.platform")
     }
-    implementation("org.eclipse.platform:org.eclipse.swt:${project.extra["swt_version"]}") {
+    implementation(Deps.swt) {
         exclude( group = "org.eclipse.platform")
     }
-    implementation("com.github.kenglxn.QRGen:javase:2.6.0")
-    implementation("io.arrow-kt:arrow-core:0.10.5")
+    implementation(Deps.qrGenJavaSe)
+    implementation(Deps.arrowCore)
 
-    kapt("com.google.dagger:dagger-compiler:${project.extra["dagger_version"]}")
+    kapt(Deps.daggerCompiler)
 }
 
 tasks {

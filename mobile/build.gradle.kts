@@ -35,16 +35,16 @@ dependencies {
     // project libs
     implementation(project(":common"))
     // support libs
-    implementation("androidx.appcompat:appcompat:1.2.0")
-    implementation("androidx.constraintlayout:constraintlayout:2.0.4")
-    implementation("androidx.recyclerview:recyclerview:1.1.0")
-    implementation("com.google.android.material:material:1.2.1")
-    implementation("androidx.legacy:legacy-support-v4:1.0.0")
+    implementation(Deps.appCompat)
+    implementation(Deps.constraintLayout)
+    implementation(Deps.recyclerView)
+    implementation(Deps.material)
+    implementation(Deps.legacySupportV4)
     // other dependencies
-    implementation("net.sourceforge.streamsupport:android-retrofuture:${project.extra["retrofuture_version"]}")
-    implementation("org.jetbrains.anko:anko-sqlite:${project.extra["anko_version"]}")
+    implementation(Deps.androidRetrofuture)
+    implementation(Deps.ankoSqlite)
     // test
-    testImplementation("junit:junit:4.12")
-    androidTestImplementation("androidx.test.ext:junit:1.1.2")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.3.0")
+    testImplementation(Deps.junit)
+    androidTestImplementation(Deps.androidTestJunit)
+    androidTestImplementation(Deps.espressoCore)
 }
