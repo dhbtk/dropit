@@ -26,7 +26,7 @@ allprojects {
     extra["hikari_version"] = "3.4.5"
     extra["slf4j_version"] = "1.7.30"
     extra["logback_version"] = "1.2.3"
-    extra["javalin_version"] = "3.11.0"
+    extra["javalin_version"] = "3.10.1"
     extra["jackson_version"] = "2.11.3"
     extra["lang3_version"] = "3.11"
     extra["fileupload_version"] = "1.4"
@@ -39,7 +39,7 @@ allprojects {
     // client
     extra["retrofit_version"] = "2.9.0"
     extra["rxjava_version"] = "2.2.4"
-    extra["okhttp_version"] = "4.9.0"
+    extra["okhttp_version"] = "4.8.1"
 
     // android
     extra["support_version"] = "27.1.1"
@@ -131,5 +131,14 @@ subprojects {
         maven("https://oss.sonatype.org/content/repositories/releases/")
         maven("https://oss.sonatype.org/content/repositories/snapshots/")
         maven("http://maven-eclipse.github.io/maven")
+    }
+
+    configurations.all {
+        resolutionStrategy {
+            force("org.jetbrains.kotlin:kotlin-stdlib-common:1.3.72")
+            force("org.jetbrains.kotlin:kotlin-stdlib:1.3.72")
+            force("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.3.72")
+            force("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.3.72")
+        }
     }
 }

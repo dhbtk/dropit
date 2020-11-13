@@ -54,7 +54,6 @@ dependencies {
     api(project(":server"))
     implementation("ch.qos.logback:logback-classic:${project.extra["logback_version"]}")
     implementation("com.google.dagger:dagger:${project.extra["dagger_version"]}")
-    implementation("io.arrow-kt:arrow-core-data:${project.extra["arrow_version"]}")
 //    implementation("io.arrow-kt:arrow-core-extensions:$arrow_version")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
 

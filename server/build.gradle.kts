@@ -2,8 +2,8 @@ import java.nio.file.Files
 import com.rohanprabhu.gradle.plugins.kdjooq.*
 
 plugins {
-    kotlin("jvm")
-    kotlin("kapt")
+    id("org.jetbrains.kotlin.jvm")
+    id("org.jetbrains.kotlin.kapt")
     id("org.flywaydb.flyway") version "5.2.4"
     id("com.rohanprabhu.kotlin-dsl-jooq") version "0.4.6"
 }
