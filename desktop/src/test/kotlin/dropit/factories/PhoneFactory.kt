@@ -2,7 +2,7 @@ package dropit.factories
 
 import dropit.application.dto.TokenStatus
 import dropit.domain.entity.Phone
-import dropit.jooq.tables.Phone.Companion.PHONE
+import dropit.jooq.Tables.PHONE
 import org.jooq.DSLContext
 import java.util.*
 

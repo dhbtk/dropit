@@ -46,6 +46,7 @@ fun main() {
     }
     component.discoveryBroadcaster()
     val display = component.display()
+    display.setRuntimeExceptionHandler { e -> reportError(e) }
     while (!display.isDisposed) {
         try {
             if (!display.readAndDispatch()) {

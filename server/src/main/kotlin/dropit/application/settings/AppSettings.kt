@@ -2,7 +2,7 @@ package dropit.application.settings
 
 import dropit.domain.entity.Settings
 import dropit.infrastructure.i18n.t
-import dropit.jooq.tables.Settings.Companion.SETTINGS
+import dropit.jooq.Tables.SETTINGS
 import org.jooq.DSLContext
 import java.net.InetAddress
 import java.net.UnknownHostException

@@ -2,7 +2,7 @@ package dropit.application.security
 
 import dropit.application.dto.TokenStatus
 import dropit.domain.entity.Phone
-import dropit.jooq.tables.Phone.Companion.PHONE
+import dropit.jooq.Tables.PHONE
 import dropit.logger
 import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse

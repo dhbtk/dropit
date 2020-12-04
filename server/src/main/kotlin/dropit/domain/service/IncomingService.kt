@@ -8,9 +8,9 @@ import dropit.domain.entity.*
 import dropit.infrastructure.event.AppEvent
 import dropit.infrastructure.event.EventBus
 import dropit.infrastructure.fs.TransferFolderProvider
+import dropit.jooq.Tables.TRANSFER
+import dropit.jooq.Tables.TRANSFER_FILE
 import dropit.jooq.tables.ClipboardLog
-import dropit.jooq.tables.Transfer.Companion.TRANSFER
-import dropit.jooq.tables.TransferFile.Companion.TRANSFER_FILE
 import dropit.logger
 import org.apache.commons.fileupload.ProgressListener
 import org.apache.commons.fileupload.servlet.ServletFileUpload

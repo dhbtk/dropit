@@ -8,9 +8,7 @@ import dropit.domain.entity.Phone
 import dropit.infrastructure.event.AppEvent
 import dropit.infrastructure.event.EventBus
 import dropit.infrastructure.i18n.t
-import dropit.jooq.tables.Phone.Companion.PHONE
-import dropit.jooq.tables.Transfer.Companion.TRANSFER
-import dropit.jooq.tables.TransferFile.Companion.TRANSFER_FILE
+import dropit.jooq.Tables.*
 import org.jooq.DSLContext
 import org.jooq.UpdatableRecord
 import java.util.UUID

@@ -14,9 +14,7 @@ import dropit.domain.entity.TransferSource
 import dropit.domain.service.PhoneService
 import dropit.infrastructure.event.AppEvent
 import dropit.infrastructure.event.EventBus
-import dropit.jooq.tables.ClipboardLog.Companion.CLIPBOARD_LOG
-import dropit.jooq.tables.Phone.Companion.PHONE
-import dropit.jooq.tables.SentFile.Companion.SENT_FILE
+import dropit.jooq.Tables.*
 import dropit.jooq.tables.records.PhoneRecord
 import dropit.logger
 import io.javalin.websocket.WsContext

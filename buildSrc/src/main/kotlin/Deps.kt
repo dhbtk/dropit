@@ -11,7 +11,7 @@ object Deps {
         val launch4j = Plugin("edu.sc.seis.launch4j", "2.4.4")
         val macAppBundle = Plugin("edu.sc.seis.macAppBundle", "2.3.0")
         val flyway = Plugin("org.flywaydb.flyway", FLYWAY_VERSION)
-        val jooq = Plugin("com.rohanprabhu.kotlin-dsl-jooq", "0.4.6")
+        val jooq = Plugin("nu.studer.jooq", "5.2")
     }
 
     data class Plugin(val id: String, val version: String? = null)
@@ -22,7 +22,7 @@ object Deps {
     const val RETROFIT_VERSION = "2.9.0"
     const val SPEK_VERSION = "2.0.13"
     const val SWT_VERSION = "3.115.0"
-    const val JOOQ_VERSION = "3.14.3"
+    const val JOOQ_VERSION = "3.14.4"
 
     const val junitJupiterEngine = "org.junit.jupiter:junit-jupiter-engine:5.3.2"
 
@@ -44,6 +44,7 @@ object Deps {
     const val logbackClassic = "ch.qos.logback:logback-classic:1.2.3"
 
     const val javaxAnnotationApi = "javax.annotation:javax.annotation-api:1.3.2"
+    const val jsr305 = "com.google.code.findbugs:jsr305:3.0.2"
 
     const val spekDslJvm = "org.spekframework.spek2:spek-dsl-jvm:$SPEK_VERSION"
     const val spekRunnerJunit5 = "org.spekframework.spek2:spek-runner-junit5:$SPEK_VERSION"

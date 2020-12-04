@@ -18,6 +18,15 @@ import java.net.URLEncoder
 import kotlin.streams.toList
 
 class PairingQrCode(private val appSettings: AppSettings, private val window: Shell) {
+    private val ipAddresses = NetworkInterface.networkInterfaces().map { iface ->
+        logger.debug("interface name: ${iface.displayName}, virtual: ${iface.isVirtual}, loopback: ${iface.isLoopback}, is up: ${iface.isUp}")
+        iface
+    }.filter {
+        it.isUp and !it.isLoopback
+    }.flatMap { iface ->
+        iface.inetAddresses().filter { it is Inet4Address }
+    }.map { it.hostAddress }.filter { it != null }.toList()
+
     private var qrCode: Image = generateQrCode()
     private val group = Group(window, SWT.SHADOW_ETCHED_OUT).also { group ->
         group.text = "Pairing QR Code"
@@ -30,14 +39,6 @@ class PairingQrCode(private val appSettings: AppSettings, private val window: Sh
                 group.layout = this
             }
     }
-    private val ipAddresses = NetworkInterface.networkInterfaces().map { iface ->
-        logger.debug("interface name: ${iface.displayName}, virtual: ${iface.isVirtual}, loopback: ${iface.isLoopback}, is up: ${iface.isUp}")
-        iface
-    }.filter {
-        it.isUp and !it.isLoopback
-    }.flatMap { iface ->
-        iface.inetAddresses().filter { it is Inet4Address }
-    }.map { it.hostAddress }.toList()
     private val canvas = Label(group, SWT.CENTER).apply {
         layoutData = GridData(SWT.CENTER, SWT.CENTER, true, true).apply {
             widthHint = 256
