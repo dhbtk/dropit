@@ -1,7 +1,7 @@
 package dropit.ui
 
 import dropit.APP_NAME
-import dropit.application.OutgoingService
+import dropit.application.PhoneSessionService
 import dropit.application.dto.TokenStatus
 import dropit.application.settings.AppSettings
 import dropit.domain.entity.ShowFileAction
@@ -10,8 +10,10 @@ import dropit.domain.service.PhoneService
 import dropit.infrastructure.event.EventBus
 import dropit.infrastructure.i18n.t
 import dropit.infrastructure.ui.GuiIntegrations
-import dropit.ui.main.MainWindowFactory
+import dropit.logger
+import dropit.ui.main.MainWindow
 import dropit.ui.service.TransferStatusService
+import dropit.ui.settings.SettingsWindow
 import dropit.ui.settings.SettingsWindowFactory
 import org.eclipse.swt.SWT
 import org.eclipse.swt.dnd.Clipboard
@@ -22,6 +24,7 @@ import org.eclipse.swt.widgets.*
 import org.slf4j.LoggerFactory
 import java.io.File
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 
 @Singleton
@@ -33,17 +36,18 @@ class GraphicalInterface @Inject constructor(
     private val desktopIntegrations: DesktopIntegrations,
     private val clipboardService: dropit.ui.service.ClipboardService,
     private val display: Display,
-    private val mainWindowFactory: MainWindowFactory,
-    private val settingsWindowFactory: SettingsWindowFactory,
+    private val mainWindowProvider: Provider<MainWindow>,
+    private val settingsWindowProvider: Provider<SettingsWindow>,
     private val guiIntegrations: GuiIntegrations,
-    private val outgoingService: OutgoingService
+    private val phoneSessionService: PhoneSessionService
 ) {
-    val logger = LoggerFactory.getLogger(javaClass)
     private val shell = Shell(display)
     private val trayImage = Image(display, javaClass.getResourceAsStream("/ui/icon.png"))
     private val trayImageConnected = Image(display, javaClass.getResourceAsStream("/ui/icon-connected.png"))
     private val trayImageDisconnected = Image(display, javaClass.getResourceAsStream("/ui/icon-disconnected.png"))
     private val trayIcon = setupTrayIcon()
+    val mainWindow: MainWindow by WindowDelegate(guiIntegrations, mainWindowProvider)
+    val settingsWindow: SettingsWindow by WindowDelegate(guiIntegrations, settingsWindowProvider)
 
     init {
         eventBus.subscribe(IncomingService.ClipboardReceiveEvent::class) { (data) ->
@@ -54,7 +58,7 @@ class GraphicalInterface @Inject constructor(
 
         guiIntegrations.afterDisplayInit()
         if (appSettings.firstStart) {
-            mainWindowFactory.open()
+            mainWindow.open()
         }
         guiIntegrations.onGuiInit(appSettings.firstStart)
     }
@@ -64,11 +68,13 @@ class GraphicalInterface @Inject constructor(
         dialog.text = t("graphicalInterface.confirmExit.title", APP_NAME)
         dialog.message = t("graphicalInterface.confirmExit.message", APP_NAME)
         if (dialog.open() == SWT.OK) {
-            trayIcon?.visible = false
-            display.asyncExec {
-                display.dispose()
-            }
+            exitApp()
         }
+    }
+
+    fun exitApp() {
+        display.syncExec { trayIcon?.visible = false }
+        display.asyncExec { display.dispose() }
     }
 
     private fun setupTrayIcon(): TrayItem? {
@@ -93,7 +99,7 @@ class GraphicalInterface @Inject constructor(
             }
 
             trayIcon.addListener(SWT.DefaultSelection) {
-                mainWindowFactory.open()
+                mainWindow.open()
             }
 
             listOf(
@@ -135,7 +141,7 @@ class GraphicalInterface @Inject constructor(
                 text = t("graphicalInterface.trayIcon.show")
                 menu.defaultItem = this
                 addListener(SWT.Selection) {
-                    mainWindowFactory.open()
+                    mainWindow.open()
                 }
             }
 
@@ -143,7 +149,7 @@ class GraphicalInterface @Inject constructor(
             .apply {
                 text = t("graphicalInterface.trayIcon.settings")
                 addListener(SWT.Selection) {
-                    settingsWindowFactory.open()
+                    settingsWindow.open()
                 }
             }
 
@@ -178,7 +184,7 @@ class GraphicalInterface @Inject constructor(
             id -> phoneService.listPhones(true).find { it.id == id }
         }
         if (defaultPhone != null) {
-            if (outgoingService.phoneSessions[defaultPhone.id]?.session != null) {
+            if (phoneSessionService.phoneSessions[defaultPhone.id]?.session != null) {
                 trayIcon?.image = trayImageConnected
             } else {
                 trayIcon?.image = trayImageDisconnected

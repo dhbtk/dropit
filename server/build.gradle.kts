@@ -1,4 +1,4 @@
-import java.nio.file.Files
+import java.nio.file.Paths
 import com.rohanprabhu.gradle.plugins.kdjooq.*
 
 plugins {
@@ -9,8 +9,7 @@ plugins {
 }
 
 description = ""
-val buildDbPath = Files.createTempFile("dropit-build", ".db").toFile()
-buildDbPath.deleteOnExit()
+val buildDbPath = Paths.get(project.buildDir.toString(), "tmp", "build.db")
 
 dependencies {
     api(project(":common"))
@@ -42,13 +41,53 @@ jooqGenerator {
                 url = "jdbc:sqlite:$buildDbPath"
             }
             generator {
+                name = "org.jooq.codegen.KotlinGenerator"
                 database {
                     includes = ".*"
                     excludes = "flyway_schema_history"
-                    isIncludeSequences = false
-                    isIncludePrimaryKeys = false
-                    isIncludeUniqueKeys = false
-                    isIncludeForeignKeys = false
+//                    schemaVersionProvider = "SELECT MAX(version) FROM flyway_schema_history"
+//                    catalogVersionProvider = "SELECT MAX(version) FROM flyway_schema_history"
+//                    withSyntheticPrimaryKeys(".+\\.(id|ID)")
+                    forcedTypes {
+                        forcedType {
+                            name = "uuid"
+                            includeExpression = "(.*\\.(.+_){0,1}id|phone\\.token)"
+                        }
+                        forcedType {
+                            name = "boolean"
+                            includeExpression = "(settings\\.(separate_transfer_folders|open_transfer_on_completion|log_clipboard_transfers|keep_window_on_top)|transfer\\.send_to_clipboard)"
+                        }
+                        forcedType {
+                            userType = "dropit.domain.entity.TransferSource"
+                            isEnumConverter = true
+                            includeExpression = "clipboard_log\\.source"
+                        }
+                        forcedType {
+                            userType = "dropit.application.dto.TokenStatus"
+                            isEnumConverter = true
+                            includeExpression = "phone\\.status"
+                        }
+                        forcedType {
+                            userType = "dropit.domain.entity.ShowFileAction"
+                            isEnumConverter = true
+                            includeExpression = "(settings\\.show_transfer_action|file_type_settings\\.show_action)"
+                        }
+                        forcedType {
+                            userType = "dropit.domain.entity.ClipboardFileDestination"
+                            isEnumConverter = true
+                            includeExpression = "file_type_settings\\.clipboard_destination"
+                        }
+                        forcedType {
+                            userType = "dropit.application.dto.TransferStatus"
+                            isEnumConverter = true
+                            includeExpression = "transfer\\.status"
+                        }
+                        forcedType {
+                            userType = "dropit.application.dto.FileStatus"
+                            isEnumConverter = true
+                            includeExpression = "transfer_file\\.status"
+                        }
+                    }
                 }
                 target {
                     packageName = "dropit.jooq"
@@ -67,4 +106,5 @@ tasks.clean {
 
 flyway {
     url = "jdbc:sqlite:$buildDbPath"
+    mixed = true
 }

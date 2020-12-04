@@ -12,10 +12,10 @@ private const val CURRENT_COMPUTER_ID = "currentComputerId"
 class PreferencesHelper(context: Context) {
     private val sharedPreferences = context.getSharedPreferences("dropit.mobile.Preferences", Context.MODE_PRIVATE)
 
-    val phoneId: String
-        get() = sharedPreferences.getString(PHONE_ID, "")!!
+    val phoneId
+        get() = sharedPreferences.getString(PHONE_ID, "").let { UUID.fromString(it) }!!
 
-    val phoneName: String
+    val phoneName
         get() = sharedPreferences.getString(PHONE_NAME, "")!!
 
     val tokenRequest

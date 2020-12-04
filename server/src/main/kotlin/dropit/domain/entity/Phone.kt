@@ -12,4 +12,6 @@ data class Phone(
     val status: TokenStatus? = null,
     val token: UUID? = null,
     val lastConnected: LocalDateTime? = null
-) : IEntity
+) : IEntity {
+
+}

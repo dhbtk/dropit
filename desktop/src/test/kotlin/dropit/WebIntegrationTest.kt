@@ -18,7 +18,7 @@ object WebIntegrationTest : Spek({
 
     val phoneService by memoized { component.phoneService() }
     val phoneData = TokenRequest(
-        UUID.randomUUID().toString(),
+        UUID.randomUUID(),
         "Phone"
     )
     val dropItClient = ClientFactory(webServer.objectMapper).create("https://localhost:58992", phoneData, null)
@@ -33,7 +33,7 @@ object WebIntegrationTest : Spek({
             val token = dropItClient.requestToken().blockingFirst()
             assertNotNull(token)
 
-            phoneService.authorizePhone(UUID.fromString(phoneData.id))
+            phoneService.authorizePhone(phoneData.id!!)
 
             val status = dropItClient.getTokenStatus().blockingFirst()
 

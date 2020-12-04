@@ -1,6 +1,6 @@
 package dropit.ui.main
 
-import dropit.application.OutgoingService
+import dropit.application.PhoneSessionService
 import dropit.application.dto.TokenStatus
 import dropit.application.settings.AppSettings
 import dropit.domain.service.PhoneService
@@ -31,7 +31,7 @@ class PhoneTable(
     private val phoneService: PhoneService,
     private val display: Display,
     private val appSettings: AppSettings,
-    private val outgoingService: OutgoingService
+    private val phoneSessionService: PhoneSessionService
 ) {
     lateinit var phoneLabel: Label
     lateinit var phoneTable: Table
@@ -170,7 +170,7 @@ class PhoneTable(
             phoneLabel.text = t("phoneTable.phoneStatus.notPaired", appSettings.settings.computerName)
         } else {
             val phone = phoneService.listPhones(false).find { it.id == appSettings.settings.currentPhoneId }
-            val connected = outgoingService.phoneSessions[phone?.id]?.session != null
+            val connected = phoneSessionService.phoneSessions[phone?.id]?.session != null
             phoneLabel.text = t(
                 "phoneTable.phoneStatus.paired",
                 phone!!.name!!,

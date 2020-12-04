@@ -7,6 +7,6 @@ enum class TokenStatus {
     PENDING, DENIED, AUTHORIZED
 }
 
-data class TokenRequest(val id: String? = null, val name: String? = null) : Serializable
+data class TokenRequest(val id: UUID? = null, val name: String? = null) : Serializable
 
 data class TokenResponse(val status: TokenStatus? = null, val computerSecret: UUID? = null) : Serializable

@@ -21,7 +21,7 @@ object Deps {
     const val JACKSON_VERSION = "2.11.3"
     const val RETROFIT_VERSION = "2.9.0"
     const val SPEK_VERSION = "2.0.13"
-    const val SWT_VERSION = "3.108.0"
+    const val SWT_VERSION = "3.115.0"
     const val JOOQ_VERSION = "3.14.3"
 
     const val junitJupiterEngine = "org.junit.jupiter:junit-jupiter-engine:5.3.2"
@@ -95,7 +95,7 @@ enum class BuildPlatform(private val targetPlatform: String, val swtRuntime: Str
                         return platform
                     }
                 }
-                val osName = System.getProperty("os.name")
+                val osName = System.getProperty("os.name").toLowerCase()
                 return when {
                     osName.contains("mac os") -> MACOS
                     osName.contains("windows") -> WINDOWS

@@ -2,7 +2,7 @@ package dropit.factories
 
 import dropit.application.dto.TokenStatus
 import dropit.domain.entity.Phone
-import dropit.jooq.tables.Phone.PHONE
+import dropit.jooq.tables.Phone.Companion.PHONE
 import org.jooq.DSLContext
 import java.util.*
 
@@ -20,9 +20,7 @@ object PhoneFactory {
             status = TokenStatus.AUTHORIZED,
             token = UUID.fromString("b145285e-7ac5-4553-a49d-8940c12ea47d")
         )
-        if (jooq != null) {
-            jooq.newRecord(PHONE, phone).insert()
-        }
+        jooq?.newRecord(PHONE, phone)?.insert()
         return phone
     }
 

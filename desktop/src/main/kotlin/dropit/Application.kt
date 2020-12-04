@@ -11,13 +11,14 @@ import org.eclipse.swt.widgets.Display
 import org.eclipse.swt.widgets.Link
 import org.eclipse.swt.widgets.Shell
 import org.eclipse.swt.widgets.Text
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.slf4j.bridge.SLF4JBridgeHandler
 import java.io.CharArrayWriter
 import java.io.PrintWriter
+import kotlin.properties.ReadOnlyProperty
+import kotlin.reflect.KProperty
 import kotlin.system.exitProcess
-
-val rootLogger = LoggerFactory.getLogger("dropit")
 
 fun main() {
     SLF4JBridgeHandler.removeHandlersForRootLogger()
@@ -27,6 +28,12 @@ fun main() {
     component.eventBus().subscribe(WebServer.ServerStartFailedEvent::class) {
         reportError("Failed to start the server component. Is the application running already?")
     }
+    val shutdownHandler = Runnable {
+        component.graphicalInterface().exitApp()
+        component.webServer().javalin.stop()
+        component.discoveryBroadcaster().stop()
+    }
+    Runtime.getRuntime().addShutdownHook(Thread(shutdownHandler))
     try {
         component.webServer()
     } catch (e: Throwable) {
@@ -49,8 +56,7 @@ fun main() {
             break
         }
     }
-    component.webServer().javalin.stop()
-    component.discoveryBroadcaster().stop()
+    shutdownHandler.run()
 }
 
 fun reportError(message: String) {
@@ -78,7 +84,7 @@ fun reportError(exception: Throwable) {
 
     Link(shell, SWT.LEFT or SWT.WRAP).apply {
         text = "DropIt could not be started. The following stack trace could be useful in figuring out why. " +
-            "Please report this at <a href=\"$githubUrl\">our GitHub page</a>."
+                "Please report this at <a href=\"$githubUrl\">our GitHub page</a>."
         layoutData = GridData(GridData.FILL_HORIZONTAL)
         pack()
         addListener(SWT.Selection) {

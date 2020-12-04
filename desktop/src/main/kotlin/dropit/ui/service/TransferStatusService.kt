@@ -1,6 +1,6 @@
 package dropit.ui.service
 
-import dropit.application.OutgoingService
+import dropit.application.PhoneSessionService
 import dropit.domain.entity.TransferSource
 import dropit.domain.service.IncomingService
 import dropit.infrastructure.event.AppEvent
@@ -16,10 +16,9 @@ import kotlin.math.roundToInt
 
 @Singleton
 class TransferStatusService @Inject constructor(
-    private val bus: EventBus,
-    private val incomingService: IncomingService,
-    private val outgoingService: OutgoingService,
-    private val jooq: DSLContext
+        private val bus: EventBus,
+        private val incomingService: IncomingService,
+        private val phoneSessionService: PhoneSessionService
 ) {
     data class CurrentTransfer(
         val id: UUID,
@@ -75,9 +74,9 @@ class TransferStatusService @Inject constructor(
             IncomingService.DownloadProgressEvent::class,
             IncomingService.DownloadFinishEvent::class,
             IncomingService.TransferCompleteEvent::class,
-            OutgoingService.UploadStartedEvent::class,
-            OutgoingService.UploadProgressEvent::class,
-            OutgoingService.UploadFinishedEvent::class
+            PhoneSessionService.UploadStartedEvent::class,
+            PhoneSessionService.UploadProgressEvent::class,
+            PhoneSessionService.UploadFinishedEvent::class
         ).forEach { eventClass ->
             bus.subscribe(eventClass) {
                 updateCurrentTransfers()
@@ -100,7 +99,7 @@ class TransferStatusService @Inject constructor(
             displayTransfer.progress = percent(times.lastOrNull()?.second, displayTransfer.size)
             displayTransfer.speedBytes = incomingService.calculateTransferRate(times)
         }
-        outgoingService.fileDownloadStatus.forEach { upload, times ->
+        phoneSessionService.fileDownloadStatus.forEach { (upload, times) ->
             val displayTransfer = currentTransfers.find { it.id == upload.id } ?: CurrentTransfer(
                 upload.id,
                 upload.file.name,
@@ -115,7 +114,7 @@ class TransferStatusService @Inject constructor(
         }
         val currentIds = incomingService.transferTimes.keys.map {
             it.id!!
-        } union outgoingService.fileDownloadStatus.keys.map { it.id }
+        } union phoneSessionService.fileDownloadStatus.keys.map { it.id }
         currentTransfers.removeIf { it.id !in currentIds }
     }
 

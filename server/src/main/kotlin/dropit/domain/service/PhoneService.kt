@@ -8,10 +8,11 @@ import dropit.domain.entity.Phone
 import dropit.infrastructure.event.AppEvent
 import dropit.infrastructure.event.EventBus
 import dropit.infrastructure.i18n.t
-import dropit.jooq.tables.Phone.PHONE
-import dropit.jooq.tables.Transfer.TRANSFER
-import dropit.jooq.tables.TransferFile.TRANSFER_FILE
+import dropit.jooq.tables.Phone.Companion.PHONE
+import dropit.jooq.tables.Transfer.Companion.TRANSFER
+import dropit.jooq.tables.TransferFile.Companion.TRANSFER_FILE
 import org.jooq.DSLContext
+import org.jooq.UpdatableRecord
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -40,7 +41,7 @@ class PhoneService @Inject constructor(
                 alreadyExists.token.toString()
             } else {
                 val phone = Phone(
-                    id = UUID.fromString(request.id),
+                    id = request.id,
                     name = request.name,
                     token = UUID.randomUUID(),
                     status = TokenStatus.PENDING)
@@ -60,13 +61,13 @@ class PhoneService @Inject constructor(
      *
      * Returns the status for a given phone token.
      */
-    fun getTokenStatus(token: String): TokenResponse {
+    fun getTokenStatus(token: UUID): TokenResponse {
         return create.selectFrom(PHONE)
             .where(PHONE.TOKEN.eq(token))
             .fetchOptionalInto(Phone::class.java)
             .map { it.status!! }
             .map { TokenResponse(it, if (it == TokenStatus.AUTHORIZED) appSettings.settings.computerSecret else null) }
-            .orElseThrow { UnauthorizedException(token) }
+            .orElseThrow { UnauthorizedException(token.toString()) }
     }
 
     /**
@@ -76,10 +77,10 @@ class PhoneService @Inject constructor(
      */
     fun authorizePhone(id: UUID): Phone {
         return create.transactionResult { _ ->
-            val pendingPhone: Phone = create.fetchOne(PHONE, PHONE.ID.eq(id.toString()))?.into(Phone::class.java)
+            val pendingPhone: Phone = create.fetchOne(PHONE, PHONE.ID.eq(id))?.into(Phone::class.java)
                 ?: throw IllegalStateException(t("phoneService.common.phoneNotFound", id))
             create.newRecord(PHONE, pendingPhone.copy(status = TokenStatus.AUTHORIZED)).update()
-            val authorizedPhone = create.fetchOne(PHONE, PHONE.ID.eq(id.toString()))!!.into(Phone::class.java)
+            val authorizedPhone = create.fetchOne(PHONE, PHONE.ID.eq(id))!!.into(Phone::class.java)
             bus.broadcast(PhoneChangedEvent(authorizedPhone))
             appSettings.settings = appSettings.settings.copy(currentPhoneId = id)
             authorizedPhone
@@ -93,10 +94,10 @@ class PhoneService @Inject constructor(
      */
     fun denyPhone(id: UUID): Phone {
         return create.transactionResult { _ ->
-            val pendingPhone: Phone = create.fetchOne(PHONE, PHONE.ID.eq(id.toString()))?.into(Phone::class.java)
+            val pendingPhone: Phone = create.fetchOne(PHONE, PHONE.ID.eq(id))?.into(Phone::class.java)
                 ?: throw IllegalStateException(t("phoneService.common.phoneNotFound", id))
             create.newRecord(PHONE, pendingPhone.copy(status = TokenStatus.DENIED)).update()
-            val deniedPhone = create.fetchOne(PHONE, PHONE.ID.eq(id.toString()))!!.into(Phone::class.java)
+            val deniedPhone = create.fetchOne(PHONE, PHONE.ID.eq(id))!!.into(Phone::class.java)
             bus.broadcast(PhoneChangedEvent(deniedPhone))
             deniedPhone
         }
@@ -111,7 +112,7 @@ class PhoneService @Inject constructor(
         val condition = if (showDenied) {
             PHONE.STATUS.isNotNull
         } else {
-            PHONE.STATUS.ne(TokenStatus.DENIED.name)
+            PHONE.STATUS.ne(TokenStatus.DENIED)
         }
         return create.selectFrom(PHONE).where(condition).orderBy(PHONE.CREATED_AT.desc()).fetchInto(Phone::class.java)
     }
@@ -124,10 +125,10 @@ class PhoneService @Inject constructor(
     fun deletePhone(id: UUID) {
         create.transaction { _ ->
             create.deleteFrom(TRANSFER_FILE).where(TRANSFER_FILE.TRANSFER_ID.`in`(
-                create.select(TRANSFER.ID).from(TRANSFER).where(TRANSFER.PHONE_ID.eq(id.toString()))))
+                create.select(TRANSFER.ID).from(TRANSFER).where(TRANSFER.PHONE_ID.eq(id))))
                 .execute()
-            create.deleteFrom(TRANSFER).where(TRANSFER.PHONE_ID.eq(id.toString())).execute()
-            create.deleteFrom(PHONE).where(PHONE.ID.eq(id.toString())).execute()
+            create.deleteFrom(TRANSFER).where(TRANSFER.PHONE_ID.eq(id)).execute()
+            create.deleteFrom(PHONE).where(PHONE.ID.eq(id)).execute()
         }
     }
 }

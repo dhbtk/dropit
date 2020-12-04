@@ -14,10 +14,11 @@ import dropit.domain.entity.TransferSource
 import dropit.domain.service.PhoneService
 import dropit.infrastructure.event.AppEvent
 import dropit.infrastructure.event.EventBus
-import dropit.jooq.tables.ClipboardLog.CLIPBOARD_LOG
-import dropit.jooq.tables.Phone.PHONE
-import dropit.jooq.tables.SentFile.SENT_FILE
+import dropit.jooq.tables.ClipboardLog.Companion.CLIPBOARD_LOG
+import dropit.jooq.tables.Phone.Companion.PHONE
+import dropit.jooq.tables.SentFile.Companion.SENT_FILE
 import dropit.jooq.tables.records.PhoneRecord
+import dropit.logger
 import io.javalin.websocket.WsContext
 import io.javalin.websocket.WsMessageContext
 import org.jooq.DSLContext
@@ -33,28 +34,26 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class OutgoingService @Inject constructor(
-    val bus: EventBus,
-    val jooq: DSLContext,
-    val objectMapper: ObjectMapper,
-    val appSettings: AppSettings
+class PhoneSessionService @Inject constructor(
+        val bus: EventBus,
+        val jooq: DSLContext,
+        val objectMapper: ObjectMapper,
+        val appSettings: AppSettings
 ) {
     val fileDownloadStatus = HashMap<FileUpload, MutableList<Pair<LocalDateTime, Long>>>()
 
     val phoneSessions = HashMap<UUID, PhoneSession>()
 
-    private val logger = LoggerFactory.getLogger(javaClass)
-
     data class PhoneSession(
-        var session: WsContext? = null,
-        var clipboardData: String? = null,
-        val files: MutableList<FileUpload> = ArrayList<FileUpload>()
+            var session: WsContext? = null,
+            var clipboardData: String? = null,
+            val files: MutableList<FileUpload> = ArrayList<FileUpload>()
     )
 
     data class FileUpload(
-        val file: File,
-        val size: Long,
-        val id: UUID = UUID.randomUUID()
+            val file: File,
+            val size: Long,
+            val id: UUID = UUID.randomUUID()
     )
 
     data class UploadStartedEvent(override val payload: FileUpload) : AppEvent<FileUpload>
@@ -110,13 +109,13 @@ class OutgoingService @Inject constructor(
                 bus.broadcast(UploadFinishedEvent(sentFile))
                 phoneSession.files.remove(sentFile)
                 val fileRecord = jooq.newRecord(SENT_FILE, SentFile(
-                    sentFile.id,
-                    null,
-                    null,
-                    appSettings.settings.currentPhoneId,
-                    sentFile.file.toString(),
-                    Files.probeContentType(sentFile.file.toPath()),
-                    sentFile.size
+                        sentFile.id,
+                        null,
+                        null,
+                        appSettings.settings.currentPhoneId,
+                        sentFile.file.toString(),
+                        Files.probeContentType(sentFile.file.toPath()),
+                        sentFile.size
                 ))
                 jooq.insertInto(SENT_FILE).set(fileRecord).execute()
             } else {
@@ -167,9 +166,9 @@ class OutgoingService @Inject constructor(
         session.session?.send(data)
         if (session.session != null && appSettings.settings.logClipboardTransfers) {
             ClipboardLog(
-                id = UUID.randomUUID(),
-                content = data,
-                source = TransferSource.COMPUTER
+                    id = UUID.randomUUID(),
+                    content = data,
+                    source = TransferSource.COMPUTER
             ).apply {
                 jooq.newRecord(CLIPBOARD_LOG, this).insert()
             }
@@ -178,12 +177,12 @@ class OutgoingService @Inject constructor(
     }
 
     private fun sendFileList(session: PhoneSession) {
-        val WsContext = session.session
-        if (WsContext != null) {
+        val wsContext = session.session
+        if (wsContext != null) {
             session.files.forEach { sentFile ->
                 if (fileDownloadStatus[sentFile]!!.isEmpty()) {
-                    WsContext.send(ByteBuffer.wrap(objectMapper.writeValueAsBytes(
-                        SentFileInfo(sentFile.id, sentFile.file.length()))))
+                    wsContext.send(ByteBuffer.wrap(objectMapper.writeValueAsBytes(
+                            SentFileInfo(sentFile.id, sentFile.file.length()))))
                 }
             }
         }
@@ -191,27 +190,27 @@ class OutgoingService @Inject constructor(
 
     private fun getPhoneById(id: UUID): Phone? {
         return jooq.selectFrom<PhoneRecord>(PHONE)
-            .where(PHONE.ID.eq(id.toString()))
-            .and(PHONE.STATUS.eq(TokenStatus.AUTHORIZED.toString()))
-            .fetchOptionalInto(Phone::class.java).orElse(null)
+                .where(PHONE.ID.eq(id))
+                .and(PHONE.STATUS.eq(TokenStatus.AUTHORIZED))
+                .fetchOptionalInto(Phone::class.java).orElse(null)
     }
 
     private fun getPhoneByToken(token: String): Phone? {
         return jooq.selectFrom<PhoneRecord>(PHONE)
-            .where(PHONE.TOKEN.eq(token))
-            .and(PHONE.STATUS.eq(TokenStatus.AUTHORIZED.toString()))
-            .fetchOptionalInto(Phone::class.java).orElse(null)
+                .where(PHONE.TOKEN.eq(UUID.fromString(token)))
+                .and(PHONE.STATUS.eq(TokenStatus.AUTHORIZED))
+                .fetchOptionalInto(Phone::class.java).orElse(null)
     }
 
     private fun updatePhoneLastConnected(id: UUID) {
-        jooq.fetchOne(PHONE, PHONE.ID.eq(id.toString()))?.into(Phone::class.java)
-            ?.copy(lastConnected = LocalDateTime.now())
-            ?.let { phone ->
-                jooq.newRecord(PHONE)
-                    .apply {
-                        from(phone)
-                        update()
-                    }
-            }
+        jooq.fetchOne(PHONE, PHONE.ID.eq(id))?.into(Phone::class.java)
+                ?.copy(lastConnected = LocalDateTime.now())
+                ?.let { phone ->
+                    jooq.newRecord(PHONE)
+                            .apply {
+                                from(phone)
+                                update()
+                            }
+                }
     }
 }

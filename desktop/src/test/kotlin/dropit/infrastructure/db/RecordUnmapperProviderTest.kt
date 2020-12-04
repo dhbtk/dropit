@@ -28,11 +28,11 @@ object RecordUnmapperProviderTest : Spek({
             }
 
             it("converts them all properly") {
-                assertEquals(settings.computerId.toString(), settingsRecord.computerId)
+                assertEquals(settings.computerId, settingsRecord.computerId)
                 assertEquals(settings.computerName, settingsRecord.computerName)
                 assertEquals(settings.serverPort, settingsRecord.serverPort)
-                assertEquals(1, settingsRecord.logClipboardTransfers)
-                assertEquals(settings.showTransferAction.name, settingsRecord.showTransferAction)
+                assertEquals(true, settingsRecord.logClipboardTransfers)
+                assertEquals(settings.showTransferAction, settingsRecord.showTransferAction)
             }
         }
     }

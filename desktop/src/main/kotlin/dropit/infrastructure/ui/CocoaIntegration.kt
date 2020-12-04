@@ -11,7 +11,7 @@ class CocoaIntegration : GuiIntegrations {
     override var preferencesCallback = nullCallback
     private val nsApplication: Any
     private val setActivationPolicy: Method
-    var openWindows = 0
+    private var openWindows = 0
 
     init {
         // we don't care if any of these fail because that means we have serious classpath issues

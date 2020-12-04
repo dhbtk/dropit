@@ -7,70 +7,67 @@ import ch.qos.logback.classic.PatternLayout
 import ch.qos.logback.classic.layout.TTLLLayout
 import ch.qos.logback.classic.spi.Configurator
 import ch.qos.logback.classic.spi.ILoggingEvent
-import ch.qos.logback.core.ConsoleAppender
+import ch.qos.logback.core.Layout
 import ch.qos.logback.core.OutputStreamAppender
 import ch.qos.logback.core.encoder.LayoutWrappingEncoder
 import ch.qos.logback.core.spi.ContextAwareBase
 import dropit.APP_NAME
 import dropit.infrastructure.fs.ConfigFolderProvider
+import java.io.OutputStream
 
 @Suppress("ComplexMethod")
 class LogbackConfigurator : ContextAwareBase(), Configurator {
-    val consolePattern = "%d{yyyy-MM-dd HH:mm:ss} [%20.20thread] %highlight(%-5level) %cyan(%-30.30logger{29}) - %msg%n"
+    private val consolePattern = "%d{yyyy-MM-dd HH:mm:ss} [%20.20thread] %highlight(%-5level) %cyan(%-30.30logger{29}) - %msg%n"
+    private val useConsole = System.getProperty("dropit.debug") == "true"
+    private val logLevels = mapOf(
+            Logger.ROOT_LOGGER_NAME to Level.INFO,
+            "org.jooq.Constants" to Level.WARN,
+            "dropit" to Level.DEBUG
+    )
+
     override fun configure(loggerContext: LoggerContext) {
-        val useConsole = System.getProperty("dropit.debug") == "true"
-        val appender = if (useConsole) {
-            setupConsoleLogging(loggerContext)
-        } else {
-            setupFileLogging(loggerContext)
+        loggerContext.getLogger(Logger.ROOT_LOGGER_NAME).addAppender(loggerAppender(loggerContext))
+
+        for ((name, level) in logLevels) {
+            loggerContext.getLogger(name).level = level
         }
-
-        loggerContext.getLogger(Logger.ROOT_LOGGER_NAME)
-            .apply {
-                addAppender(appender)
-                level = Level.INFO
-            }
-
-        loggerContext.getLogger("org.jooq.Constants")
-            .apply { level = Level.WARN }
-
-        loggerContext.getLogger("dropit")
-            .apply { level = Level.DEBUG }
     }
 
-    private fun setupFileLogging(context: LoggerContext): OutputStreamAppender<ILoggingEvent> {
+    private fun loggerAppender(loggerContext: LoggerContext): OutputStreamAppender<ILoggingEvent> {
         return OutputStreamAppender<ILoggingEvent>()
-            .apply { this.context = context }
-            .apply { this.name = "logfile" }
-            .apply {
-                this.encoder = LayoutWrappingEncoder<ILoggingEvent>()
-                    .apply { this.context = context }
-                    .apply {
-                        this.layout = TTLLLayout()
-                            .apply { this.context = context }
-                            .apply { start() }
+                .apply {
+                    context = loggerContext
+                    name = "logfile"
+                    encoder = LayoutWrappingEncoder<ILoggingEvent>().apply {
+                        context = loggerContext
+                        layout = loggerLayout(loggerContext)
                     }
-            }
-            .apply {
-                this.outputStream = ConfigFolderProvider().configFolder
-                    .resolve("$APP_NAME.log").toFile().outputStream()
-            }
-            .apply { start() }
+                    outputStream = loggerOutputStream()
+                    start()
+                }
     }
 
-    private fun setupConsoleLogging(context: LoggerContext): OutputStreamAppender<ILoggingEvent> {
-        return ConsoleAppender<ILoggingEvent>()
-            .apply { this.context = context }
-            .apply { this.name = "console" }
-            .apply {
-                this.encoder = LayoutWrappingEncoder<ILoggingEvent>()
-                    .apply { this.context = context }
-                    .apply {
-                        this.layout = PatternLayout()
-                            .apply { this.pattern = consolePattern }
-                            .apply { this.context = context }
-                            .apply { start() }
-                    }
-            }.apply { start() }
+    private fun loggerOutputStream(): OutputStream {
+        return if (useConsole) {
+            System.out
+        } else {
+            ConfigFolderProvider().configFolder
+                    .resolve("$APP_NAME.log").toFile().outputStream()
+        }
+    }
+
+    private fun loggerLayout(loggerContext: LoggerContext): Layout<ILoggingEvent> {
+        return if (useConsole) {
+            PatternLayout().apply {
+                pattern = consolePattern
+                context = loggerContext
+                start()
+            }
+        } else {
+            TTLLLayout().apply {
+                context = loggerContext
+                start()
+            }
+        }
     }
 }

@@ -26,7 +26,7 @@ object PhoneServiceTest : Spek({
                 called = true
                 assertEquals(TokenStatus.PENDING, it.payload.status)
             }
-            val request = TokenRequest(UUID.randomUUID().toString(), "test phone")
+            val request = TokenRequest(UUID.randomUUID(), "test phone")
             val token = phoneService.requestToken(request)
             assertNotNull(token)
             assertTrue(called, "NewPhoneRequestEvent has not been raised")
@@ -40,20 +40,20 @@ object PhoneServiceTest : Spek({
 
         it("throws an exception if it can't find a phone") {
             assertThrows(UnauthorizedException::class.java) {
-                phoneService.getTokenStatus("abcd")
+                phoneService.getTokenStatus(UUID.randomUUID())
             }
         }
 
         it("returns authorized for an authorized phone") {
-            assertEquals(TokenStatus.AUTHORIZED, phoneService.getTokenStatus(PhoneFactory.authorizedPhone().token!!.toString()).status)
+            assertEquals(TokenStatus.AUTHORIZED, phoneService.getTokenStatus(PhoneFactory.authorizedPhone().token!!).status)
         }
 
         it("returns pending for a pending phone") {
-            assertEquals(TokenStatus.PENDING, phoneService.getTokenStatus(PhoneFactory.pendingPhone().token!!.toString()).status)
+            assertEquals(TokenStatus.PENDING, phoneService.getTokenStatus(PhoneFactory.pendingPhone().token!!).status)
         }
 
         it("returns denied for a denied phone") {
-            assertEquals(TokenStatus.DENIED, phoneService.getTokenStatus(PhoneFactory.deniedPhone().token!!.toString()).status)
+            assertEquals(TokenStatus.DENIED, phoneService.getTokenStatus(PhoneFactory.deniedPhone().token!!).status)
         }
     }
 

@@ -25,9 +25,9 @@ class TransferTable(
 ) {
     lateinit var transferTable: Table
     lateinit var subscription: EventHandler<TransferStatusService.TransferUpdatedEvent>
-    val rowMap = HashMap<UUID, TableItem>()
-    val downloadImage = Image(display, javaClass.getResourceAsStream("/ui/transfer/download.png"))
-    val uploadImage = Image(display, javaClass.getResourceAsStream("/ui/transfer/upload.png"))
+    private val rowMap = HashMap<UUID, TableItem>()
+    private val downloadImage = Image(display, javaClass.getResourceAsStream("/ui/transfer/download.png"))
+    private val uploadImage = Image(display, javaClass.getResourceAsStream("/ui/transfer/upload.png"))
 
     fun init(parent: Composite) {
         transferTable = Table(parent, SWT.V_SCROLL)
