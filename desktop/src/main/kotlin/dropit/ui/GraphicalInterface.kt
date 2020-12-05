@@ -3,6 +3,7 @@ package dropit.ui
 import dropit.APP_NAME
 import dropit.application.PhoneSessionService
 import dropit.application.dto.TokenStatus
+import dropit.application.model.files
 import dropit.application.settings.AppSettings
 import dropit.domain.entity.ShowFileAction
 import dropit.domain.service.IncomingService
@@ -73,6 +74,8 @@ class GraphicalInterface @Inject constructor(
     }
 
     fun exitApp() {
+        if (display.isDisposed) return
+
         display.syncExec { trayIcon?.visible = false }
         display.asyncExec { display.dispose() }
     }
@@ -180,7 +183,7 @@ class GraphicalInterface @Inject constructor(
         } else {
             trayIcon?.toolTipText = APP_NAME
         }
-        val defaultPhone = appSettings.settings.currentPhoneId?.let {
+        val defaultPhone = appSettings.currentPhoneId?.let {
             id -> phoneService.listPhones(true).find { it.id == id }
         }
         if (defaultPhone != null) {
@@ -199,7 +202,7 @@ class GraphicalInterface @Inject constructor(
         if (completedTransfer.transfer.sendToClipboard!! && completedTransfer.locations.size == 1) {
             notifyClipboardFile(completedTransfer, toolTip)
         } else {
-            val autoOpen = appSettings.settings.openTransferOnCompletion
+            val autoOpen = appSettings.openTransferOnCompletion
             if (autoOpen) {
                 openTransfer(completedTransfer)
             }
@@ -239,7 +242,7 @@ class GraphicalInterface @Inject constructor(
     }
 
     private fun openLocation(location: File) {
-        when (appSettings.settings.showTransferAction) {
+        when (appSettings.showTransferAction) {
             ShowFileAction.OPEN_FOLDER -> desktopIntegrations.openFolderSelectFile(location)
             ShowFileAction.OPEN_FILE -> desktopIntegrations.openFile(location)
         }

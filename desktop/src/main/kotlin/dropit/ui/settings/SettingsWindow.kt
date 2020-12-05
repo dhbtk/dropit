@@ -24,9 +24,9 @@ import javax.inject.Inject
 typealias SaveCallback = () -> Either<String, Unit>
 
 class SettingsWindow @Inject constructor(
-        private val appSettings: AppSettings,
-        private val guiIntegrations: GuiIntegrations,
-        private val display: Display
+    private val appSettings: AppSettings,
+    private val guiIntegrations: GuiIntegrations,
+    private val display: Display
 ) : ShellContainer() {
     override val window = Shell(display, SWT.CLOSE or SWT.TITLE or SWT.MAX or SWT.RESIZE)
     val saveCallbacks: ArrayList<SaveCallback> = ArrayList()
@@ -75,7 +75,7 @@ class SettingsWindow @Inject constructor(
 
         val textField = Text(composite, SWT.SINGLE or SWT.BORDER)
         textField.apply {
-            text = appSettings.settings.computerName
+            text = appSettings.computerName
             layoutData = GridData(GridData.FILL_HORIZONTAL)
 
             val saveCallback: SaveCallback = {
@@ -87,10 +87,10 @@ class SettingsWindow @Inject constructor(
                     }
                 }.map { path ->
                     this.text = path
-                    appSettings.settings = appSettings.settings.copy(computerName = path)
+                    appSettings.computerName = path
                     Unit
                 }.mapLeft { message ->
-                    this.text = appSettings.settings.computerName
+                    this.text = appSettings.computerName
                     this.setFocus()
                     message
                 }
@@ -105,10 +105,10 @@ class SettingsWindow @Inject constructor(
 
         spacer(composite)
         Button(composite, SWT.CHECK).apply {
-            selection = appSettings.settings.keepWindowOnTop
+            selection = appSettings.keepWindowOnTop
             text = t("settings.keepWindowOnTop.label")
             addListener(SWT.Selection) {
-                appSettings.settings = appSettings.settings.copy(keepWindowOnTop = this.selection)
+                appSettings.keepWindowOnTop = this.selection
             }
         }
 
@@ -121,7 +121,7 @@ class SettingsWindow @Inject constructor(
         settingLabel(composite, t("settings.rootTransferFolder.label"))
 
         val rootTransferFolderField = Text(composite, SWT.SINGLE or SWT.BORDER).apply {
-            text = appSettings.settings.rootTransferFolder
+            text = appSettings.rootTransferFolder
             layoutData = GridData(GridData.FILL_HORIZONTAL)
 
             val saveCallback: SaveCallback = {
@@ -146,10 +146,10 @@ class SettingsWindow @Inject constructor(
                     }
                 }.map { path ->
                     this.text = path
-                    appSettings.settings = appSettings.settings.copy(rootTransferFolder = path)
+                    appSettings.rootTransferFolder = path
                     Unit
                 }.mapLeft { message ->
-                    this.text = appSettings.settings.rootTransferFolder
+                    this.text = appSettings.rootTransferFolder
                     this.setFocus()
                     message
                 }
@@ -173,7 +173,7 @@ class SettingsWindow @Inject constructor(
 
         settingLabel(composite, t("settings.transferFolderName.label"))
         Text(composite, SWT.SINGLE or SWT.BORDER).apply {
-            text = appSettings.settings.transferFolderName
+            text = appSettings.transferFolderName
             layoutData = GridData(GridData.FILL_HORIZONTAL)
 
             val saveCallback: SaveCallback = {
@@ -192,10 +192,10 @@ class SettingsWindow @Inject constructor(
                     }
                 }.map { path ->
                     this.text = path
-                    appSettings.settings = appSettings.settings.copy(transferFolderName = path)
+                    appSettings.transferFolderName = path
                     Unit
                 }.mapLeft { message ->
-                    this.text = appSettings.settings.transferFolderName
+                    this.text = appSettings.transferFolderName
                     this.setFocus()
                     message
                 }
@@ -209,10 +209,10 @@ class SettingsWindow @Inject constructor(
 
         spacer(composite)
         Button(composite, SWT.CHECK).apply {
-            selection = appSettings.settings.separateTransferFolders
+            selection = appSettings.separateTransferFolders
             text = t("settings.separateTransferFolders.label")
             addListener(SWT.Selection) {
-                appSettings.settings = appSettings.settings.copy(separateTransferFolders = this.selection)
+                appSettings.separateTransferFolders = this.selection
             }
         }
 
@@ -222,9 +222,9 @@ class SettingsWindow @Inject constructor(
             add(t("settings.afterReceivingFiles.openFolder"))
             add(t("settings.afterReceivingFiles.openFile"))
 
-            if (!appSettings.settings.openTransferOnCompletion) {
+            if (!appSettings.openTransferOnCompletion) {
                 select(0)
-            } else if (appSettings.settings.showTransferAction == ShowFileAction.OPEN_FOLDER) {
+            } else if (appSettings.showTransferAction == ShowFileAction.OPEN_FOLDER) {
                 select(1)
             } else {
                 select(2)
@@ -233,21 +233,15 @@ class SettingsWindow @Inject constructor(
             addListener(SWT.Selection) {
                 when (selectionIndex) {
                     1 -> {
-                        appSettings.settings = appSettings.settings.copy(
-                            showTransferAction = ShowFileAction.OPEN_FOLDER,
-                            openTransferOnCompletion = true
-                        )
+                        appSettings.showTransferAction = ShowFileAction.OPEN_FOLDER
+                        appSettings.openTransferOnCompletion = true
                     }
                     2 -> {
-                        appSettings.settings = appSettings.settings.copy(
-                            showTransferAction = ShowFileAction.OPEN_FILE,
-                            openTransferOnCompletion = true
-                        )
+                        appSettings.showTransferAction = ShowFileAction.OPEN_FILE
+                        appSettings.openTransferOnCompletion = true
                     }
                     else -> {
-                        appSettings.settings = appSettings.settings.copy(
-                            openTransferOnCompletion = false
-                        )
+                        appSettings.openTransferOnCompletion = false
                     }
                 }
             }
@@ -266,10 +260,10 @@ class SettingsWindow @Inject constructor(
 
         settingLabel(composite, " ")
         Button(composite, SWT.CHECK).apply {
-            selection = appSettings.settings.logClipboardTransfers
+            selection = appSettings.logClipboardTransfers
             text = t("settings.logClipboardTransfers.label")
             addListener(SWT.Selection) {
-                appSettings.settings = appSettings.settings.copy(logClipboardTransfers = this.selection)
+                appSettings.logClipboardTransfers = this.selection
             }
             pack()
         }

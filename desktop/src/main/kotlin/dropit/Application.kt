@@ -28,10 +28,20 @@ fun main() {
     component.eventBus().subscribe(WebServer.ServerStartFailedEvent::class) {
         reportError("Failed to start the server component. Is the application running already?")
     }
-    val shutdownHandler = Runnable {
-        component.graphicalInterface().exitApp()
-        component.webServer().javalin.stop()
-        component.discoveryBroadcaster().stop()
+    val shutdownHandler = object : Runnable {
+        override fun run() {
+            tryThis { component.graphicalInterface().exitApp() }
+            tryThis {component.webServer().javalin.stop() }
+            tryThis { component.discoveryBroadcaster().stop() }
+        }
+
+        private fun tryThis(block: () -> Unit) {
+            try {
+                block()
+            } catch (e: Exception) {
+                logger.error("Error running shutdownHandler: ${e.message}", e)
+            }
+        }
     }
     Runtime.getRuntime().addShutdownHook(Thread(shutdownHandler))
     try {

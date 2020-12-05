@@ -50,9 +50,9 @@ class PairingQrCode(private val appSettings: AppSettings, private val window: Sh
 
     private fun generateQrCode(): Image {
         val params = HashMap<String, String>()
-        params["computerName"] = appSettings.settings.computerName
-        params["computerId"] = appSettings.settings.computerId.toString()
-        params["serverPort"] = appSettings.settings.serverPort.toString()
+        params["computerName"] = appSettings.computerName
+        params["computerId"] = appSettings.computerId.toString()
+        params["serverPort"] = appSettings.serverPort.toString()
         params["ipAddress"] = ipAddresses.joinToString(",")
         val encodedParams = params.toList().joinToString("&") { (k, v) -> "${k}=${URLEncoder.encode(v, "UTF-8")}" }
         val broadcast = "dropitapp://pair?${encodedParams}"

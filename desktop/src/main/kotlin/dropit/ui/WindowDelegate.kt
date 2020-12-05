@@ -12,11 +12,7 @@ class WindowDelegate<T : ShellContainer>(
     operator fun getValue(thisRef: GraphicalInterface, property: KProperty<*>): T {
         if (!this::window.isInitialized) return createWindow()
 
-        return if (window.window.shell != null && !window.window.shell.isDisposed) {
-            window
-        } else {
-            createWindow()
-        }
+        return if (window.window.isDisposed) createWindow() else window
     }
 
     private fun createWindow(): T {

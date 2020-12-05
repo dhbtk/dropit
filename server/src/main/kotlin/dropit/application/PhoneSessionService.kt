@@ -7,15 +7,16 @@ import dropit.application.dto.DownloadStatus
 import dropit.application.dto.SentFileInfo
 import dropit.application.dto.TokenStatus
 import dropit.application.settings.AppSettings
-import dropit.domain.entity.ClipboardLog
-import dropit.domain.entity.Phone
-import dropit.domain.entity.SentFile
 import dropit.domain.entity.TransferSource
 import dropit.domain.service.PhoneService
 import dropit.infrastructure.event.AppEvent
 import dropit.infrastructure.event.EventBus
-import dropit.jooq.Tables.*
+import dropit.jooq.tables.pojos.ClipboardLog
+import dropit.jooq.tables.pojos.SentFile
 import dropit.jooq.tables.records.PhoneRecord
+import dropit.jooq.tables.references.CLIPBOARD_LOG
+import dropit.jooq.tables.references.PHONE
+import dropit.jooq.tables.references.SENT_FILE
 import dropit.logger
 import io.javalin.websocket.WsContext
 import io.javalin.websocket.WsMessageContext
@@ -33,25 +34,25 @@ import javax.inject.Singleton
 
 @Singleton
 class PhoneSessionService @Inject constructor(
-        val bus: EventBus,
-        val jooq: DSLContext,
-        val objectMapper: ObjectMapper,
-        val appSettings: AppSettings
+    val bus: EventBus,
+    val jooq: DSLContext,
+    val objectMapper: ObjectMapper,
+    val appSettings: AppSettings
 ) {
     val fileDownloadStatus = HashMap<FileUpload, MutableList<Pair<LocalDateTime, Long>>>()
 
     val phoneSessions = HashMap<UUID, PhoneSession>()
 
     data class PhoneSession(
-            var session: WsContext? = null,
-            var clipboardData: String? = null,
-            val files: MutableList<FileUpload> = ArrayList<FileUpload>()
+        var session: WsContext? = null,
+        var clipboardData: String? = null,
+        val files: MutableList<FileUpload> = ArrayList<FileUpload>()
     )
 
     data class FileUpload(
-            val file: File,
-            val size: Long,
-            val id: UUID = UUID.randomUUID()
+        val file: File,
+        val size: Long,
+        val id: UUID = UUID.randomUUID()
     )
 
     data class UploadStartedEvent(override val payload: FileUpload) : AppEvent<FileUpload>
@@ -68,7 +69,7 @@ class PhoneSessionService @Inject constructor(
             return
         }
         val phone = getPhoneByToken(token)
-        if (phone == null || phone.id != appSettings.settings.currentPhoneId) {
+        if (phone == null || phone.id != appSettings.currentPhoneId) {
             context.session.close()
             return
         }
@@ -90,7 +91,7 @@ class PhoneSessionService @Inject constructor(
                 PhoneSession(context)
             }
         }
-        updatePhoneLastConnected(phone.id)
+        updatePhoneLastConnected(phone.id!!)
         bus.broadcast(PhoneService.PhoneChangedEvent(phone))
     }
 
@@ -100,22 +101,23 @@ class PhoneSessionService @Inject constructor(
     fun receiveDownloadStatus(session: WsMessageContext) {
         try {
             val (fileId, downloaded) = session.message(DownloadStatus::class.java)
-            val phoneSession = phoneSessions.filterValues { it.session?.header("Authorization") == session.header("Authorization") }.values.first()
+            val phoneSession =
+                phoneSessions.filterValues { it.session?.header("Authorization") == session.header("Authorization") }.values.first()
             val sentFile = phoneSession.files.find { it.id == fileId } ?: return
             if (sentFile.size == downloaded) {
                 fileDownloadStatus.remove(sentFile)
                 bus.broadcast(UploadFinishedEvent(sentFile))
                 phoneSession.files.remove(sentFile)
-                val fileRecord = jooq.newRecord(SENT_FILE, SentFile(
-                        sentFile.id,
-                        null,
-                        null,
-                        appSettings.settings.currentPhoneId,
-                        sentFile.file.toString(),
-                        Files.probeContentType(sentFile.file.toPath()),
-                        sentFile.size
-                ))
-                jooq.insertInto(SENT_FILE).set(fileRecord).execute()
+                val fileRecord = jooq.newRecord(
+                    SENT_FILE, SentFile(
+                        id = sentFile.id,
+                        phoneId = appSettings.currentPhoneId,
+                        fileName = sentFile.file.toString(),
+                        mimeType = Files.probeContentType(sentFile.file.toPath()),
+                        fileSize = sentFile.size
+                    )
+                )
+                fileRecord.insert()
             } else {
                 fileDownloadStatus[sentFile]?.add(Pair(LocalDateTime.now(), downloaded))
                 bus.broadcast(UploadProgressEvent(sentFile))
@@ -141,8 +143,8 @@ class PhoneSessionService @Inject constructor(
         }
     }
 
-    fun getFileDownload(phone: Phone, id: UUID): File {
-        val file = phoneSessions[phone.id!!]!!.files.find { it.id == id }!!
+    fun getFileDownload(phone: PhoneRecord, id: UUID): File {
+        val file = phoneSessions[phone.id]!!.files.find { it.id == id }!!
         fileDownloadStatus[file] = ArrayList() // reset download data
         bus.broadcast(UploadStartedEvent(file))
         return file.file
@@ -162,14 +164,14 @@ class PhoneSessionService @Inject constructor(
         val session = phoneSessions.computeIfAbsent(phoneId) { PhoneSession() }
         session.clipboardData = data
         session.session?.send(data)
-        if (session.session != null && appSettings.settings.logClipboardTransfers) {
-            ClipboardLog(
+        if (session.session != null && appSettings.logClipboardTransfers) {
+            jooq.newRecord(
+                CLIPBOARD_LOG, ClipboardLog(
                     id = UUID.randomUUID(),
                     content = data,
                     source = TransferSource.COMPUTER
-            ).apply {
-                jooq.newRecord(CLIPBOARD_LOG, this).insert()
-            }
+                )
+            ).insert()
         }
         session.clipboardData = null
     }
@@ -179,36 +181,30 @@ class PhoneSessionService @Inject constructor(
         if (wsContext != null) {
             session.files.forEach { sentFile ->
                 if (fileDownloadStatus[sentFile]!!.isEmpty()) {
-                    wsContext.send(ByteBuffer.wrap(objectMapper.writeValueAsBytes(
-                            SentFileInfo(sentFile.id, sentFile.file.length()))))
+                    wsContext.send(
+                        ByteBuffer.wrap(
+                            objectMapper.writeValueAsBytes(
+                                SentFileInfo(sentFile.id, sentFile.file.length())
+                            )
+                        )
+                    )
                 }
             }
         }
     }
 
-    private fun getPhoneById(id: UUID): Phone? {
-        return jooq.selectFrom<PhoneRecord>(PHONE)
-                .where(PHONE.ID.eq(id))
-                .and(PHONE.STATUS.eq(TokenStatus.AUTHORIZED))
-                .fetchOptionalInto(Phone::class.java).orElse(null)
+    private fun getPhoneById(id: UUID): PhoneRecord? {
+        return jooq.fetchOne(PHONE, PHONE.ID.eq(id).and(PHONE.STATUS.eq(TokenStatus.AUTHORIZED)))
     }
 
-    private fun getPhoneByToken(token: String): Phone? {
-        return jooq.selectFrom<PhoneRecord>(PHONE)
-                .where(PHONE.TOKEN.eq(UUID.fromString(token)))
-                .and(PHONE.STATUS.eq(TokenStatus.AUTHORIZED))
-                .fetchOptionalInto(Phone::class.java).orElse(null)
+    private fun getPhoneByToken(token: String): PhoneRecord? {
+        return jooq.fetchOne(PHONE, PHONE.TOKEN.eq(UUID.fromString(token)).and(PHONE.STATUS.eq(TokenStatus.AUTHORIZED)))
     }
 
     private fun updatePhoneLastConnected(id: UUID) {
-        jooq.fetchOne(PHONE, PHONE.ID.eq(id))?.into(Phone::class.java)
-                ?.copy(lastConnected = LocalDateTime.now())
-                ?.let { phone ->
-                    jooq.newRecord(PHONE)
-                            .apply {
-                                from(phone)
-                                update()
-                            }
-                }
+        jooq.fetchOne(PHONE, PHONE.ID.eq(id))?.apply {
+            lastConnected = LocalDateTime.now()
+            update()
+        }
     }
 }

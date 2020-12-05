@@ -26,8 +26,7 @@ class DiscoveryBroadcaster(appSettings: AppSettings, objectMapper: ObjectMapper)
     private var running = true
     val senderThread = Thread {
         while (running) {
-            val settings = appSettings.settings
-            val broadcast = BroadcastMessage(settings.computerName, settings.computerId, settings.serverPort)
+            val broadcast = BroadcastMessage(appSettings.computerName, appSettings.computerId, appSettings.serverPort)
             val message = objectMapper.writeValueAsBytes(broadcast)
             val packet = DatagramPacket(message, message.size, group, broadcastPort)
             try {

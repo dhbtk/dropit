@@ -1,20 +1,19 @@
 package dropit.application
 
-import dropit.application.controllers.TokensController
-import dropit.application.controllers.VersionController
-import dropit.application.dto.TransferRequest
-import dropit.domain.entity.Phone
+import dropit.application.controllers.*
+import dropit.application.model.PhoneRole
 import io.javalin.apibuilder.ApiBuilder.*
-import org.eclipse.jetty.http.HttpStatus
-import java.nio.file.Files
-import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class Routes @Inject constructor(
     private val versionController: VersionController,
-    private val tokensController: TokensController
+    private val tokensController: TokensController,
+    private val transfersController: TransfersController,
+    private val filesController: FilesController,
+    private val clipboardsController: ClipboardsController,
+    private val downloadsController: DownloadsController
 ) {
     fun configure() {
         get("/", versionController::show)
@@ -22,5 +21,9 @@ class Routes @Inject constructor(
             post(tokensController::create)
             get(tokensController::show)
         }
+        post("transfers", transfersController::create, setOf(PhoneRole.AUTHORIZED))
+        post("files/:id", filesController::update, setOf(PhoneRole.AUTHORIZED))
+        post("clipboard", clipboardsController::create, setOf(PhoneRole.AUTHORIZED))
+        get("downloads/:id", downloadsController::show, setOf(PhoneRole.AUTHORIZED))
     }
 }

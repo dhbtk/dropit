@@ -85,13 +85,13 @@ class PhoneTable(
                 } else {
                     item.setText(1, "-")
                 }
-                if (appSettings.settings.currentPhoneId == phone.id) {
+                if (appSettings.currentPhoneId == phone.id) {
                     item.setText(2, t("phone.status.PAIRED"))
                 } else {
                     item.setText(2, t("phone.status.${phone.status}"))
                 }
                 if (phone.status == TokenStatus.AUTHORIZED) {
-                    if (appSettings.settings.currentPhoneId != phone.id) {
+                    if (appSettings.currentPhoneId != phone.id) {
                         val pairButton = Button(phoneTable, SWT.PUSH)
                             .apply {
                                 image = pairIcon
@@ -166,10 +166,10 @@ class PhoneTable(
     }
 
     private fun setLabelText() {
-        if (appSettings.settings.currentPhoneId == null) {
-            phoneLabel.text = t("phoneTable.phoneStatus.notPaired", appSettings.settings.computerName)
+        if (appSettings.currentPhoneId == null) {
+            phoneLabel.text = t("phoneTable.phoneStatus.notPaired", appSettings.computerName)
         } else {
-            val phone = phoneService.listPhones(false).find { it.id == appSettings.settings.currentPhoneId }
+            val phone = phoneService.listPhones(false).find { it.id == appSettings.currentPhoneId }
             val connected = phoneSessionService.phoneSessions[phone?.id]?.session != null
             phoneLabel.text = t(
                 "phoneTable.phoneStatus.paired",

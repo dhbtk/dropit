@@ -1,5 +1,6 @@
 package dropit.application.controllers
 
+import dropit.application.currentPhoneUuid
 import dropit.application.dto.TokenRequest
 import dropit.domain.service.PhoneService
 import io.javalin.http.Context
@@ -9,9 +10,8 @@ import javax.inject.Singleton
 
 @Singleton
 class TokensController @Inject constructor(
-    jooq: DSLContext,
     private val phoneService: PhoneService
-) : ApplicationController(jooq) {
+) : ApplicationController() {
     fun create(context: Context) {
         context.bodyAsClass(TokenRequest::class.java)
             .let { phoneService.requestToken(it) }

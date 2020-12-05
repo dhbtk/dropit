@@ -43,7 +43,7 @@ class MainWindow @Inject constructor(
         private val display: Display,
         private val graphicalInterface: Lazy<GraphicalInterface>
 ): ShellContainer() {
-    private val windowOpts = if (appSettings.settings.keepWindowOnTop) {
+    private val windowOpts = if (appSettings.keepWindowOnTop) {
         SWT.SHELL_TRIM or SWT.ON_TOP
     } else {
         SWT.SHELL_TRIM

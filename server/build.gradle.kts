@@ -48,7 +48,7 @@ jooq {
                     url = "jdbc:sqlite:$buildDbPath"
                 }
                 generator.apply {
-                    name = "org.jooq.codegen.JavaGenerator"
+                    name = "org.jooq.codegen.KotlinGenerator"
                     strategy.name = "org.jooq.codegen.DefaultGeneratorStrategy"
                     database.apply {
                         excludes = "flyway_schema_history"

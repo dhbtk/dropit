@@ -39,7 +39,7 @@ class ClipboardService @Inject constructor(
         val stringContents = clipboard.getContents(TextTransfer.getInstance()) as String?
         val fileContents = clipboard.getContents(FileTransfer.getInstance()) as Array<*>?
         val imageContents = clipboard.getContents(desktopIntegrations.getImageTransfer()) as ImageData?
-        val defaultPhoneId = appSettings.settings.currentPhoneId
+        val defaultPhoneId = appSettings.currentPhoneId
         logger.info("string contents: $stringContents")
         logger.info("file contents: $fileContents")
         logger.info("image contents: $imageContents")
@@ -70,7 +70,7 @@ class ClipboardService @Inject constructor(
     }
 
     fun sendFilesToPhone(shell: Shell, files: Array<String>) {
-        val defaultPhoneId = appSettings.settings.currentPhoneId
+        val defaultPhoneId = appSettings.currentPhoneId
         if (defaultPhoneId == null) {
             MessageBox(shell, SWT.ICON_WARNING or SWT.OK)
                 .apply {
