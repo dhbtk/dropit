@@ -4,7 +4,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import kotlin.reflect.KProperty
 
-val rootLogger = LoggerFactory.getLogger("dropit")
+val rootLogger: Logger = LoggerFactory.getLogger("dropit")
 
 val Any.logger: Logger by LoggerDelegate()
 

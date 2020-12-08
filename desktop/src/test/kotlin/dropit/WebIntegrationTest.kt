@@ -3,8 +3,10 @@ package dropit
 import dropit.application.client.ClientFactory
 import dropit.application.dto.TokenRequest
 import dropit.application.dto.TokenStatus
+import dropit.application.model.authorize
 import dropit.domain.service.IncomingService
 import dropit.factories.TransferFactory
+import dropit.jooq.tables.references.PHONE
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.spekframework.spek2.Spek
@@ -33,7 +35,7 @@ object WebIntegrationTest : Spek({
             val token = dropItClient.requestToken().blockingFirst()
             assertNotNull(token)
 
-            phoneService.authorizePhone(phoneData.id!!)
+            component.jooq().fetchOne(PHONE, PHONE.ID.eq(phoneData.id))!!.authorize()
 
             val status = dropItClient.getTokenStatus().blockingFirst()
 

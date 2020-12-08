@@ -7,7 +7,7 @@ import dropit.application.dto.DownloadStatus
 import dropit.application.dto.SentFileInfo
 import dropit.application.dto.TokenStatus
 import dropit.application.settings.AppSettings
-import dropit.domain.entity.TransferSource
+import dropit.application.model.TransferSource
 import dropit.domain.service.PhoneService
 import dropit.infrastructure.event.AppEvent
 import dropit.infrastructure.event.EventBus
@@ -21,7 +21,6 @@ import dropit.logger
 import io.javalin.websocket.WsContext
 import io.javalin.websocket.WsMessageContext
 import org.jooq.DSLContext
-import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.file.Files
@@ -33,7 +32,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class PhoneSessionService @Inject constructor(
+class PhoneSessions @Inject constructor(
     val bus: EventBus,
     val jooq: DSLContext,
     val objectMapper: ObjectMapper,
@@ -177,18 +176,14 @@ class PhoneSessionService @Inject constructor(
     }
 
     private fun sendFileList(session: PhoneSession) {
-        val wsContext = session.session
-        if (wsContext != null) {
-            session.files.forEach { sentFile ->
-                if (fileDownloadStatus[sentFile]!!.isEmpty()) {
-                    wsContext.send(
-                        ByteBuffer.wrap(
-                            objectMapper.writeValueAsBytes(
-                                SentFileInfo(sentFile.id, sentFile.file.length())
-                            )
-                        )
-                    )
-                }
+        val wsContext = session.session ?: return
+
+        session.files.forEach { sentFile ->
+            if (fileDownloadStatus[sentFile]!!.isEmpty()) {
+                SentFileInfo(sentFile.id, sentFile.file.length())
+                    .let { objectMapper.writeValueAsBytes(it) }
+                    .let { ByteBuffer.wrap(it) }
+                    .let { wsContext.send(it) }
             }
         }
     }

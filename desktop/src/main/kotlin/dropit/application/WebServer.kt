@@ -24,7 +24,7 @@ class WebServer @Inject constructor(
     val appSettings: AppSettings,
     val phoneService: PhoneService,
     val incomingService: IncomingService,
-    val phoneSessionService: PhoneSessionService,
+    val phoneSessions: PhoneSessions,
     val objectMapper: ObjectMapper,
     val bus: EventBus,
     val routes: Routes,
@@ -54,7 +54,7 @@ class WebServer @Inject constructor(
                 if (role != null && role in permittedRoles) {
                     handler.handle(ctx)
                 } else {
-                    ctx.status(401).result("Unauthorized");
+                    ctx.status(401).result("Unauthorized")
                 }
             }
         }
@@ -66,15 +66,15 @@ class WebServer @Inject constructor(
             }
             .routes(routes::configure)
             .ws("ws") { wsHandler ->
-                wsHandler.onConnect { phoneSessionService.openSession(it) }
-                wsHandler.onMessage { phoneSessionService.receiveDownloadStatus(it) }
+                wsHandler.onConnect { phoneSessions.openSession(it) }
+                wsHandler.onMessage { phoneSessions.receiveDownloadStatus(it) }
                 wsHandler.onError { session ->
                     logger.warn("Error on phone session with ID ${session.sessionId}", session.error())
-                    phoneSessionService.closeSession(session)
+                    phoneSessions.closeSession(session)
                 }
                 wsHandler.onClose { session ->
                     logger.info("Closing session: id = ${session.sessionId} statusCode = ${session.status()}, reason: ${session.reason()}")
-                    phoneSessionService.closeSession(session)
+                    phoneSessions.closeSession(session)
                 }
             }
             .events { event ->

@@ -5,7 +5,7 @@ import dropit.application.dto.TransferRequest
 import dropit.application.dto.TransferStatus
 import dropit.application.model.transfer
 import dropit.application.settings.AppSettings
-import dropit.domain.entity.TransferSource
+import dropit.application.model.TransferSource
 import dropit.infrastructure.event.AppEvent
 import dropit.infrastructure.event.EventBus
 import dropit.infrastructure.fs.TransferFolderProvider
@@ -20,7 +20,6 @@ import org.apache.commons.fileupload.ProgressListener
 import org.apache.commons.fileupload.servlet.ServletFileUpload
 import org.apache.commons.io.IOUtils
 import org.jooq.DSLContext
-import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.IOException
 import java.time.LocalDateTime
@@ -30,8 +29,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import javax.servlet.http.HttpServletRequest
 import kotlin.NoSuchElementException
-
-const val UPLOAD_PROGRESS_INTERVAL = 500 * 1000 * 1000
 
 @Singleton
 class IncomingService @Inject constructor(
@@ -74,42 +71,6 @@ class IncomingService @Inject constructor(
     /**
      * Called from web
      *
-     * creates a transfer from a transfer request.
-     */
-    fun createTransfer(phone: PhoneRecord, request: TransferRequest): String {
-        return jooq.transactionResult { _ ->
-            val transferId = UUID.randomUUID()
-            val count = jooq.insertInto(TRANSFER)
-                .set(jooq.newRecord(TRANSFER, dropit.jooq.tables.pojos.Transfer(
-                    id = transferId,
-                    name = request.name,
-                    sendToClipboard = request.sendToClipboard,
-                    phoneId = phone.id,
-                    status = TransferStatus.PENDING
-                ))).execute()
-            count == 0 && throw IllegalStateException("Could not save transfer")
-            request.files.forEach { fileRequest ->
-                val record = jooq.newRecord(TRANSFER_FILE, dropit.jooq.tables.pojos.TransferFile(
-                    id = UUID.fromString(fileRequest.id),
-                    transferId = transferId,
-                    fileName = fileRequest.fileName,
-                    mimeType = fileRequest.mimeType,
-                    fileSize = fileRequest.fileSize,
-                    status = FileStatus.PENDING
-                ))
-                if (jooq.insertInto(TRANSFER_FILE).set(record).execute() == 0) {
-                    throw IllegalStateException("Could not save transfer file")
-                }
-            }
-            val transfer = jooq.fetchOne(TRANSFER, TRANSFER.ID.eq(transferId))!!
-            bus.broadcast(NewTransferEvent(transfer))
-            transferId.toString()
-        }
-    }
-
-    /**
-     * Called from web
-     *
      * uploads a file, notifying the UI of progress.
      */
     fun receiveFile(fileId: UUID, request: HttpServletRequest) {
@@ -124,15 +85,26 @@ class IncomingService @Inject constructor(
         transferTimes[transferFile] = transferList
         try {
             val upload = ServletFileUpload()
-            var lastNanoTime = System.nanoTime()
+            var currentBytesRead: Long = 0
+            var finished = false
+            Runnable {
+                while (!finished) {
+                    Thread.sleep(250)
+                    val read = currentBytesRead
+                    bus.broadcast(DownloadProgressEvent(Pair(transferFile, read)))
+                    transferList += Pair(LocalDateTime.now(), read)
+                }
+            }.let { Thread(it) }.apply { start() }
             upload.progressListener = ProgressListener { pBytesRead, pContentLength, _ ->
-                if (System.nanoTime() - lastNanoTime >= (UPLOAD_PROGRESS_INTERVAL) || pBytesRead == pContentLength) {
+                if (pBytesRead == pContentLength) {
                     bus.broadcast(DownloadProgressEvent(Pair(transferFile, pBytesRead)))
                     transferList += Pair(LocalDateTime.now(), pBytesRead)
-                    lastNanoTime = System.nanoTime()
+                } else {
+                    currentBytesRead = pBytesRead
                 }
             }
             saveFileUpload(tempFile, upload, request)
+            finished = true
 
             val actualFile = transferFolder.toPath().resolve(transferFile.fileName!!).toFile()
             actualFile.exists() && actualFile.delete()
@@ -189,22 +161,6 @@ class IncomingService @Inject constructor(
     }
 
     /**
-     * Called from web
-     *
-     * receives clipboard text, logs it and notifies listeners
-     */
-    fun receiveClipboard(data: String) {
-        if (appSettings.logClipboardTransfers) {
-            jooq.newRecord(ClipboardLog.CLIPBOARD_LOG, dropit.jooq.tables.pojos.ClipboardLog(
-                id = UUID.randomUUID(),
-                content = data,
-                source = TransferSource.PHONE
-            )).insert()
-        }
-        bus.broadcast(ClipboardReceiveEvent(data))
-    }
-
-    /**
      * Returns in B/s
      */
     fun calculateTransferRate(points: List<Pair<LocalDateTime, Long>>): Long {
@@ -223,5 +179,6 @@ class IncomingService @Inject constructor(
 
     companion object {
         const val TRANSFER_CALC_INTERVAL = 5
+        const val UPLOAD_PROGRESS_INTERVAL = 500 * 1000 * 1000
     }
 }

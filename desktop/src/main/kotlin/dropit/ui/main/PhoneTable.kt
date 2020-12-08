@@ -1,7 +1,10 @@
 package dropit.ui.main
 
-import dropit.application.PhoneSessionService
+import dropit.application.PhoneSessions
 import dropit.application.dto.TokenStatus
+import dropit.application.model.Phones
+import dropit.application.model.authorize
+import dropit.application.model.destroy
 import dropit.application.settings.AppSettings
 import dropit.domain.service.PhoneService
 import dropit.infrastructure.event.EventBus
@@ -31,7 +34,7 @@ class PhoneTable(
     private val phoneService: PhoneService,
     private val display: Display,
     private val appSettings: AppSettings,
-    private val phoneSessionService: PhoneSessionService
+    private val phoneSessions: PhoneSessions
 ) {
     lateinit var phoneLabel: Label
     lateinit var phoneTable: Table
@@ -76,7 +79,7 @@ class PhoneTable(
         display.asyncExec {
             setLabelText()
             phoneTable.removeAll()
-            phoneService.listPhones(false).forEach { phone ->
+            Phones.all().forEach { phone ->
                 val item = TableItem(phoneTable, SWT.NONE)
                 item.setText(0, phone.name)
                 if (phone.lastConnected != null) {
@@ -98,7 +101,7 @@ class PhoneTable(
                                 toolTipText = t("phoneTable.actions.pair")
                                 addListener(SWT.Selection) {
                                     CompletableFuture.runAsync {
-                                        phoneService.authorizePhone(phone.id!!)
+                                        phone.authorize()
                                     }
                                 }
                             }
@@ -115,7 +118,7 @@ class PhoneTable(
                             toolTipText = t("phoneTable.actions.delete")
                             addListener(SWT.Selection) {
                                 CompletableFuture.runAsync {
-                                    phoneService.deletePhone(phone.id!!)
+                                    phone.destroy()
                                 }
                             }
                         }
@@ -134,7 +137,7 @@ class PhoneTable(
                             toolTipText = t("phoneTable.actions.authorize")
                             addListener(SWT.Selection) {
                                 CompletableFuture.runAsync {
-                                    phoneService.authorizePhone(phone.id!!)
+                                    phone.authorize()
                                 }
                             }
                         }
@@ -150,7 +153,7 @@ class PhoneTable(
                             toolTipText = t("phoneTable.actions.reject")
                             addListener(SWT.Selection) {
                                 CompletableFuture.runAsync {
-                                    phoneService.deletePhone(phone.id!!)
+                                    phone.destroy()
                                 }
                             }
                         }
@@ -169,8 +172,8 @@ class PhoneTable(
         if (appSettings.currentPhoneId == null) {
             phoneLabel.text = t("phoneTable.phoneStatus.notPaired", appSettings.computerName)
         } else {
-            val phone = phoneService.listPhones(false).find { it.id == appSettings.currentPhoneId }
-            val connected = phoneSessionService.phoneSessions[phone?.id]?.session != null
+            val phone = Phones.current()
+            val connected = phoneSessions.phoneSessions[phone?.id]?.session != null
             phoneLabel.text = t(
                 "phoneTable.phoneStatus.paired",
                 phone!!.name!!,

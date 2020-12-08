@@ -1,11 +1,12 @@
 package dropit.ui
 
 import dropit.APP_NAME
-import dropit.application.PhoneSessionService
+import dropit.application.PhoneSessions
 import dropit.application.dto.TokenStatus
+import dropit.application.model.Phones
 import dropit.application.model.files
 import dropit.application.settings.AppSettings
-import dropit.domain.entity.ShowFileAction
+import dropit.application.model.ShowFileAction
 import dropit.domain.service.IncomingService
 import dropit.domain.service.PhoneService
 import dropit.infrastructure.event.EventBus
@@ -15,14 +16,12 @@ import dropit.logger
 import dropit.ui.main.MainWindow
 import dropit.ui.service.TransferStatusService
 import dropit.ui.settings.SettingsWindow
-import dropit.ui.settings.SettingsWindowFactory
 import org.eclipse.swt.SWT
 import org.eclipse.swt.dnd.Clipboard
 import org.eclipse.swt.dnd.FileTransfer
 import org.eclipse.swt.dnd.TextTransfer
 import org.eclipse.swt.graphics.Image
 import org.eclipse.swt.widgets.*
-import org.slf4j.LoggerFactory
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Provider
@@ -37,10 +36,10 @@ class GraphicalInterface @Inject constructor(
     private val desktopIntegrations: DesktopIntegrations,
     private val clipboardService: dropit.ui.service.ClipboardService,
     private val display: Display,
-    private val mainWindowProvider: Provider<MainWindow>,
-    private val settingsWindowProvider: Provider<SettingsWindow>,
-    private val guiIntegrations: GuiIntegrations,
-    private val phoneSessionService: PhoneSessionService
+    mainWindowProvider: Provider<MainWindow>,
+    settingsWindowProvider: Provider<SettingsWindow>,
+    guiIntegrations: GuiIntegrations,
+    private val phoneSessions: PhoneSessions
 ) {
     private val shell = Shell(display)
     private val trayImage = Image(display, javaClass.getResourceAsStream("/ui/icon.png"))
@@ -170,7 +169,7 @@ class GraphicalInterface @Inject constructor(
     }
 
     private fun refreshTrayIcon() {
-        val pendingPhone = phoneService.listPhones(false).find { it.status == TokenStatus.PENDING }
+        val pendingPhone = Phones.pending().firstOrNull()
         val transferringFile = transferStatusService.currentTransfers.firstOrNull()
         if (pendingPhone != null) {
             trayIcon?.toolTipText = t("graphicalInterface.trayIcon.tooltip.pendingPhone",
@@ -183,11 +182,9 @@ class GraphicalInterface @Inject constructor(
         } else {
             trayIcon?.toolTipText = APP_NAME
         }
-        val defaultPhone = appSettings.currentPhoneId?.let {
-            id -> phoneService.listPhones(true).find { it.id == id }
-        }
+        val defaultPhone = Phones.current()
         if (defaultPhone != null) {
-            if (phoneSessionService.phoneSessions[defaultPhone.id]?.session != null) {
+            if (phoneSessions.phoneSessions[defaultPhone.id]?.session != null) {
                 trayIcon?.image = trayImageConnected
             } else {
                 trayIcon?.image = trayImageDisconnected

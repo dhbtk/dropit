@@ -1,15 +1,15 @@
 package dropit.application.controllers
 
-import dropit.application.PhoneSessionService
+import dropit.application.PhoneSessions
 import dropit.application.currentPhone
 import io.javalin.http.Context
 import java.nio.file.Files
 import java.util.*
 import javax.inject.Inject
 
-class DownloadsController @Inject constructor(private val phoneSessionService: PhoneSessionService) : ApplicationController() {
+class DownloadsController @Inject constructor(private val phoneSessions: PhoneSessions) : ApplicationController() {
     fun show(context: Context) {
-        val file = phoneSessionService.getFileDownload(
+        val file = phoneSessions.getFileDownload(
             context.currentPhone()!!,
             context.pathParam<UUID>("id").get()
         )

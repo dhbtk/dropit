@@ -4,7 +4,7 @@ import arrow.core.Either
 import arrow.core.flatMap
 import dropit.APP_NAME
 import dropit.application.settings.AppSettings
-import dropit.domain.entity.ShowFileAction
+import dropit.application.model.ShowFileAction
 import dropit.infrastructure.i18n.t
 import dropit.infrastructure.ui.GuiIntegrations
 import dropit.ui.ShellContainer

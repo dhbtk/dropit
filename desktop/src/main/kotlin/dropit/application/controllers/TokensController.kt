@@ -1,7 +1,10 @@
 package dropit.application.controllers
 
+import dropit.application.currentPhone
 import dropit.application.currentPhoneUuid
 import dropit.application.dto.TokenRequest
+import dropit.application.model.Phones
+import dropit.application.model.tokenResponse
 import dropit.domain.service.PhoneService
 import io.javalin.http.Context
 import org.jooq.DSLContext
@@ -14,12 +17,11 @@ class TokensController @Inject constructor(
 ) : ApplicationController() {
     fun create(context: Context) {
         context.bodyAsClass(TokenRequest::class.java)
-            .let { phoneService.requestToken(it) }
-            .also { context.json(it) }
+            .let { Phones.findOrCreate(it) }
+            .also { context.json(it.token.toString()) }
     }
 
     fun show(context: Context) {
-        phoneService.getTokenStatus(context.currentPhoneUuid()!!)
-            .also { context.json(it) }
+        context.json(context.currentPhone()!!.tokenResponse())
     }
 }

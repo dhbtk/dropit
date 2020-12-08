@@ -1,7 +1,7 @@
 package dropit.ui.service
 
 import dropit.APP_NAME
-import dropit.application.PhoneSessionService
+import dropit.application.PhoneSessions
 import dropit.application.settings.AppSettings
 import dropit.infrastructure.i18n.t
 import dropit.logger
@@ -15,7 +15,6 @@ import org.eclipse.swt.graphics.ImageLoader
 import org.eclipse.swt.widgets.Display
 import org.eclipse.swt.widgets.MessageBox
 import org.eclipse.swt.widgets.Shell
-import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -31,7 +30,7 @@ class ClipboardService @Inject constructor(
     private val display: Display,
     private val desktopIntegrations: DesktopIntegrations,
     private val appSettings: AppSettings,
-    private val phoneSessionService: PhoneSessionService,
+    private val phoneSessions: PhoneSessions,
     private val executor: Executor
 ) {
     fun sendClipboardToPhone(shell: Shell) {
@@ -55,9 +54,9 @@ class ClipboardService @Inject constructor(
 
         executor.execute {
             when {
-                imageContents != null -> phoneSessionService.sendFile(defaultPhoneId, imageClipboardToFile(imageContents))
+                imageContents != null -> phoneSessions.sendFile(defaultPhoneId, imageClipboardToFile(imageContents))
                 fileContents != null -> sendClipboardFiles(fileContents, defaultPhoneId)
-                stringContents != null -> phoneSessionService.sendClipboard(defaultPhoneId, stringContents)
+                stringContents != null -> phoneSessions.sendClipboard(defaultPhoneId, stringContents)
             }
         }
     }
@@ -65,7 +64,7 @@ class ClipboardService @Inject constructor(
     private fun sendClipboardFiles(fileContents: Array<*>, defaultPhoneId: UUID) {
         val files = fileContents.filterIsInstance<String>().map(::File)
         files.forEach {
-            phoneSessionService.sendFile(defaultPhoneId, it)
+            phoneSessions.sendFile(defaultPhoneId, it)
         }
     }
 
@@ -83,7 +82,7 @@ class ClipboardService @Inject constructor(
 
         executor.execute {
             files.forEach {
-                phoneSessionService.sendFile(defaultPhoneId, File(it))
+                phoneSessions.sendFile(defaultPhoneId, File(it))
             }
         }
     }

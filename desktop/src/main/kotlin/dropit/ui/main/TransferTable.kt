@@ -1,6 +1,6 @@
 package dropit.ui.main
 
-import dropit.domain.entity.TransferSource
+import dropit.application.model.TransferSource
 import dropit.infrastructure.event.EventBus
 import dropit.infrastructure.event.EventHandler
 import dropit.infrastructure.i18n.t

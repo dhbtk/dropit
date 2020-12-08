@@ -7,8 +7,8 @@ object Deps {
 
         val kotlinJvm = Plugin("org.jetbrains.kotlin.jvm")
         val kotlinKapt = Plugin("org.jetbrains.kotlin.kapt")
-        val shadow = Plugin("com.github.johnrengelman.shadow", "4.0.4")
-        val launch4j = Plugin("edu.sc.seis.launch4j", "2.4.4")
+        val shadow = Plugin("com.github.johnrengelman.shadow", "6.1.0")
+        val launch4j = Plugin("edu.sc.seis.launch4j", "2.4.9")
         val macAppBundle = Plugin("edu.sc.seis.macAppBundle", "2.3.0")
         val flyway = Plugin("org.flywaydb.flyway", FLYWAY_VERSION)
         val jooq = Plugin("nu.studer.jooq", "5.2")

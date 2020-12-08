@@ -2,7 +2,7 @@ package dropit.ui.main
 
 import dagger.Lazy
 import dropit.APP_NAME
-import dropit.application.PhoneSessionService
+import dropit.application.PhoneSessions
 import dropit.application.settings.AppSettings
 import dropit.domain.service.PhoneService
 import dropit.infrastructure.event.EventBus
@@ -13,35 +13,25 @@ import dropit.ui.GraphicalInterface
 import dropit.ui.ShellContainer
 import dropit.ui.service.ClipboardService
 import dropit.ui.service.TransferStatusService
-import net.glxn.qrgen.core.image.ImageType
-import net.glxn.qrgen.javase.QRCode
 import org.eclipse.swt.SWT
 import org.eclipse.swt.dnd.*
-import org.eclipse.swt.events.SelectionAdapter
-import org.eclipse.swt.events.SelectionEvent
 import org.eclipse.swt.graphics.Image
 import org.eclipse.swt.layout.GridData
 import org.eclipse.swt.layout.GridLayout
 import org.eclipse.swt.widgets.*
-import org.slf4j.LoggerFactory
-import java.io.ByteArrayInputStream
-import java.net.Inet4Address
-import java.net.NetworkInterface
-import java.net.URLEncoder
 import javax.inject.Inject
-import kotlin.streams.toList
 
 @Suppress("MagicNumber")
 class MainWindow @Inject constructor(
-        private val eventBus: EventBus,
-        private val phoneService: PhoneService,
-        private val phoneSessionService: PhoneSessionService,
-        private val appSettings: AppSettings,
-        private val clipboardService: ClipboardService,
-        private val transferStatusService: TransferStatusService,
-        private val guiIntegrations: GuiIntegrations,
-        private val display: Display,
-        private val graphicalInterface: Lazy<GraphicalInterface>
+    eventBus: EventBus,
+    phoneService: PhoneService,
+    phoneSessions: PhoneSessions,
+    appSettings: AppSettings,
+    private val clipboardService: ClipboardService,
+    transferStatusService: TransferStatusService,
+    private val guiIntegrations: GuiIntegrations,
+    private val display: Display,
+    private val graphicalInterface: Lazy<GraphicalInterface>
 ): ShellContainer() {
     private val windowOpts = if (appSettings.keepWindowOnTop) {
         SWT.SHELL_TRIM or SWT.ON_TOP
@@ -50,7 +40,7 @@ class MainWindow @Inject constructor(
     }
     override val window: Shell = Shell(display, windowOpts)
     val transferTable = TransferTable(eventBus, transferStatusService, display)
-    val phoneTable = PhoneTable(window, eventBus, phoneService, display, appSettings, phoneSessionService)
+    val phoneTable = PhoneTable(window, eventBus, phoneService, display, appSettings, phoneSessions)
 
     init {
         window.text = APP_NAME

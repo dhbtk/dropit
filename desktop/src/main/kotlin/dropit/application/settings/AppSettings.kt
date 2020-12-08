@@ -1,6 +1,6 @@
 package dropit.application.settings
 
-import dropit.domain.entity.ShowFileAction
+import dropit.application.model.ShowFileAction
 import dropit.infrastructure.i18n.t
 import dropit.jooq.tables.pojos.Settings
 import dropit.jooq.tables.records.SettingsRecord

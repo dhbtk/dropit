@@ -6,3 +6,4 @@ import dropit.jooq.tables.records.TransferRecord
 
 val TransferRecord.files: List<TransferFileRecord>
     get() = fetchChildren(FK_TRANSFER_FILE_TRANSFER_1)
+

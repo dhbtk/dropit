@@ -1,7 +1,10 @@
 package dropit
 
 import dropit.application.settings.AppSettings
-import dropit.jooq.Tables.*
+import dropit.jooq.tables.references.PHONE
+import dropit.jooq.tables.references.SETTINGS
+import dropit.jooq.tables.references.TRANSFER
+import dropit.jooq.tables.references.TRANSFER_FILE
 import org.jooq.DSLContext
 import org.slf4j.bridge.SLF4JBridgeHandler
 

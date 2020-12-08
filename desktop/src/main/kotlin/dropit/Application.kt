@@ -11,38 +11,29 @@ import org.eclipse.swt.widgets.Display
 import org.eclipse.swt.widgets.Link
 import org.eclipse.swt.widgets.Shell
 import org.eclipse.swt.widgets.Text
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import org.slf4j.bridge.SLF4JBridgeHandler
 import java.io.CharArrayWriter
 import java.io.PrintWriter
-import kotlin.properties.ReadOnlyProperty
-import kotlin.reflect.KProperty
 import kotlin.system.exitProcess
+
+object Application {
+    val component: ApplicationComponent
+
+    init {
+        component = DaggerApplicationComponent.create()
+    }
+}
 
 fun main() {
     SLF4JBridgeHandler.removeHandlersForRootLogger()
     SLF4JBridgeHandler.install()
 
-    val component = DaggerApplicationComponent.create()
+    val component = Application.component
     component.eventBus().subscribe(WebServer.ServerStartFailedEvent::class) {
         reportError("Failed to start the server component. Is the application running already?")
     }
-    val shutdownHandler = object : Runnable {
-        override fun run() {
-            tryThis { component.graphicalInterface().exitApp() }
-            tryThis {component.webServer().javalin.stop() }
-            tryThis { component.discoveryBroadcaster().stop() }
-        }
+    val shutdownHandler = Runnable(::shutdownHandler)
 
-        private fun tryThis(block: () -> Unit) {
-            try {
-                block()
-            } catch (e: Exception) {
-                logger.error("Error running shutdownHandler: ${e.message}", e)
-            }
-        }
-    }
     Runtime.getRuntime().addShutdownHook(Thread(shutdownHandler))
     try {
         component.webServer()
@@ -70,6 +61,20 @@ fun main() {
     shutdownHandler.run()
 }
 
+private fun tryThis(block: () -> Unit) {
+    try {
+        block()
+    } catch (e: Exception) {
+        rootLogger.error("Error running shutdownHandler: ${e.message}", e)
+    }
+}
+
+private fun shutdownHandler() {
+    tryThis { Application.component.graphicalInterface().exitApp() }
+    tryThis { Application.component.webServer().javalin.stop() }
+    tryThis { Application.component.discoveryBroadcaster().stop() }
+}
+
 fun reportError(message: String) {
     rootLogger.error(message)
     exitProcess(1)
@@ -91,7 +96,7 @@ fun reportError(exception: Throwable) {
         layout = GridLayout(1, false)
     }
 
-    val githubUrl = "https://github.com/edanniehues/DropIt/issues"
+    val githubUrl = "https://github.com/dhbtk/DropIt/issues"
 
     Link(shell, SWT.LEFT or SWT.WRAP).apply {
         text = "DropIt could not be started. The following stack trace could be useful in figuring out why. " +

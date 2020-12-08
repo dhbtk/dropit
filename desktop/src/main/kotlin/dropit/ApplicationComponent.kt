@@ -3,6 +3,7 @@ package dropit
 import com.fasterxml.jackson.databind.ObjectMapper
 import dagger.Component
 import dropit.application.WebServer
+import dropit.application.model.ApplicationModel
 import dropit.application.settings.AppSettings
 import dropit.domain.service.IncomingService
 import dropit.domain.service.PhoneService
@@ -35,4 +36,6 @@ interface ApplicationComponent {
     fun graphicalInterface(): GraphicalInterface
 
     fun display(): Display
+
+    fun inject(model: ApplicationModel)
 }

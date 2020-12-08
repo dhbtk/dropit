@@ -1,4 +1,4 @@
-package dropit.domain.entity
+package dropit.application.model
 
 enum class ShowFileAction {
     OPEN_FILE, OPEN_FOLDER

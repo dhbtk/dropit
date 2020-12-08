@@ -1,15 +1,12 @@
 package dropit.ui.service
 
-import dropit.application.PhoneSessionService
-import dropit.domain.entity.TransferSource
+import dropit.application.PhoneSessions
+import dropit.application.model.TransferSource
 import dropit.domain.service.IncomingService
 import dropit.infrastructure.event.AppEvent
 import dropit.infrastructure.event.EventBus
-import org.jooq.DSLContext
 import java.nio.file.Files
 import java.util.ArrayList
-import java.util.Locale
-import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
@@ -18,51 +15,8 @@ import kotlin.math.roundToInt
 class TransferStatusService @Inject constructor(
         private val bus: EventBus,
         private val incomingService: IncomingService,
-        private val phoneSessionService: PhoneSessionService
+        private val phoneSessions: PhoneSessions
 ) {
-    data class CurrentTransfer(
-        val id: UUID,
-        val name: String,
-        val mimeType: String,
-        val size: Long,
-        var progress: Int,
-        var speedBytes: Long,
-        val source: TransferSource
-    ) {
-        fun humanSize() = bytesToHuman(size)
-
-        fun humanSpeed() = bytesToHuman(speedBytes) + "/s"
-
-        @Suppress("MagicNumber")
-        fun humanEta(): String {
-            if (speedBytes == 0L) {
-                return "-"
-            }
-            val totalSeconds = ((size * (progress.toDouble() / 100)) / speedBytes).roundToInt()
-            val hours = totalSeconds / 3600
-            val minutes = (totalSeconds - hours * 3600) / 60
-            val seconds = totalSeconds - hours * 3600 - minutes * 60
-            return if (hours > 0) {
-                String.format("%02d:%02d:%02d", hours, minutes, seconds)
-            } else {
-                String.format("%02d:%02d", minutes, seconds)
-            }
-        }
-
-        @Suppress("MagicNumber")
-        private fun bytesToHuman(bytes: Long): String {
-            return when {
-                bytes > (1024 * 1024 * 1024) -> bytes.let { it.toDouble() / (1024 * 1024 * 1024) }.let {
-                    "${String.format(Locale.getDefault(), "%.1f", it)} GB"
-                }
-                bytes > (1024 * 1024) -> bytes.let { it.toDouble() / (1024 * 1024) }.let {
-                    "${String.format(Locale.getDefault(), "%.1f", it)} MB"
-                }
-                bytes > 1024 -> "${bytes / 1024} kB"
-                else -> "$bytes B"
-            }
-        }
-    }
 
     data class TransferUpdatedEvent(override val payload: Unit) : AppEvent<Unit>
 
@@ -74,9 +28,9 @@ class TransferStatusService @Inject constructor(
             IncomingService.DownloadProgressEvent::class,
             IncomingService.DownloadFinishEvent::class,
             IncomingService.TransferCompleteEvent::class,
-            PhoneSessionService.UploadStartedEvent::class,
-            PhoneSessionService.UploadProgressEvent::class,
-            PhoneSessionService.UploadFinishedEvent::class
+            PhoneSessions.UploadStartedEvent::class,
+            PhoneSessions.UploadProgressEvent::class,
+            PhoneSessions.UploadFinishedEvent::class
         ).forEach { eventClass ->
             bus.subscribe(eventClass) {
                 updateCurrentTransfers()
@@ -86,7 +40,7 @@ class TransferStatusService @Inject constructor(
     }
 
     private fun updateCurrentTransfers() {
-        incomingService.transferTimes.forEach { transfer, times ->
+        incomingService.transferTimes.forEach { (transfer, times) ->
             val displayTransfer = currentTransfers.find { it.id == transfer.id } ?: CurrentTransfer(
                 transfer.id!!,
                 transfer.fileName!!,
@@ -99,7 +53,7 @@ class TransferStatusService @Inject constructor(
             displayTransfer.progress = percent(times.lastOrNull()?.second, displayTransfer.size)
             displayTransfer.speedBytes = incomingService.calculateTransferRate(times)
         }
-        phoneSessionService.fileDownloadStatus.forEach { (upload, times) ->
+        phoneSessions.fileDownloadStatus.forEach { (upload, times) ->
             val displayTransfer = currentTransfers.find { it.id == upload.id } ?: CurrentTransfer(
                 upload.id,
                 upload.file.name,
@@ -114,7 +68,7 @@ class TransferStatusService @Inject constructor(
         }
         val currentIds = incomingService.transferTimes.keys.map {
             it.id!!
-        } union phoneSessionService.fileDownloadStatus.keys.map { it.id }
+        } union phoneSessions.fileDownloadStatus.keys.map { it.id }
         currentTransfers.removeIf { it.id !in currentIds }
     }
 
