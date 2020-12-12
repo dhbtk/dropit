@@ -5,26 +5,30 @@ import dropit.infrastructure.event.EventBus
 import dropit.infrastructure.event.EventHandler
 import dropit.infrastructure.i18n.t
 import dropit.infrastructure.ui.TableResizedAdapter
-import dropit.ui.service.TransferStatusService
+import dropit.ui.service.TransferStatusMonitor
 import org.eclipse.swt.SWT
 import org.eclipse.swt.graphics.Image
 import org.eclipse.swt.layout.GridData
-import org.eclipse.swt.widgets.Composite
-import org.eclipse.swt.widgets.Display
-import org.eclipse.swt.widgets.Table
-import org.eclipse.swt.widgets.TableColumn
-import org.eclipse.swt.widgets.TableItem
-import java.util.UUID
+import org.eclipse.swt.widgets.*
+import java.util.*
+import kotlin.collections.HashMap
+import kotlin.collections.component1
+import kotlin.collections.component2
+import kotlin.collections.filter
+import kotlin.collections.forEach
+import kotlin.collections.indexOf
+import kotlin.collections.map
+import kotlin.collections.sum
 import kotlin.math.min
 
 
 class TransferTable(
     private val eventBus: EventBus,
-    private val transferStatusService: TransferStatusService,
+    private val transferStatusMonitor: TransferStatusMonitor,
     private val display: Display
 ) {
     lateinit var transferTable: Table
-    lateinit var subscription: EventHandler<TransferStatusService.TransferUpdatedEvent>
+    lateinit var subscription: EventHandler<TransferStatusMonitor.TransferUpdatedEvent>
     private val rowMap = HashMap<UUID, TableItem>()
     private val downloadImage = Image(display, javaClass.getResourceAsStream("/ui/transfer/download.png"))
     private val uploadImage = Image(display, javaClass.getResourceAsStream("/ui/transfer/upload.png"))
@@ -41,7 +45,7 @@ class TransferTable(
             }
         transferTable.pack()
         createColumns()
-        subscription = eventBus.subscribe(TransferStatusService.TransferUpdatedEvent::class) {
+        subscription = eventBus.subscribe(TransferStatusMonitor.TransferUpdatedEvent::class) {
             updateTable()
         }
         updateTable()
@@ -49,12 +53,12 @@ class TransferTable(
     }
 
     fun dispose() {
-        eventBus.unsubscribe(TransferStatusService.TransferUpdatedEvent::class, subscription)
+        eventBus.unsubscribe(TransferStatusMonitor.TransferUpdatedEvent::class, subscription)
     }
 
     private fun updateTable() {
         display.asyncExec {
-            transferStatusService.currentTransfers.forEach { transfer ->
+            transferStatusMonitor.currentTransfers.forEach { transfer ->
                 val tableItem = rowMap.computeIfAbsent(transfer.id) { TableItem(transferTable, SWT.NONE) }
                 tableItem.setImage(0, if (transfer.source == TransferSource.PHONE) {
                     downloadImage
@@ -67,7 +71,7 @@ class TransferTable(
                 tableItem.setText(4, transfer.humanSpeed())
                 tableItem.setText(5, transfer.humanEta())
             }
-            val ids = transferStatusService.currentTransfers.map { it.id }
+            val ids = transferStatusMonitor.currentTransfers.map { it.id }
             rowMap.filter { (id, _) -> id !in ids }.forEach { (id, item) ->
                 val index = transferTable.items.indexOf(item)
                 transferTable.remove(index)

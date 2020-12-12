@@ -11,11 +11,9 @@ import javax.inject.Singleton
 class UIModule {
     @Provides
     @Singleton
-    fun display(guiIntegrations: GuiIntegrations): Display {
+    fun display(): Display {
         Display.setAppName(APP_NAME)
-        return Display.getDefault().apply {
-            guiIntegrations.afterDisplayInit()
-        }
+        return Display.getDefault()
     }
 
     @Provides

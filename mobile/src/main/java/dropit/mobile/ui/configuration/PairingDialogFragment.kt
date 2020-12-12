@@ -2,11 +2,12 @@ package dropit.mobile.ui.configuration
 
 import android.app.Dialog
 import android.content.Context
-import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
-import androidx.fragment.app.DialogFragment
-import androidx.appcompat.app.AlertDialog
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
+import dagger.android.support.AndroidSupportInjection
+import dagger.android.support.DaggerDialogFragment
 import dropit.application.dto.TokenRequest
 import dropit.mobile.R
 import dropit.mobile.domain.entity.Computer
@@ -14,79 +15,96 @@ import dropit.mobile.domain.service.ServerConnectionService
 import dropit.mobile.infrastructure.db.SQLiteHelper
 import dropit.mobile.infrastructure.preferences.PreferencesHelper
 import dropit.mobile.onMainThread
+import java.util.*
+import java.util.concurrent.ExecutorService
+import javax.inject.Inject
 
-class PairingDialogFragment : DialogFragment() {
+class PairingDialogFragment(val onSuccess: () -> Unit) : DaggerDialogFragment() {
+    data class QrCodeInformation(
+        val computerName: String,
+        val computerId: UUID,
+        val serverPort: Int,
+        val ipAddresses: List<String>
+    ) {
+        constructor(uri: Uri) : this(
+            uri.getQueryParameter("computerName")!!,
+            UUID.fromString(uri.getQueryParameter("computerId")),
+            uri.getQueryParameter("serverPort")!!.toInt(),
+            uri.getQueryParameter("ipAddress")!!.split(",")
+        )
+    }
+
+    lateinit var qrCodeInformation: QrCodeInformation
+
+    @Inject
     lateinit var sqLiteHelper: SQLiteHelper
+
+    @Inject
     lateinit var preferencesHelper: PreferencesHelper
-    lateinit var pairingTask: PairingTask
+
+    @Inject
+    lateinit var executorService: ExecutorService
+
+    @Inject
+    lateinit var pairTaskFactory: PairTask.Factory
+    lateinit var pairTask: PairTask
 
     companion object {
-        fun create(computer: Computer): PairingDialogFragment {
-            return PairingDialogFragment()
-                .apply {
-                    val bundle = Bundle()
-                        .apply { putSerializable("computer", computer) }
-                    arguments = bundle
-                }
+        fun create(qrCode: String, onSuccess: () -> Unit): PairingDialogFragment {
+            return PairingDialogFragment(onSuccess).apply {
+                arguments = Bundle().apply { putString("qrCode", qrCode) }
+            }
         }
     }
 
     override fun onAttach(context: Context) {
+        AndroidSupportInjection.inject(this)
         super.onAttach(context)
-        sqLiteHelper = SQLiteHelper(context)
-        preferencesHelper = PreferencesHelper(context)
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val computer = arguments?.getSerializable("computer") as Computer
-        val tokenRequest = TokenRequest(
-            preferencesHelper.phoneId,
-            preferencesHelper.phoneName
+        qrCodeInformation = QrCodeInformation(Uri.parse(requireArguments().getString("qrCode")!!))
+        pairTask = pairTaskFactory.create(
+            qrCodeInformation,
+            TokenRequest(preferencesHelper.phoneId, preferencesHelper.phoneName),
+            ::showSuccess,
+            ::showError
         )
-        pairingTask = PairingTask(
-            sqLiteHelper,
-            computer,
-            tokenRequest,
-            this::showProgress,
-            this::showError,
-            this::showSuccess
-        )
-        pairingTask.execute()
-        return activity?.let {
-            AlertDialog.Builder(it)
-                .setView(R.layout.fragment_pairing_dialog)
-                .setTitle(String.format(resources.getString(R.string.pairing_dialog_title), computer.name))
-                .setNegativeButton(R.string.cancel) { dialog, _ ->
-                    dialog.dismiss()
-                }.create()
-        } ?: throw IllegalStateException("Activity cannot be null")
+        executorService.submit(pairTask)
+        return AlertDialog.Builder(requireActivity())
+            .setView(R.layout.fragment_pairing_dialog)
+            .setTitle(
+                String.format(
+                    resources.getString(R.string.pairing_dialog_title),
+                    qrCodeInformation.computerName
+                )
+            )
+            .setNegativeButton(R.string.cancel) { dialog, _ ->
+                pairTask.cancel()
+                dialog.dismiss()
+            }.create()
     }
 
     override fun onPause() {
         super.onPause()
-        pairingTask.cancel(true)
+        pairTask.cancel()
     }
 
-    fun showProgress(message: String) {
+    private fun showError(throwable: Throwable) {
         onMainThread {
-            //            pairingMessage.text = message /*resources.getString(R.string.pairing_dialog_message_2)*/
-        }
-    }
-
-    fun showError(messageId: Int) {
-        onMainThread {
-            Toast.makeText(activity, messageId, Toast.LENGTH_LONG).show()
+            throwable.printStackTrace()
+            Toast.makeText(activity, throwable.localizedMessage, Toast.LENGTH_LONG).show()
             dismissAllowingStateLoss()
         }
     }
 
-    fun showSuccess(computer: Computer) {
+    private fun showSuccess(computer: Computer) {
         onMainThread {
             preferencesHelper.currentComputerId = computer.id
             Toast.makeText(activity, R.string.paired_and_set_as_default, Toast.LENGTH_LONG).show()
-            ServerConnectionService.enqueueWork(activity!!, Intent())
+            ServerConnectionService.start(requireActivity())
             dismissAllowingStateLoss()
+            onSuccess()
         }
     }
-
 }

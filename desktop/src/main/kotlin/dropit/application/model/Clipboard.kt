@@ -1,10 +1,9 @@
 package dropit.application.model
 
 import dropit.Application
-import dropit.domain.service.IncomingService
-import java.util.*
 import dropit.jooq.tables.pojos.ClipboardLog
 import dropit.jooq.tables.references.CLIPBOARD_LOG
+import java.util.*
 
 object Clipboard : ApplicationModel() {
     init {
@@ -21,6 +20,6 @@ object Clipboard : ApplicationModel() {
                 )
             ).insert()
         }
-        bus.broadcast(IncomingService.ClipboardReceiveEvent(data))
+        bus.broadcast(FileTransfers.ClipboardReceiveEvent(data))
     }
 }

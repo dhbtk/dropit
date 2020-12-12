@@ -4,12 +4,13 @@ import android.content.Context
 import android.provider.Settings
 import dropit.application.dto.TokenRequest
 import java.util.*
+import javax.inject.Inject
 
 private const val PHONE_ID = "phoneId"
 private const val PHONE_NAME = "phoneName"
 private const val CURRENT_COMPUTER_ID = "currentComputerId"
 
-class PreferencesHelper(context: Context) {
+class PreferencesHelper @Inject constructor(context: Context) {
     private val sharedPreferences = context.getSharedPreferences("dropit.mobile.Preferences", Context.MODE_PRIVATE)
 
     val phoneId

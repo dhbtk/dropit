@@ -7,7 +7,6 @@ import javax.inject.Singleton
 
 @Module
 class WebModule {
-
     @Provides
     @Singleton
     fun objectMapper() = ObjectMapper()

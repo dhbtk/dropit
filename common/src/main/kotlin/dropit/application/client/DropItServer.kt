@@ -5,15 +5,12 @@ import dropit.application.dto.TokenResponse
 import dropit.application.dto.TransferRequest
 import okhttp3.MultipartBody
 import retrofit2.Call
-import retrofit2.http.Body
-import retrofit2.http.GET
-import retrofit2.http.Header
-import retrofit2.http.Multipart
-import retrofit2.http.POST
-import retrofit2.http.Part
-import retrofit2.http.Path
+import retrofit2.http.*
 
 interface DropItServer {
+    @GET("/version")
+    fun version(): Call<String>
+
     @POST("/token")
     fun requestToken(@Body request: TokenRequest): Call<String>
 

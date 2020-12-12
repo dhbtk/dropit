@@ -9,7 +9,6 @@ import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat.startForegroundService
 import dropit.mobile.CHANNEL_ID
 import dropit.mobile.R
 
@@ -37,6 +36,6 @@ class BootBroadcastReceiver : BroadcastReceiver() {
                 .setSmallIcon(R.drawable.ic_notification).let { notification ->
                     NotificationManagerCompat.from(context).notify(1011, notification.build())
                 }
-        ServerConnectionService.enqueueWork(context, intent!!)
+        ServerConnectionService.start(context)
     }
 }

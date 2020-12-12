@@ -1,0 +1,130 @@
+---
+settings:
+  transferFolderName:
+    invalid: "The pattern entered for the transfer folders is invalid."
+    description: "{0} is the timestamp and {1} is the transfer name."
+    label: "Pattern for transfer folder names:"
+    required: "The pattern for the transfer folders is required."
+  separateTransferFolders:
+    label: "Create a new folder for each transfer"
+  computerName:
+    description: "This name is displayed in the mobile application."
+    label: "Computer name:"
+    required: "The root transfer folder is required."
+  rootTransferFolder:
+    selectFolder: "Select folder"
+    invalid: "The path entered for the root transfer folder is invalid."
+    label: "Root transfer folder:"
+    required: "The root transfer folder is required."
+    notCreated: "The folder selected for the root transfer folder couldn''t be created."
+  afterReceivingFiles:
+    doNothing: "Do nothing"
+    openFile: "Open file"
+    openFolder: "Open folder"
+    label: "After receiving files:"
+  keepWindowOnTop:
+    label: "Keep main window on top"
+  logClipboardTransfers:
+    label: "Log clipboard transfers"
+  configureByFileType:
+    label: "Configure by file type"
+transferTable:
+  columns:
+    eta: "ETA"
+    size: "Size"
+    name: "Name"
+    progress: "%"
+    speed: "Speed"
+appSettings:
+  init:
+    defaultComputerName: "{0}''s Computer"
+    defaultTransferFolder: "DropIt Transfers"
+settingsWindow:
+  title: "Settings"
+phoneService:
+  common:
+    phoneNotFound: "Could not find phone with GUID {0}"
+appTrayIcon:
+  notifyTransferStart:
+    title: "Transfer started"
+    message: "{0} from {1}"
+  notifyPhoneRequest:
+    message: "{0} has connected. Click to authorize or deny."
+    title: "New phone connected"
+mainWindow:
+  currentTransfers:
+    title: "Current transfers"
+  dropZone:
+    clickHere: "&Click here"
+    or: "or"
+    sendClipboard: "to send the clipboard contents"
+    title: "Drop zone"
+    dndLabel: "Drag files here to send them to your phone"
+  menus:
+    help:
+      googlePlayLink: "&View app on Google Play"
+      onlineManual: "&Open online manual"
+      about: "&About"
+      title: "&Help"
+    view:
+      transferLog: "&Transfer log"
+      title: "&View"
+      clipboardLog: "&Clipboard log"
+    application:
+      exit: "E&xit"
+      settings: "S&ettings"
+      sendClipboard: "&Send clipboard to phone"
+      title: "&Application"
+  phoneDetails:
+    title: "Phone"
+phone:
+  status:
+    DENIED: "Denied"
+    PAIRED: "Paired"
+    PENDING: "Pending"
+    AUTHORIZED: "Authorized"
+phoneTable:
+  columns:
+    lastConnected: "Last seen"
+    name: "Name"
+    status: "Status"
+  phoneStatus:
+    notPaired: "You are not paired to any phones. Open the application on your phone,\
+      \ find this computer ({0}) and tap to pair."
+    paired: "Currently paired to {0}. Status: {1}"
+  actions:
+    reject: "Deny"
+    delete: "Delete"
+    authorize: "Authorize and pair"
+    pair: "Pair and connect"
+graphicalInterface:
+  confirmExit:
+    title: "Exit {0}"
+    message: "Exit {0}? You won''t be able to receive files and data while the application\
+      \ is closed."
+  trayIcon:
+    exit: "Exit"
+    settings: "Settings"
+    balloon:
+      fileIntoClipboard:
+        message: "File sent to clipboard"
+      transferComplete:
+        title: "Batch transfer complete"
+        message: "Click to open"
+      fileDownloaded:
+        title: "File \"{0}\" received"
+        message: "Click to open"
+      clipboardReceived:
+        title: "Text copied to clipboard"
+    tooltip:
+      downloadingFile: "{0} - Receiving... {1} - {2}"
+      pendingPhone: "{0} - {1} wants to pair"
+    show: "Show"
+    sendClipboard: "Send clipboard contents"
+configFolderProvider:
+  init:
+    configFolderObstructed: "Could not create config folder: there is a file with\
+      \ the same name. {0}"
+    couldNotCreateFolder: "Could not create config folder at {0}"
+trayIcon:
+  starting: "{0} - Starting..."

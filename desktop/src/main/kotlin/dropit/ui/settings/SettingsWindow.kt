@@ -3,8 +3,8 @@ package dropit.ui.settings
 import arrow.core.Either
 import arrow.core.flatMap
 import dropit.APP_NAME
-import dropit.application.settings.AppSettings
 import dropit.application.model.ShowFileAction
+import dropit.application.settings.AppSettings
 import dropit.infrastructure.i18n.t
 import dropit.infrastructure.ui.GuiIntegrations
 import dropit.ui.ShellContainer
@@ -29,13 +29,10 @@ class SettingsWindow @Inject constructor(
     private val display: Display
 ) : ShellContainer() {
     override val window = Shell(display, SWT.CLOSE or SWT.TITLE or SWT.MAX or SWT.RESIZE)
-    val saveCallbacks: ArrayList<SaveCallback> = ArrayList()
-    val descriptionFont = display.systemFont.fontData.map {
-        it.height = it.height * 0.85f
-        it
-    }.let {
-        Font(display, it.toTypedArray())
-    }
+    private val saveCallbacks: ArrayList<SaveCallback> = ArrayList()
+    private val descriptionFont = display.systemFont.fontData.map {
+        it.apply { height *= 0.85f }
+    }.let { Font(display, it.toTypedArray()) }
 
     init {
         window.text = t("settingsWindow.title")
@@ -147,7 +144,6 @@ class SettingsWindow @Inject constructor(
                 }.map { path ->
                     this.text = path
                     appSettings.rootTransferFolder = path
-                    Unit
                 }.mapLeft { message ->
                     this.text = appSettings.rootTransferFolder
                     this.setFocus()
@@ -193,7 +189,6 @@ class SettingsWindow @Inject constructor(
                 }.map { path ->
                     this.text = path
                     appSettings.transferFolderName = path
-                    Unit
                 }.mapLeft { message ->
                     this.text = appSettings.transferFolderName
                     this.setFocus()
@@ -222,12 +217,10 @@ class SettingsWindow @Inject constructor(
             add(t("settings.afterReceivingFiles.openFolder"))
             add(t("settings.afterReceivingFiles.openFile"))
 
-            if (!appSettings.openTransferOnCompletion) {
-                select(0)
-            } else if (appSettings.showTransferAction == ShowFileAction.OPEN_FOLDER) {
-                select(1)
-            } else {
-                select(2)
+            when {
+                !appSettings.openTransferOnCompletion -> select(0)
+                appSettings.showTransferAction == ShowFileAction.OPEN_FOLDER -> select(1)
+                else -> select(2)
             }
 
             addListener(SWT.Selection) {

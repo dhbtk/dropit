@@ -8,9 +8,11 @@ import java.nio.file.Paths
 import java.text.MessageFormat
 import java.time.ZoneOffset
 import java.util.*
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class TransferFolderProvider(val appSettings: AppSettings) {
-
+@Singleton
+class TransferFolderProvider @Inject constructor(val appSettings: AppSettings) {
     fun getForTransfer(transfer: TransferRecord): Path {
         return if (appSettings.separateTransferFolders) {
             val folderName = MessageFormat(appSettings.transferFolderName).format(

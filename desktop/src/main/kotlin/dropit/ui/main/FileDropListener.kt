@@ -1,17 +1,15 @@
 package dropit.ui.main
 
-import dropit.ui.service.ClipboardService
 import org.eclipse.swt.dnd.DND
 import org.eclipse.swt.dnd.DropTargetEvent
 import org.eclipse.swt.dnd.DropTargetListener
 import org.eclipse.swt.dnd.FileTransfer
-import org.eclipse.swt.widgets.Shell
 
 class FileDropListener(
-    private val transferType: FileTransfer,
-    private val window: Shell,
-    private val clipboardService: ClipboardService
+    private val action: (files: Array<String>) -> Unit
 ) : DropTargetListener {
+    private val transferType = FileTransfer.getInstance()
+
     override fun dragEnter(event: DropTargetEvent) {
         if (event.detail == DND.DROP_DEFAULT) {
             if (event.operations and DND.DROP_COPY != 0) {
@@ -61,7 +59,7 @@ class FileDropListener(
         if (transferType.isSupportedType(event.currentDataType)) {
             val files = transferType.nativeToJava(event.currentDataType)
             if (files != null && files is Array<*>) {
-                clipboardService.sendFilesToPhone(window, files.filterIsInstance<String>().toTypedArray())
+                action(files.filterIsInstance<String>().toTypedArray())
             }
         }
     }

@@ -2,7 +2,6 @@ package dropit.application.model
 
 import dropit.Application
 import dropit.application.dto.TransferRequest
-import dropit.domain.service.IncomingService
 import dropit.jooq.tables.records.PhoneRecord
 import dropit.jooq.tables.records.TransferRecord
 import dropit.jooq.tables.references.TRANSFER
@@ -18,7 +17,7 @@ object Transfers : ApplicationModel() {
         for (file in request.files) {
             jooq.newRecord(TRANSFER_FILE, file.toTransferFile(transfer)).insert()
         }
-        bus.broadcast(IncomingService.NewTransferEvent(transfer))
+        bus.broadcast(FileTransfers.NewTransferEvent(transfer))
         return transfer
     }
 }

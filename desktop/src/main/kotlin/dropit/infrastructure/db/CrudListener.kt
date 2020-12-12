@@ -6,8 +6,8 @@ import java.lang.reflect.Method
 import java.time.LocalDateTime
 
 class CrudListener : DefaultRecordListener() {
-    val methodCache = HashMap<Class<*>, Method>()
-    val nxCache = HashSet<Class<*>>()
+    private val methodCache = HashMap<Class<*>, Method>()
+    private val nxCache = HashSet<Class<*>>()
     override fun updateStart(ctx: RecordContext) {
         val clazz = ctx.record().javaClass
         if (!nxCache.contains(clazz)) {

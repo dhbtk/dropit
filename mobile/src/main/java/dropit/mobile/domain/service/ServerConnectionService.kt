@@ -1,46 +1,67 @@
 package dropit.mobile.domain.service
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
-import android.widget.Toast
-import androidx.core.app.JobIntentService
+import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
-import dropit.application.client.ClientFactory
-import dropit.application.dto.SentFileInfo
+import androidx.core.app.ServiceCompat
+import androidx.core.app.ServiceCompat.stopForeground
+import dagger.android.DaggerService
 import dropit.mobile.CONNECTION_CHANNEL_ID
 import dropit.mobile.R
+import dropit.mobile.TAG
 import dropit.mobile.domain.entity.Computer
-import dropit.mobile.infrastructure.db.SQLiteHelper
 import dropit.mobile.infrastructure.preferences.PreferencesHelper
 import dropit.mobile.onMainThread
-import java9.util.concurrent.CompletableFuture
-import okhttp3.Response
-import okhttp3.WebSocket
-import okhttp3.WebSocketListener
-import okio.ByteString
-import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ExecutorService
+import javax.inject.Inject
+import javax.inject.Provider
 
-class ServerConnectionService : JobIntentService() {
-    override fun onHandleWork(intent: Intent) {
-        val preferencesHelper = PreferencesHelper(this)
-        val sqLiteHelper = SQLiteHelper(this)
-        val computerId = preferencesHelper.currentComputerId
-        if (computerId == null) {
-            requeue()
-            return
+class ServerConnectionService : DaggerService() {
+    @Inject
+    lateinit var preferencesHelper: PreferencesHelper
+    @Inject
+    lateinit var executorService: ExecutorService
+    @Inject
+    lateinit var serverConnectionProvider: Provider<ServerConnection>
+
+    private var alreadyRunning = false
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.d(this.TAG, "onStartCommand: currentComputerId=${preferencesHelper.currentComputerId} alreadyRunning=$alreadyRunning")
+        if (preferencesHelper.currentComputerId == null || alreadyRunning) {
+            stopSelf(startId)
+            return START_NOT_STICKY
         }
 
-        val computer = sqLiteHelper.getComputer(computerId)
-        val tokenRequest = preferencesHelper.tokenRequest
-        val objectMapper = ObjectMapper().apply { findAndRegisterModules() }
-        val client = ClientFactory(objectMapper)
-            .create(computer.url, tokenRequest, computer.token?.toString())
-        val completableFuture = CompletableFuture<Boolean>()
+        alreadyRunning = true
+        doConnect()
+        return START_STICKY
+    }
+
+    private fun doConnect() {
+        serverConnectionProvider.get().doConnect(::onStart, ::onStop, ::onRestart)
+    }
+
+    private fun onStop() {
+        alreadyRunning = false
+        stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+        stopSelf()
+    }
+
+    private fun onRestart() {
+        executorService.submit {
+            Thread.sleep(5000)
+            onMainThread {
+                stopForeground(false)
+                doConnect()
+            }
+        }
+    }
+
+    private fun onStart(computer: Computer) {
         val notificationBuilder = NotificationCompat.Builder(this, CONNECTION_CHANNEL_ID)
             .setContentTitle(String.format(getText(R.string.connected_to_computer).toString(), computer.name))
             .setContentText(getText(R.string.ready_to_receive_data))
@@ -49,58 +70,6 @@ class ServerConnectionService : JobIntentService() {
             .setSmallIcon(R.drawable.ic_notification)
             .setOngoing(true)
         startForeground(NOTIFICATION_ID, notificationBuilder.build())
-        val fileDownloader = ServerFileDownloader(this, LinkedBlockingQueue(), client)
-        fileDownloader.start()
-
-        client.connectWebSocket(ServerWebSocketListener(this, fileDownloader, completableFuture, computer, objectMapper))
-
-        completableFuture.get()
-        stopForeground(NOTIFICATION_ID)
-        fileDownloader.stop()
-
-        requeue()
-    }
-
-    private fun requeue() {
-        Thread.sleep(5000)
-        enqueueWork(applicationContext, Intent())
-    }
-
-    class ServerWebSocketListener(private val context: Context, private val fileDownloader: ServerFileDownloader, private val completableFuture: CompletableFuture<Boolean>, private val computer: Computer, private val objectMapper: ObjectMapper) : WebSocketListener() {
-        override fun onOpen(webSocket: WebSocket, response: Response) {
-            fileDownloader.webSocket = webSocket
-        }
-
-        override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-            t.printStackTrace()
-            completableFuture.complete(false)
-        }
-
-        override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
-            completableFuture.complete(true)
-        }
-
-        override fun onMessage(webSocket: WebSocket, text: String) {
-            onMainThread {
-                val clipboard = context.getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
-                clipboard.setPrimaryClip(ClipData.newPlainText("Clipboard text from ${computer.name}", text))
-                Toast.makeText(context, R.string.received_clipboard, Toast.LENGTH_SHORT).show()
-            }
-        }
-
-        override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
-            try {
-                val data = objectMapper.readValue<SentFileInfo>(bytes.toByteArray())
-                fileDownloader.queue.put(data)
-            } catch (e: Exception) {
-
-            }
-        }
-
-        override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-            completableFuture.complete(true)
-            super.onClosed(webSocket, code, reason)
-        }
     }
 
     companion object {
@@ -108,8 +77,12 @@ class ServerConnectionService : JobIntentService() {
         const val NOTIFICATION_ID = 7
         const val DOWNLOAD_NOTIFICATION_ID = 2
 
-        fun enqueueWork(context: Context, work: Intent) {
-            enqueueWork(context, ServerConnectionService::class.java, JOB_ID, work)
+        fun start(context: Context) {
+            context.startService(Intent(context, ServerConnectionService::class.java))
         }
+    }
+
+    override fun onBind(intent: Intent?): IBinder? {
+        return null
     }
 }

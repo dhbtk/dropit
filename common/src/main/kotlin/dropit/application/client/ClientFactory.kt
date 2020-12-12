@@ -11,7 +11,6 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.net.ssl.HostnameVerifier
 import javax.net.ssl.SSLContext
-import javax.net.ssl.SSLSession
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 
@@ -25,18 +24,12 @@ class ClientFactory @Inject constructor(private val objectMapper: ObjectMapper) 
     }.socketFactory
     private val okHttpLogger = HttpLoggingInterceptor()
         .apply { level = HEADERS }
+
     @Suppress("MagicNumber")
     private val okHttpClient = OkHttpClient.Builder()
         .sslSocketFactory(sslSocketFactory, trustManager)
-            .apply {
-                try {
-                    Class.forName("android.os.Build")
-                    addInterceptor(okHttpLogger)
-                } catch (e: ClassNotFoundException) {
-
-                }
-            }
-        .addInterceptor(Client.ErrorHandlingInterceptor())
+        .addInterceptor(okHttpLogger)
+//        .addInterceptor(Client.ErrorHandlingInterceptor())
         .connectTimeout(5, TimeUnit.SECONDS)
         .hostnameVerifier(HostnameVerifier { _, _ -> true })
         .build()

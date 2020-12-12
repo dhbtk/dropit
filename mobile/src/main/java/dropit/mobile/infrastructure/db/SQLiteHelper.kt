@@ -14,6 +14,7 @@ import org.jetbrains.anko.db.update
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.util.*
+import javax.inject.Inject
 
 const val CURRENT_VERSION = 1
 const val COMPUTER_TABLE = "computer"
@@ -25,7 +26,7 @@ const val PORT_COLUMN = "port"
 const val TOKEN_COLUMN = "token"
 const val TOKEN_STATUS_COLUMN = "token_status"
 
-class SQLiteHelper(val context: Context) : ManagedSQLiteOpenHelper(context, "DropIt", null, CURRENT_VERSION) {
+class SQLiteHelper @Inject constructor(val context: Context) : ManagedSQLiteOpenHelper(context, "DropIt", null, CURRENT_VERSION) {
     companion object {
         @SuppressLint("StaticFieldLeak")
         private var instance: SQLiteHelper? = null
@@ -72,6 +73,12 @@ class SQLiteHelper(val context: Context) : ManagedSQLiteOpenHelper(context, "Dro
                 statement.clear()
             }
             line = reader.readLine()
+        }
+    }
+
+    fun deleteComputer(computer: Computer) {
+        use {
+            delete(COMPUTER_TABLE, "$ID_COLUMN = ?", arrayOf(computer.id.toString()))
         }
     }
 
@@ -140,6 +147,23 @@ class SQLiteHelper(val context: Context) : ManagedSQLiteOpenHelper(context, "Dro
             cursor.getString(cursor.getColumnIndex(TOKEN_COLUMN))?.let { UUID.fromString(it) },
             cursor.getInt(cursor.getColumnIndex(TOKEN_STATUS_COLUMN)).let { if (it == -1) null else TokenStatus.values()[it] }
         )
+    }
+
+    fun insertComputer(computer: Computer): Computer {
+        return use {
+            insert(COMPUTER_TABLE,
+                ID_COLUMN to computer.id.toString(),
+                NAME_COLUMN to computer.name,
+                PORT_COLUMN to computer.port,
+                IP_ADDRESS_COLUMN to computer.ipAddress,
+                SECRET_COLUMN to computer.secret.toString(),
+                NAME_COLUMN to computer.name,
+                IP_ADDRESS_COLUMN to computer.ipAddress,
+                PORT_COLUMN to computer.port,
+                TOKEN_COLUMN to computer.token?.toString(),
+                TOKEN_STATUS_COLUMN to (computer.tokenStatus?.ordinal ?: -1))
+            getComputer(computer.id)
+        }
     }
 
     fun updateComputer(computer: Computer): Computer {

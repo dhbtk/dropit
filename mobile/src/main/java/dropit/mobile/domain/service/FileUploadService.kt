@@ -1,27 +1,18 @@
 package dropit.mobile.domain.service
 
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
-import android.net.Uri
 import android.os.IBinder
-import androidx.core.app.JobIntentService
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import android.widget.Toast
-import com.fasterxml.jackson.databind.ObjectMapper
-import dropit.application.client.Client
-import dropit.application.client.ClientFactory
 import dropit.application.dto.FileRequest
 import dropit.application.dto.TokenRequest
 import dropit.mobile.CHANNEL_ID
 import dropit.mobile.R
 import dropit.mobile.domain.entity.Computer
-import java.io.IOException
-import java.net.SocketTimeoutException
-import java.util.concurrent.CompletableFuture
-import kotlin.math.roundToInt
+import java9.util.concurrent.CompletableFuture
 
 const val FILE_LIST = "fileList"
 const val COMPUTER = "computer"

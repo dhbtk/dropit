@@ -33,7 +33,7 @@ class ClipboardService @Inject constructor(
     private val phoneSessions: PhoneSessions,
     private val executor: Executor
 ) {
-    fun sendClipboardToPhone(shell: Shell) {
+    fun sendClipboardData(shell: Shell) {
         val clipboard = Clipboard(display)
         val stringContents = clipboard.getContents(TextTransfer.getInstance()) as String?
         val fileContents = clipboard.getContents(FileTransfer.getInstance()) as Array<*>?
@@ -68,7 +68,7 @@ class ClipboardService @Inject constructor(
         }
     }
 
-    fun sendFilesToPhone(shell: Shell, files: Array<String>) {
+    fun sendFiles(shell: Shell, files: Array<String>) {
         val defaultPhoneId = appSettings.currentPhoneId
         if (defaultPhoneId == null) {
             MessageBox(shell, SWT.ICON_WARNING or SWT.OK)

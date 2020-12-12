@@ -1,23 +1,21 @@
 package dropit.application.settings
 
+import dropit.application.model.DefaultSettings.defaultSettings
 import dropit.application.model.ShowFileAction
-import dropit.infrastructure.i18n.t
-import dropit.jooq.tables.pojos.Settings
 import dropit.jooq.tables.records.SettingsRecord
 import dropit.jooq.tables.references.SETTINGS
 import org.jooq.DSLContext
-import java.net.InetAddress
-import java.net.UnknownHostException
-import java.nio.file.Files
-import java.nio.file.Paths
 import java.util.*
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.KProperty
 import kotlin.reflect.full.memberProperties
 
-class AppSettings(val jooq: DSLContext) {
+@Singleton
+class AppSettings @Inject constructor(val jooq: DSLContext) {
+    val firstStart = jooq.fetchOne(SETTINGS) == null
     private val record = createDefaultSettings()
-    var firstStart: Boolean = false
     var computerId: UUID by Delegate(record)
     var computerSecret: UUID by Delegate(record)
     var computerName: String by Delegate(record)
@@ -32,7 +30,7 @@ class AppSettings(val jooq: DSLContext) {
     var keepWindowOnTop: Boolean by Delegate(record)
 
     private inner class Delegate<T>(private val record: SettingsRecord) {
-        private val propMap = HashMap<KProperty<*>, KMutableProperty1<SettingsRecord, Any?>>()
+        private val propMap = HashMap<KProperty<*>, KMutableProperty1<SettingsRecord, T>>()
         
         operator fun setValue(thisRef: AppSettings, property: KProperty<*>, value: T) {
             getProperty(record, property).also { prop ->
@@ -42,60 +40,23 @@ class AppSettings(val jooq: DSLContext) {
         }
 
         operator fun getValue(thisRef: AppSettings, property: KProperty<*>): T {
-            return getProperty(record, property).get(record) as T
+            return getProperty(record, property).get(record)
         }
-        
-        private fun getProperty(thisRef: SettingsRecord, property: KProperty<*>): KMutableProperty1<SettingsRecord, Any?> {
-            return propMap.computeIfAbsent(property) {
-                    p ->
-                (thisRef::class.memberProperties.find {
-                    it is KMutableProperty1 && it.name == p.name
-                } as KMutableProperty1<SettingsRecord, Any?>?)!!
+
+        @Suppress("UNCHECKED_CAST")
+        private fun getProperty(thisRef: SettingsRecord, property: KProperty<*>): KMutableProperty1<SettingsRecord, T> {
+            return propMap.computeIfAbsent(property) { p ->
+                thisRef::class.memberProperties
+                    .find { it is KMutableProperty1 && it.name == p.name }
+                    .let { it as KMutableProperty1<SettingsRecord, T> }
             }
         }
     }
 
     fun createDefaultSettings(): SettingsRecord {
         if (jooq.fetchOne(SETTINGS) == null) {
-            val settings = Settings(
-                computerName = getDefaultComputerName(),
-                rootTransferFolder = getDefaultTransferFolder(),
-                transferFolderName = "{0,date,yyyy-MM-dd HH-mm} {1}",
-                computerId = UUID.randomUUID(),
-                computerSecret = UUID.randomUUID().toString(),
-                serverPort = 58992,
-                separateTransferFolders = true,
-                openTransferOnCompletion = true,
-                showTransferAction = ShowFileAction.OPEN_FILE,
-                logClipboardTransfers = true,
-                keepWindowOnTop = false
-            )
-            jooq.newRecord(SETTINGS, settings).insert()
-            firstStart = true
+            jooq.newRecord(SETTINGS, defaultSettings).insert()
         }
         return jooq.fetchOne(SETTINGS)!!
-    }
-
-    private fun getDefaultTransferFolder(): String {
-        return if (System.getProperty("dropit.test") == "true") {
-            val folder = Files.createTempDirectory("dropit")
-            folder.toString()
-        } else {
-            val path = Paths.get(System.getProperty("user.home"), t("appSettings.init.defaultTransferFolder"))
-            if (!(path.toFile().exists() && path.toFile().isDirectory)) {
-                if (!path.toFile().mkdirs()) {
-                    throw IllegalStateException("Could not create default transfer folder $path")
-                }
-            }
-            return path.toString()
-        }
-    }
-
-    private fun getDefaultComputerName(): String {
-        return try {
-            InetAddress.getLocalHost().hostName
-        } catch (e: UnknownHostException) {
-            t("appSettings.init.defaultComputerName", System.getProperty("user.name"))
-        }
     }
 }

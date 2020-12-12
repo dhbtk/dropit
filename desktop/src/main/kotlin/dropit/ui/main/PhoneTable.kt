@@ -6,7 +6,6 @@ import dropit.application.model.Phones
 import dropit.application.model.authorize
 import dropit.application.model.destroy
 import dropit.application.settings.AppSettings
-import dropit.domain.service.PhoneService
 import dropit.infrastructure.event.EventBus
 import dropit.infrastructure.event.EventHandler
 import dropit.infrastructure.i18n.t
@@ -15,34 +14,25 @@ import org.eclipse.swt.SWT
 import org.eclipse.swt.custom.TableEditor
 import org.eclipse.swt.graphics.Image
 import org.eclipse.swt.layout.GridData
-import org.eclipse.swt.widgets.Button
-import org.eclipse.swt.widgets.Composite
-import org.eclipse.swt.widgets.Display
-import org.eclipse.swt.widgets.Label
-import org.eclipse.swt.widgets.Shell
-import org.eclipse.swt.widgets.Table
-import org.eclipse.swt.widgets.TableColumn
-import org.eclipse.swt.widgets.TableItem
+import org.eclipse.swt.widgets.*
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.concurrent.CompletableFuture
 import kotlin.math.min
 
 class PhoneTable(
-    private val window: Shell,
     private val bus: EventBus,
-    private val phoneService: PhoneService,
     private val display: Display,
     private val appSettings: AppSettings,
     private val phoneSessions: PhoneSessions
 ) {
-    lateinit var phoneLabel: Label
-    lateinit var phoneTable: Table
-    lateinit var subscription: EventHandler<PhoneService.PhoneChangedEvent>
-    val authorizeIcon = Image(display, javaClass.getResourceAsStream("/ui/phone/authorize.png"))
-    val deleteIcon = Image(display, javaClass.getResourceAsStream("/ui/phone/delete.png"))
-    val pairIcon = Image(display, javaClass.getResourceAsStream("/ui/phone/pair.png"))
-    val rejectIcon = Image(display, javaClass.getResourceAsStream("/ui/phone/reject.png"))
+    private lateinit var phoneLabel: Label
+    private lateinit var phoneTable: Table
+    private lateinit var subscription: EventHandler<Phones.PhoneChangedEvent>
+    private val authorizeIcon = Image(display, javaClass.getResourceAsStream("/ui/phone/authorize.png"))
+    private val deleteIcon = Image(display, javaClass.getResourceAsStream("/ui/phone/delete.png"))
+    private val pairIcon = Image(display, javaClass.getResourceAsStream("/ui/phone/pair.png"))
+    private val rejectIcon = Image(display, javaClass.getResourceAsStream("/ui/phone/reject.png"))
 
     fun init(parent: Composite) {
         phoneLabel = Label(parent, SWT.LEFT or SWT.WRAP)
@@ -64,7 +54,7 @@ class PhoneTable(
             }
         phoneTable.pack()
         createColumns()
-        subscription = bus.subscribe(PhoneService.PhoneChangedEvent::class) {
+        subscription = bus.subscribe(Phones.PhoneChangedEvent::class) {
             updateTable()
         }
         updateTable()
@@ -72,7 +62,7 @@ class PhoneTable(
     }
 
     fun dispose() {
-        bus.unsubscribe(PhoneService.PhoneChangedEvent::class, subscription)
+        bus.unsubscribe(Phones.PhoneChangedEvent::class, subscription)
     }
 
     private fun updateTable() {

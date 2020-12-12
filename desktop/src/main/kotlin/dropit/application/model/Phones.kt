@@ -3,7 +3,7 @@ package dropit.application.model
 import dropit.Application
 import dropit.application.dto.TokenRequest
 import dropit.application.dto.TokenStatus
-import dropit.domain.service.PhoneService
+import dropit.infrastructure.event.AppEvent
 import dropit.jooq.tables.pojos.Phone
 import dropit.jooq.tables.records.PhoneRecord
 import dropit.jooq.tables.references.PHONE
@@ -24,8 +24,8 @@ object Phones : ApplicationModel() {
             token = UUID.randomUUID(),
             status = TokenStatus.PENDING
         )).apply { insert() }
-        bus.broadcast(PhoneService.PhoneChangedEvent(phone))
-        bus.broadcast(PhoneService.NewPhoneRequestEvent(phone))
+        bus.broadcast(PhoneChangedEvent(phone))
+        bus.broadcast(NewPhoneRequestEvent(phone))
 
         return phone
     }
@@ -35,4 +35,7 @@ object Phones : ApplicationModel() {
     fun current(): PhoneRecord? = jooq.fetchOne(PHONE, PHONE.ID.eq(appSettings.currentPhoneId))
 
     fun pending(): List<PhoneRecord> = jooq.selectFrom(PHONE).where(PHONE.STATUS.eq(TokenStatus.PENDING)).fetch()
+
+    data class NewPhoneRequestEvent(override val payload: PhoneRecord) : AppEvent<PhoneRecord>
+    data class PhoneChangedEvent(override val payload: PhoneRecord) : AppEvent<PhoneRecord>
 }

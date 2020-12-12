@@ -18,61 +18,42 @@ import java.io.UncheckedIOException
  *
  * @see https://stackoverflow.com/a/45819406
  */
-class LinuxPngTransfer private constructor() : ByteArrayTransfer() {
+object LinuxPngTransfer : ByteArrayTransfer() {
+    private const val IMAGE_PNG = "image/png"
+    private val ID = Transfer.registerType(IMAGE_PNG)
 
-    override fun getTypeNames(): Array<String> {
-        return arrayOf(IMAGE_PNG)
-    }
+    override fun getTypeNames(): Array<String> = arrayOf(IMAGE_PNG)
 
-    override fun getTypeIds(): IntArray {
-        return intArrayOf(ID)
-    }
+    override fun getTypeIds(): IntArray = intArrayOf(ID)
 
     override fun javaToNative(obj: Any, transferData: TransferData) {
-        if (obj !is ImageData) {
-            return
-        }
+        if (obj !is ImageData) return
+        if (!isSupportedType(transferData)) return
 
-        if (isSupportedType(transferData)) {
-            try {
-                ByteArrayOutputStream().use { out ->
-                    // write data to a byte array and then ask super to convert to pMedium
+        try {
+            ByteArrayOutputStream().use { out ->
+                // write data to a byte array and then ask super to convert to pMedium
 
-                    val imgLoader = ImageLoader()
-                    imgLoader.data = arrayOf(obj)
-                    imgLoader.save(out, SWT.IMAGE_PNG)
-
-                    val buffer = out.toByteArray()
-                    out.close()
-
-                    super.javaToNative(buffer, transferData)
+                ImageLoader().apply {
+                    data = arrayOf(obj)
+                    save(out, SWT.IMAGE_PNG)
                 }
-            } catch (e: IOException) {
-                throw UncheckedIOException(e)
+
+                super.javaToNative(out.toByteArray(), transferData)
             }
+        } catch (e: IOException) {
+            throw UncheckedIOException(e)
         }
     }
 
     override fun nativeToJava(transferData: TransferData): Any? {
-        if (isSupportedType(transferData)) {
+        if (!isSupportedType(transferData)) return null
 
-            val buffer = super.nativeToJava(transferData) as ByteArray
-
-            try {
-                ByteArrayInputStream(buffer).use { `in` -> return ImageData(`in`) }
-            } catch (e: IOException) {
-                throw UncheckedIOException(e)
-            }
+        val buffer = super.nativeToJava(transferData) as ByteArray
+        try {
+            ByteArrayInputStream(buffer).use { `in` -> return ImageData(`in`) }
+        } catch (e: IOException) {
+            throw UncheckedIOException(e)
         }
-
-        return null
-    }
-
-    companion object {
-
-        private val IMAGE_PNG = "image/png"
-        private val ID = Transfer.registerType(IMAGE_PNG)
-
-        val instance = LinuxPngTransfer()
     }
 }

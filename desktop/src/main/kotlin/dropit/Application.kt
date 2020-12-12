@@ -1,6 +1,5 @@
 package dropit
 
-import dropit.application.WebServer
 import dropit.ui.DesktopIntegrations
 import org.eclipse.swt.SWT
 import org.eclipse.swt.graphics.Image
@@ -29,23 +28,18 @@ fun main() {
     SLF4JBridgeHandler.install()
 
     val component = Application.component
-    component.eventBus().subscribe(WebServer.ServerStartFailedEvent::class) {
-        reportError("Failed to start the server component. Is the application running already?")
-    }
     val shutdownHandler = Runnable(::shutdownHandler)
 
     Runtime.getRuntime().addShutdownHook(Thread(shutdownHandler))
-    try {
-        component.webServer()
-    } catch (e: Throwable) {
-        reportError(e)
+
+    for (needsStart in component.needsStart()) {
+        try {
+            needsStart.start()
+        } catch(e: Throwable) {
+            reportError(e)
+        }
     }
-    try {
-        component.graphicalInterface()
-    } catch (e: Throwable) {
-        reportError(e)
-    }
-    component.discoveryBroadcaster()
+
     val display = component.display()
     display.setRuntimeExceptionHandler { e -> reportError(e) }
     while (!display.isDisposed) {
@@ -70,14 +64,7 @@ private fun tryThis(block: () -> Unit) {
 }
 
 private fun shutdownHandler() {
-    tryThis { Application.component.graphicalInterface().exitApp() }
-    tryThis { Application.component.webServer().javalin.stop() }
-    tryThis { Application.component.discoveryBroadcaster().stop() }
-}
-
-fun reportError(message: String) {
-    rootLogger.error(message)
-    exitProcess(1)
+    Application.component.needsStop().forEach { tryThis { it.stop() } }
 }
 
 fun reportError(exception: Throwable) {

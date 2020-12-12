@@ -11,9 +11,11 @@
     <string name="default_server">Default</string>
     <string name="server_is_paired">Paired</string>
 
-    <string name="activity_configuration_help_text">This list shows all computer running DropIt in your network. The computer in green is currently active, and this is where your files and data will go.
+    <string name="activity_configuration_help_text">This list shows all computer running DropIt in your network. The
+        computer in green is currently active, and this is where your files and data will go.
 
-    Touch a computer to pair with it.</string>
+        Touch a computer to pair with it.
+    </string>
     <string name="cancel">Cancel</string>
     <string name="pairing_dialog_title">Pairing with \"%1$s\"</string>
     <string name="pairing_dialog_message_1">Requesting pairing…</string>
@@ -24,7 +26,9 @@
     <string name="no_current_computer">You need to pair to a computer first.</string>
 
     <string name="connecting_to_computer">Connecting to %1$s…</string>
-    <string name="connect_to_computer_failed">Failed to connect to computer. Check if you are in the same network as your computer.</string>
+    <string name="connect_to_computer_failed">Failed to connect to computer. Check if you are in the same network as
+        your computer.
+    </string>
     <string name="sending_file">Sending file</string>
     <string name="file_sent">File transfer finished</string>
     <string name="file_sent_successfully">The transfer has finished successfully.</string>
@@ -37,7 +41,9 @@
     <string name="send_to_clipboard">Send to clipboard</string>
     <string name="pairing_failed">Pairing failed.</string>
     <string name="receiving_file">Receiving file</string>
-    <string name="external_storage_permission_explanation">This permission is needed to store files sent from your computer. This feature will not work otherwise.</string>
+    <string name="external_storage_permission_explanation">This permission is needed to store files sent from your
+        computer. This feature will not work otherwise.
+    </string>
     <string name="ok">OK</string>
     <string name="file_received">%1$s received</string>
     <string name="click_to_open">Click to open</string>
@@ -55,4 +61,15 @@
     <string name="channel_description">Connection status and transfers</string>
     <string name="connection_channel_name">Connection</string>
     <string name="connection_channel_description">Status of the connection to your computer</string>
+    <string name="title_activity_main">MainActivity</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_settings">Settings</string>
+
+    <string name="menu_home">Home</string>
+    <string name="menu_gallery">Gallery</string>
+    <string name="menu_slideshow">Slideshow</string>
 </resources>

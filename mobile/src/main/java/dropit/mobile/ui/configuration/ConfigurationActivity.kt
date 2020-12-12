@@ -1,15 +1,14 @@
 package dropit.mobile.ui.configuration
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.TrafficStats
 import android.net.Uri
 import android.os.Bundle
 import android.os.PersistableBundle
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -18,6 +17,7 @@ import dropit.application.discovery.DiscoveryClient
 import dropit.application.dto.BroadcastMessage
 import dropit.infrastructure.event.EventBus
 import dropit.mobile.R
+import dropit.mobile.databinding.ActivityConfigurationBinding
 import dropit.mobile.domain.entity.Computer
 import dropit.mobile.domain.service.ServerConnectionService
 import dropit.mobile.infrastructure.db.SQLiteHelper
@@ -25,7 +25,6 @@ import dropit.mobile.infrastructure.preferences.PreferencesHelper
 import dropit.mobile.onMainThread
 import dropit.mobile.ui.configuration.adapter.ServerListAdapter
 import java9.util.concurrent.CompletableFuture
-import kotlinx.android.synthetic.main.activity_configuration.*
 import java.net.InetAddress
 import java.util.*
 
@@ -38,10 +37,13 @@ class ConfigurationActivity : AppCompatActivity() {
     lateinit var discoveryClient: DiscoveryClient
     lateinit var sqliteHelper: SQLiteHelper
     lateinit var preferencesHelper: PreferencesHelper
+    private lateinit var binding: ActivityConfigurationBinding
     val seenComputerIds = HashSet<UUID>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        binding = ActivityConfigurationBinding.inflate(layoutInflater)
+        setContentView(binding.root)
         sqliteHelper = SQLiteHelper(this)
         preferencesHelper = PreferencesHelper(this)
         eventBus.subscribe(DiscoveryClient.DiscoveryEvent::class) { (broadcast) ->
@@ -51,17 +53,17 @@ class ConfigurationActivity : AppCompatActivity() {
         discoveryClient = DiscoveryClient(objectMapper, eventBus)
 
         setContentView(R.layout.activity_configuration)
-        serverListView.layoutManager = LinearLayoutManager(this.applicationContext)
-        serverListView.itemAnimator = DefaultItemAnimator()
-        serverListView.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
-        serverListView.adapter = serverListAdapter
+        binding.serverListView.layoutManager = LinearLayoutManager(this.applicationContext)
+        binding.serverListView.itemAnimator = DefaultItemAnimator()
+        binding.serverListView.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
+        binding.serverListView.adapter = serverListAdapter
 
         requestExternalStoragePermission()
 
         if (intent.dataString != null) pairFromIntentUrl()
 
         refreshServerList()
-        ServerConnectionService.enqueueWork(this, Intent())
+        ServerConnectionService.start(this)
     }
 
     private fun pairFromIntentUrl() {
@@ -81,7 +83,7 @@ class ConfigurationActivity : AppCompatActivity() {
         seenComputerIds.add(computerId)
         val computer = sqliteHelper.saveFromBroadcast(broadcast)
         refreshServerList()
-        PairingDialogFragment.create(computer).show(supportFragmentManager, "t")
+//        PairingDialogFragment.create(computer).show(supportFragmentManager, "t")
     }
 
     fun requestExternalStoragePermission() {
@@ -119,8 +121,8 @@ class ConfigurationActivity : AppCompatActivity() {
     }
 
     private fun handleListClick(computer: Computer) {
-        PairingDialogFragment.create(computer)
-            .show(supportFragmentManager, "t")
+//        PairingDialogFragment.create(computer)
+//            .show(supportFragmentManager, "t")
     }
 
     /**

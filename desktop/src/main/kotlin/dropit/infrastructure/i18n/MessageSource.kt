@@ -1,43 +1,50 @@
 package dropit.infrastructure.i18n
 
+import org.yaml.snakeyaml.Yaml
 import java.io.InputStream
 import java.text.MessageFormat
-import java.util.Locale
-import java.util.Properties
+import java.util.*
 
-class MessageSource(baseNames: Array<String>, locale: Locale, defaultLocale: Locale) {
-    private val keys = baseNames
-        .map { inputStreamFor(it, locale, defaultLocale) }
-        .map { Properties().apply { load(it) }.entries }
-        .let { allProperties ->
-            val map = HashMap<String, String>()
-            allProperties.forEach { set ->
-                set.forEach { entry ->
-                    if (entry.key is String && entry.value is String) {
-                        map[entry.key as String] = entry.value as String
-                    }
-                }
-            }
-            map
-        }
+class MessageSource(baseName: String, locale: Locale, defaultLocale: Locale) {
+    private val keys = inputStreamFor(baseName, locale, defaultLocale)
+        .let { Yaml().load<HashMap<String, Any>>(it) }
 
     fun get(key: String, vararg args: Any): String {
-        return if (keys.containsKey(key)) {
-            MessageFormat(keys[key])
-                .format(args)
+        val template = dig(key)
+        return if (template != null) {
+            MessageFormat(template).format(args)
         } else {
             "UNTRANSLATED: $key"
         }
     }
 
+    private fun dig(key: String): String? {
+        var currentMap: HashMap<*, *> = keys
+        val fullPath = key.split(".")
+        for (s in fullPath) {
+            val data = currentMap[s]
+            if (data != null && data is HashMap<*, *>) {
+                currentMap = data
+            } else {
+                break
+            }
+        }
+        val str = currentMap[fullPath.last()]
+        return if (str != null && str is String) {
+            str
+        } else {
+            null
+        }
+    }
+
     private fun inputStreamFor(name: String, locale: Locale, defaultLocale: Locale): InputStream {
         return listOf(
-            "${name}_${locale.language}_${locale.country}",
-            "${name}_${locale.language}",
-            "${name}_${defaultLocale.language}_${defaultLocale.country}",
-            "${name}_${defaultLocale.language}"
+            "${name}.${locale.language}-${locale.country}",
+            "${name}.${locale.language}",
+            "${name}.${defaultLocale.language}-${defaultLocale.country}",
+            "${name}.${defaultLocale.language}"
         ).stream()
-            .map { javaClass.getResourceAsStream("$it.properties") }
+            .map { javaClass.getResourceAsStream("$it.yaml") }
             .filter { it != null }
             .findFirst()
             .get()
@@ -45,7 +52,7 @@ class MessageSource(baseNames: Array<String>, locale: Locale, defaultLocale: Loc
 }
 
 private val messageSource = MessageSource(
-    arrayOf("/i18n/strings"),
+    "/i18n/strings",
     Locale.getDefault(),
     Locale.ENGLISH
 )

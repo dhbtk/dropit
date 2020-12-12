@@ -1,7 +1,7 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import de.undercouch.gradle.tasks.download.Download
-import java.nio.file.Paths
 import org.jooq.meta.jaxb.ForcedType
+import java.nio.file.Paths
 
 plugins {
     use(Deps.Plugins.kotlinJvm)
@@ -89,6 +89,7 @@ dependencies {
     api(Deps.javalin)
     api(Deps.jacksonDatabind)
     api(Deps.jacksonModuleKotlin)
+    api(Deps.jacksonDataformatYaml)
     api(Deps.commonsLang3)
     api(Deps.commonsFileupload)
     api(Deps.javaxAnnotationApi)

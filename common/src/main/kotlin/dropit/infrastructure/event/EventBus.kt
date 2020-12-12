@@ -3,9 +3,12 @@ package dropit.infrastructure.event
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.logging.Logger
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlin.reflect.KClass
 
-class EventBus {
+@Singleton
+class EventBus @Inject constructor() {
     private val subscriptions = ConcurrentHashMap<KClass<out AppEvent<*>>, LinkedHashSet<EventHandler<AppEvent<*>>>>()
     private val log = Logger.getLogger(this::class.java.name)
 

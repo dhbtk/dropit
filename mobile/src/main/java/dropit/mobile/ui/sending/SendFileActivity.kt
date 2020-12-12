@@ -3,29 +3,32 @@ package dropit.mobile.ui.sending
 import android.content.*
 import android.net.Uri
 import android.os.Bundle
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import androidx.appcompat.app.AppCompatActivity
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import dropit.application.dto.FileRequest
 import dropit.application.dto.TokenRequest
 import dropit.mobile.R
+import dropit.mobile.databinding.ActivitySendFileBinding
 import dropit.mobile.domain.service.*
 import dropit.mobile.infrastructure.db.SQLiteHelper
 import dropit.mobile.infrastructure.preferences.PreferencesHelper
 import dropit.mobile.ui.configuration.ConfigurationActivity
-import kotlinx.android.synthetic.main.activity_send_file.*
 import java.util.*
 
 open class SendFileActivity : AppCompatActivity() {
     lateinit var sqliteHelper: SQLiteHelper
     lateinit var preferencesHelper: PreferencesHelper
+    lateinit var binding: ActivitySendFileBinding
     var activeTasks: Int = 0
     open val sendToClipboard = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setTheme(R.style.NoTopBar)
-        setContentView(R.layout.activity_send_file)
+        binding = ActivitySendFileBinding.inflate(layoutInflater)
+        setContentView(binding.root)
         sqliteHelper = SQLiteHelper(this)
         preferencesHelper = PreferencesHelper(this)
 
@@ -54,7 +57,7 @@ open class SendFileActivity : AppCompatActivity() {
         }
 
         val computer = sqliteHelper.getComputer(preferencesHelper.currentComputerId!!)
-        connectionStatus.text = String.format(resources.getString(R.string.connecting_to_computer), computer.name)
+        binding.connectionStatus.text = String.format(resources.getString(R.string.connecting_to_computer), computer.name)
 
         val action = intent.action
 
@@ -69,7 +72,7 @@ open class SendFileActivity : AppCompatActivity() {
                 ).execute(intent.getStringExtra(Intent.EXTRA_TEXT))
             } else {
                 val uris = if (action == Intent.ACTION_SEND) {
-                    listOf(intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))!!
+                    listOf(intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
                 } else {
                     intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)!!
                 }
@@ -144,8 +147,8 @@ open class SendFileActivity : AppCompatActivity() {
                 preferencesHelper.phoneId,
                 preferencesHelper.phoneName
             ))
-        startForegroundService(intent)
-        connectionStatus.text = getString(R.string.keep_upload_activity_open_notice)
+        ContextCompat.startForegroundService(this, intent)
+        binding.connectionStatus.text = getString(R.string.keep_upload_activity_open_notice)
         moveTaskToBack(true)
     }
 

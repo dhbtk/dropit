@@ -15,13 +15,13 @@ import dropit.application.dto.DownloadStatus
 import dropit.application.dto.SentFileInfo
 import dropit.mobile.CHANNEL_ID
 import dropit.mobile.R
+import java9.util.concurrent.CompletableFuture
 import okhttp3.Response
 import okhttp3.WebSocket
 import okio.ByteString
 import java.io.File
 import java.util.*
 import java.util.concurrent.BlockingQueue
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList

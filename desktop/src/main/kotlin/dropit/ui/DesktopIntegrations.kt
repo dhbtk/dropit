@@ -65,7 +65,7 @@ class DesktopIntegrations @Inject constructor() {
      */
     fun getImageTransfer(): ByteArrayTransfer =
         when (currentOS) {
-            LINUX -> LinuxPngTransfer.instance
+            LINUX -> LinuxPngTransfer
             else -> ImageTransfer.getInstance()
         }
 }

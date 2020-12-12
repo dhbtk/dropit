@@ -1,14 +1,14 @@
 package dropit.application.controllers
 
-import dropit.domain.service.IncomingService
+import dropit.application.model.FileTransfers
 import io.javalin.http.Context
 import org.eclipse.jetty.http.HttpStatus
 import java.util.*
 import javax.inject.Inject
 
-class FilesController @Inject constructor(private val incomingService: IncomingService) : ApplicationController() {
+class FilesController @Inject constructor() : ApplicationController() {
     fun update(context: Context) {
-        incomingService.receiveFile(
+        FileTransfers.receive(
             context.pathParam<UUID>("id").get(),
             context.req
         )

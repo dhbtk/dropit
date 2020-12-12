@@ -3,8 +3,8 @@ package dropit
 import dropit.application.client.ClientFactory
 import dropit.application.dto.TokenRequest
 import dropit.application.dto.TokenStatus
+import dropit.application.model.FileTransfers
 import dropit.application.model.authorize
-import dropit.domain.service.IncomingService
 import dropit.factories.TransferFactory
 import dropit.jooq.tables.references.PHONE
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -18,12 +18,11 @@ object WebIntegrationTest : Spek({
     val component = TestHelper.createComponent()
     val webServer = component.webServer()
 
-    val phoneService by memoized { component.phoneService() }
     val phoneData = TokenRequest(
         UUID.randomUUID(),
         "Phone"
     )
-    val dropItClient = ClientFactory(webServer.objectMapper).create("https://localhost:58992", phoneData, null)
+    val dropItClient = ClientFactory(component.objectMapper()).create("https://localhost:58992", phoneData, null)
 
     beforeEachTest {
         TestHelper.clearDatabase(component.jooq(), component.appSettings())
@@ -54,7 +53,7 @@ object WebIntegrationTest : Spek({
 
             val textToSend = "abcde\nfghijk"
             var callbackCalled = false
-            component.eventBus().subscribe(IncomingService.ClipboardReceiveEvent::class) { (data) ->
+            component.eventBus().subscribe(FileTransfers.ClipboardReceiveEvent::class) { (data) ->
                 callbackCalled = true
                 assertEquals(textToSend, data)
             }
@@ -65,6 +64,6 @@ object WebIntegrationTest : Spek({
     }
 
     afterGroup {
-        webServer.javalin.stop()
+        webServer.stop()
     }
 })

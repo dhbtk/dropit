@@ -6,18 +6,11 @@ import dropit.application.dto.TokenRequest
 import dropit.application.dto.TokenResponse
 import dropit.application.dto.TransferRequest
 import io.reactivex.Observable
-import okhttp3.Headers
-import okhttp3.Interceptor
-import okhttp3.MultipartBody
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import okhttp3.WebSocket
-import okhttp3.WebSocketListener
+import okhttp3.*
 import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
 import java.io.InputStream
-import java.util.UUID
+import java.util.*
 
 class Client(
     val okHttpClient: OkHttpClient,
@@ -37,6 +30,10 @@ class Client(
             dropItServer.requestToken(phoneData)
                 .execute().body()!!
         }.doOnNext { token = it }
+    }
+
+    fun version(): Observable<String> {
+        return Observable.fromCallable { dropItServer.version().execute().body()!! }
     }
 
     fun getTokenStatus(): Observable<TokenResponse> {

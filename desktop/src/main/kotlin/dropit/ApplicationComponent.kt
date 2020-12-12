@@ -5,8 +5,8 @@ import dagger.Component
 import dropit.application.WebServer
 import dropit.application.model.ApplicationModel
 import dropit.application.settings.AppSettings
-import dropit.domain.service.IncomingService
-import dropit.domain.service.PhoneService
+import dropit.infrastructure.NeedsStart
+import dropit.infrastructure.NeedsStop
 import dropit.infrastructure.discovery.DiscoveryBroadcaster
 import dropit.infrastructure.event.EventBus
 import dropit.ui.GraphicalInterface
@@ -17,10 +17,6 @@ import javax.inject.Singleton
 @Singleton
 @Component(modules = [ApplicationModule::class])
 interface ApplicationComponent {
-    fun phoneService(): PhoneService
-
-    fun transferService(): IncomingService
-
     fun eventBus(): EventBus
 
     fun discoveryBroadcaster(): DiscoveryBroadcaster
@@ -36,6 +32,10 @@ interface ApplicationComponent {
     fun graphicalInterface(): GraphicalInterface
 
     fun display(): Display
+
+    fun needsStart(): List<NeedsStart>
+
+    fun needsStop(): List<NeedsStop>
 
     fun inject(model: ApplicationModel)
 }

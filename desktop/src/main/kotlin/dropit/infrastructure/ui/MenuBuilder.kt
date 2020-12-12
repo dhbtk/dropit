@@ -5,19 +5,16 @@ import org.eclipse.swt.widgets.Display
 import org.eclipse.swt.widgets.Menu
 import org.eclipse.swt.widgets.MenuItem
 import org.eclipse.swt.widgets.Shell
-import org.slf4j.LoggerFactory
 
 typealias SelectAction = () -> Unit
 
-class MenuBuilder(val display: Display) {
-    private data class MenuData(
+class MenuBuilder(val display: Display, private val menus: MutableList<MenuData> = ArrayList()) {
+    data class MenuData(
         val title: String,
-        val entries: List<Triple<String?, SelectAction?, Int?>>
+        val entries: List<MenuEntry>
     )
 
-    private val menus = ArrayList<MenuData>()
-
-    fun menu(title: String, vararg entries: Triple<String?, SelectAction?, Int?>): MenuBuilder {
+    fun menu(title: String, vararg entries: MenuEntry): MenuBuilder {
         menus.add(MenuData(title, entries.asList()))
         return this
     }
@@ -31,31 +28,59 @@ class MenuBuilder(val display: Display) {
                     text = title
                     this.menu = menu
                 }
-            entries.forEach { (entryName, action, id) ->
-                if (entryName == null && action == null) {
-                    MenuItem(menu, SWT.SEPARATOR)
-                } else if (entryName != null) {
-                    val systemMenu = display.systemMenu?.items?.find { it.id == id }
-                    if (systemMenu != null) {
-                        systemMenu.addListener(SWT.Selection) {
-                            if (action != null) {
-                                action()
-                            }
-                        }
-                    } else {
-                        MenuItem(menu, SWT.PUSH)
-                            .apply {
-                                text = entryName
-                                if (action != null) {
-                                    addListener(SWT.Selection) {
-                                        action()
-                                    }
-                                }
-                            }
-                    }
-                }
-            }
+            entries.forEach { it.create(menu) }
         }
         shell.menuBar = menuBar
     }
+
+    interface MenuEntry {
+        fun create(menu: Menu)
+    }
+
+    class Item(private val title: String, val action: SelectAction = {}, private val systemMenuId: Int? = null) : MenuEntry {
+        override fun create(menu: Menu) {
+            val sysMenuItem = menu.display.systemMenu?.items?.find { it.id == systemMenuId }
+            if (sysMenuItem != null) {
+                sysMenuItem.addListener(SWT.Selection) { action() }
+            } else {
+                MenuItem(menu, SWT.PUSH).apply {
+                    text = title
+                    addListener(SWT.Selection) { action() }
+                }
+            }
+        }
+    }
+
+    class Separator : MenuEntry {
+        override fun create(menu: Menu) {
+            MenuItem(menu, SWT.SEPARATOR)
+        }
+    }
+}
+
+class MenuBarBuilderDsl {
+    val menus = ArrayList<MenuBuilder.MenuData>()
+
+    fun menu(title: String, action: MenuBuilderDsl.() -> Unit) {
+        val menuBuilder = MenuBuilderDsl()
+        action(menuBuilder)
+        menus.add(MenuBuilder.MenuData(title, menuBuilder.items))
+    }
+}
+
+class MenuBuilderDsl {
+    val items = ArrayList<MenuBuilder.MenuEntry>()
+
+    fun item(title: String, action: SelectAction = {}, systemMenuId: Int? = null) {
+        items.add(MenuBuilder.Item(title, action, systemMenuId))
+    }
+
+    fun separator() {
+        items.add(MenuBuilder.Separator())
+    }
+}
+
+fun windowMenu(window: Shell, action: MenuBarBuilderDsl.() -> Unit) {
+    val dsl = MenuBarBuilderDsl().also { action(it) }
+    MenuBuilder(window.display, dsl.menus).build(window)
 }

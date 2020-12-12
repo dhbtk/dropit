@@ -6,9 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import dropit.application.dto.DownloadStatus
 import dropit.application.dto.SentFileInfo
 import dropit.application.dto.TokenStatus
-import dropit.application.settings.AppSettings
+import dropit.application.model.Phones
 import dropit.application.model.TransferSource
-import dropit.domain.service.PhoneService
+import dropit.application.settings.AppSettings
 import dropit.infrastructure.event.AppEvent
 import dropit.infrastructure.event.EventBus
 import dropit.jooq.tables.pojos.ClipboardLog
@@ -19,15 +19,14 @@ import dropit.jooq.tables.references.PHONE
 import dropit.jooq.tables.references.SENT_FILE
 import dropit.logger
 import io.javalin.websocket.WsContext
+import io.javalin.websocket.WsHandler
 import io.javalin.websocket.WsMessageContext
 import org.jooq.DSLContext
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.file.Files
 import java.time.LocalDateTime
-import java.util.ArrayList
-import java.util.HashMap
-import java.util.UUID
+import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -91,7 +90,22 @@ class PhoneSessions @Inject constructor(
             }
         }
         updatePhoneLastConnected(phone.id!!)
-        bus.broadcast(PhoneService.PhoneChangedEvent(phone))
+        bus.broadcast(Phones.PhoneChangedEvent(phone))
+    }
+
+    fun defaultPhoneConnected() = phoneSessions[Phones.current()?.id]?.session != null
+
+    fun configureEndpoint(wsHandler: WsHandler) {
+        wsHandler.onConnect { openSession(it) }
+        wsHandler.onMessage { receiveDownloadStatus(it) }
+        wsHandler.onError { session ->
+            logger.warn("Error on phone session with ID ${session.sessionId}", session.error())
+            closeSession(session)
+        }
+        wsHandler.onClose { session ->
+            logger.info("Closing session: id = ${session.sessionId} statusCode = ${session.status()}, reason: ${session.reason()}")
+            closeSession(session)
+        }
     }
 
     /**
@@ -137,7 +151,7 @@ class PhoneSessions @Inject constructor(
             logger.debug("checking phone session token ${value.session?.header("Authorization")}")
             if (value.session?.header("Authorization") == session.header("Authorization")) {
                 value.session = null
-                bus.broadcast(PhoneService.PhoneChangedEvent(getPhoneById(id)!!))
+                bus.broadcast(Phones.PhoneChangedEvent(getPhoneById(id)!!))
             }
         }
     }

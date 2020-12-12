@@ -4,8 +4,11 @@ import dropit.APP_NAME
 import dropit.infrastructure.i18n.t
 import java.nio.file.Path
 import java.nio.file.Paths
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class ConfigFolderProvider {
+@Singleton
+class ConfigFolderProvider @Inject constructor() {
     val configFolder: Path = System.getProperty("os.name").toLowerCase()
         .let { osName ->
             when {
