@@ -2,6 +2,7 @@ package dropit.application.controllers
 
 import dropit.application.currentPhone
 import dropit.application.dto.TokenRequest
+import dropit.application.dto.TokenStatus
 import dropit.application.model.Phones
 import dropit.application.model.tokenResponse
 import io.javalin.http.Context
@@ -18,6 +19,11 @@ class TokensController @Inject constructor(
     }
 
     fun show(context: Context) {
-        context.json(context.currentPhone()!!.tokenResponse())
+        context.currentPhone()!!.also { phone ->
+            if (phone.status == TokenStatus.PENDING) {
+                Phones.bus.broadcast(Phones.NewPhoneRequestEvent(phone))
+            }
+            context.json(phone.tokenResponse())
+        }
     }
 }

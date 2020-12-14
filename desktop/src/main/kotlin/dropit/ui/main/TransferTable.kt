@@ -2,7 +2,6 @@ package dropit.ui.main
 
 import dropit.application.model.TransferSource
 import dropit.infrastructure.event.EventBus
-import dropit.infrastructure.event.EventHandler
 import dropit.infrastructure.i18n.t
 import dropit.infrastructure.ui.TableResizedAdapter
 import dropit.ui.service.TransferStatusMonitor
@@ -14,11 +13,6 @@ import java.util.*
 import kotlin.collections.HashMap
 import kotlin.collections.component1
 import kotlin.collections.component2
-import kotlin.collections.filter
-import kotlin.collections.forEach
-import kotlin.collections.indexOf
-import kotlin.collections.map
-import kotlin.collections.sum
 import kotlin.math.min
 
 
@@ -28,7 +22,7 @@ class TransferTable(
     private val display: Display
 ) {
     lateinit var transferTable: Table
-    lateinit var subscription: EventHandler<TransferStatusMonitor.TransferUpdatedEvent>
+    lateinit var subscription: EventBus.Subscription
     private val rowMap = HashMap<UUID, TableItem>()
     private val downloadImage = Image(display, javaClass.getResourceAsStream("/ui/transfer/download.png"))
     private val uploadImage = Image(display, javaClass.getResourceAsStream("/ui/transfer/upload.png"))
@@ -53,7 +47,7 @@ class TransferTable(
     }
 
     fun dispose() {
-        eventBus.unsubscribe(TransferStatusMonitor.TransferUpdatedEvent::class, subscription)
+        eventBus.unsubscribe(subscription)
     }
 
     private fun updateTable() {

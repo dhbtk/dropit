@@ -41,6 +41,7 @@ launch4j {
     jar = "${project.buildDir}/libs/${shadowJar.archiveBaseName.get()}-${project.version}-${shadowJar.archiveClassifier.get()}.jar"
     print("Jar is $jar")
     bundledJrePath = "jdk-15.0.1+9-jre"
+    jvmOptions = setOf("-Dlaunch4j.exedir=\"%EXEDIR%\"", "-Dlaunch4j.exefile=\"%EXEFILE%\"")
 }
 
 tasks.named("createExe").configure {
@@ -75,25 +76,25 @@ macAppBundle {
 }
 
 dependencies {
-    api(project(":common"))
-    api(Deps.sqliteJdbc)
+    implementation(project(":common"))
+    implementation(Deps.sqliteJdbc)
     jooqGenerator(Deps.sqliteJdbc)
     jooqGenerator(Deps.jaxbRuntime)
     jooqGenerator(Deps.javaxActivation)
 
-    api(Deps.hikariCP)
-    api(Deps.flywayCore)
-    api(Deps.jooq)
-    api(Deps.julToSlf4j)
-    api(Deps.dagger)
-    api(Deps.javalin)
-    api(Deps.jacksonDatabind)
-    api(Deps.jacksonModuleKotlin)
-    api(Deps.jacksonDataformatYaml)
-    api(Deps.commonsLang3)
-    api(Deps.commonsFileupload)
-    api(Deps.javaxAnnotationApi)
-    api(Deps.jsr305)
+    implementation(Deps.hikariCP)
+    implementation(Deps.flywayCore)
+    implementation(Deps.jooq)
+    implementation(Deps.julToSlf4j)
+    implementation(Deps.dagger)
+    implementation(Deps.javalin)
+    implementation(Deps.jacksonDatabind)
+    implementation(Deps.jacksonModuleKotlin)
+    implementation(Deps.jacksonDataformatYaml)
+    implementation(Deps.commonsLang3)
+    implementation(Deps.commonsFileupload)
+    implementation(Deps.javaxAnnotationApi)
+    implementation(Deps.jsr305)
     implementation(Deps.logbackClassic)
     implementation(Deps.dagger)
 //    implementation("io.arrow-kt:arrow-core-extensions:$arrow_version")
@@ -101,7 +102,7 @@ dependencies {
 
     testImplementation(Deps.junitJupiterEngine)
     testImplementation(kotlin("test-junit5"))
-    testImplementation(Deps.spekDslJvm)  {
+    testImplementation(Deps.spekDslJvm) {
         exclude(group = "org.jetbrains.kotlin")
     }
     testRuntimeOnly (Deps.spekRunnerJunit5) {

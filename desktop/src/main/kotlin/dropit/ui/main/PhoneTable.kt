@@ -7,7 +7,6 @@ import dropit.application.model.authorize
 import dropit.application.model.destroy
 import dropit.application.settings.AppSettings
 import dropit.infrastructure.event.EventBus
-import dropit.infrastructure.event.EventHandler
 import dropit.infrastructure.i18n.t
 import dropit.infrastructure.ui.TableResizedAdapter
 import org.eclipse.swt.SWT
@@ -28,8 +27,9 @@ class PhoneTable(
 ) {
     private lateinit var phoneLabel: Label
     private lateinit var phoneTable: Table
-    private lateinit var subscription: EventHandler<Phones.PhoneChangedEvent>
-    private val authorizeIcon = Image(display, javaClass.getResourceAsStream("/ui/phone/authorize.png"))
+    private lateinit var subscription: EventBus.Subscription
+    private val authorizeIcon =
+        Image(display, javaClass.getResourceAsStream("/ui/phone/authorize.png"))
     private val deleteIcon = Image(display, javaClass.getResourceAsStream("/ui/phone/delete.png"))
     private val pairIcon = Image(display, javaClass.getResourceAsStream("/ui/phone/pair.png"))
     private val rejectIcon = Image(display, javaClass.getResourceAsStream("/ui/phone/reject.png"))
@@ -62,7 +62,7 @@ class PhoneTable(
     }
 
     fun dispose() {
-        bus.unsubscribe(Phones.PhoneChangedEvent::class, subscription)
+        bus.unsubscribe(subscription)
     }
 
     private fun updateTable() {

@@ -7,7 +7,19 @@ import java.nio.file.Files
 import java.util.*
 import javax.inject.Inject
 
-class DownloadsController @Inject constructor(private val phoneSessions: PhoneSessions) : ApplicationController() {
+class DownloadsController @Inject constructor(private val phoneSessions: PhoneSessions) :
+    ApplicationController() {
+    fun beforeShow(context: Context) {
+
+    }
+
+    fun afterShow(context: Context) {
+        phoneSessions.recordUploadFinished(
+            context.currentPhone()!!,
+            context.pathParam<UUID>("id").get()
+        )
+    }
+
     fun show(context: Context) {
         val file = phoneSessions.getFileDownload(
             context.currentPhone()!!,

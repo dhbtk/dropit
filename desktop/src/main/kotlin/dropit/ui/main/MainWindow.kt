@@ -10,6 +10,7 @@ import dropit.infrastructure.ui.GuiIntegrations
 import dropit.infrastructure.ui.windowMenu
 import dropit.ui.GraphicalInterface
 import dropit.ui.ShellContainer
+import dropit.ui.pairing.PairingDialog
 import dropit.ui.service.ClipboardService
 import dropit.ui.service.TransferStatusMonitor
 import org.eclipse.swt.SWT
@@ -31,7 +32,8 @@ class MainWindow @Inject constructor(
     transferStatusMonitor: TransferStatusMonitor,
     private val guiIntegrations: GuiIntegrations,
     private val display: Display,
-    private val graphicalInterface: Lazy<GraphicalInterface>
+    private val graphicalInterface: Lazy<GraphicalInterface>,
+    private val pairingDialog: PairingDialog
 ) : ShellContainer() {
     private val windowOpts = if (appSettings.keepWindowOnTop) {
         SWT.SHELL_TRIM or SWT.ON_TOP
@@ -60,7 +62,6 @@ class MainWindow @Inject constructor(
         buildDropZone(window)
         buildCurrentTransfers(window)
         buildPhoneDetails(window)
-        PairingQrCode(appSettings, window)
         window.pack()
         window.minimumSize = window.size.apply { x = 440 }
         window.open()
@@ -69,6 +70,7 @@ class MainWindow @Inject constructor(
     private fun buildWindowMenu() {
         windowMenu(window) {
             menu(t("mainWindow.menus.application.title")) {
+                item(t("mainWindow.menus.application.startPairing"), ::startPairing)
                 item(t("mainWindow.menus.application.sendClipboard"), ::sendClipboard)
                 item(t("mainWindow.menus.application.settings"), ::openSettings, SWT.ID_PREFERENCES)
                 separator()
@@ -84,6 +86,10 @@ class MainWindow @Inject constructor(
                 item(t("mainWindow.menus.help.about"), {}, SWT.ID_ABOUT)
             }
         }
+    }
+
+    private fun startPairing() {
+        pairingDialog.open()
     }
 
     private fun buildDropZone(parent: Composite) {

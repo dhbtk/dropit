@@ -29,7 +29,7 @@ class Routes @Inject constructor(
 
     fun configure() {
         before(::before)
-        get("/", versionController::show)
+        get("/version", versionController::show)
         path("token") {
             post(tokensController::create)
             get(tokensController::show)
@@ -37,6 +37,8 @@ class Routes @Inject constructor(
         post("transfers", transfersController::create, setOf(PhoneRole.AUTHORIZED))
         post("files/:id", filesController::update, setOf(PhoneRole.AUTHORIZED))
         post("clipboard", clipboardsController::create, setOf(PhoneRole.AUTHORIZED))
+        before("downloads/:id", downloadsController::beforeShow)
         get("downloads/:id", downloadsController::show, setOf(PhoneRole.AUTHORIZED))
+        after("downloads/:id", downloadsController::afterShow)
     }
 }

@@ -22,7 +22,7 @@ class TransferStatusMonitor @Inject constructor(
         get() = transferMap.values
 
     init {
-        arrayOf(
+        bus.subscribe(
             FileTransfers.DownloadStartedEvent::class,
             FileTransfers.DownloadProgressEvent::class,
             FileTransfers.DownloadFinishEvent::class,
@@ -30,11 +30,9 @@ class TransferStatusMonitor @Inject constructor(
             PhoneSessions.UploadStartedEvent::class,
             PhoneSessions.UploadProgressEvent::class,
             PhoneSessions.UploadFinishedEvent::class
-        ).forEach { eventClass ->
-            bus.subscribe(eventClass) {
-                updateCurrentTransfers()
-                bus.broadcast(TransferUpdatedEvent(Unit))
-            }
+        ) {
+            updateCurrentTransfers()
+            bus.broadcast(TransferUpdatedEvent(Unit))
         }
     }
 

@@ -27,8 +27,10 @@ class TrayIcon @Inject constructor(
 ) : NeedsStop {
     private val shell = Shell(display)
     private val trayImage = Image(display, javaClass.getResourceAsStream("/ui/icon.png"))
-    private val trayImageConnected = Image(display, javaClass.getResourceAsStream("/ui/icon-connected.png"))
-    private val trayImageDisconnected = Image(display, javaClass.getResourceAsStream("/ui/icon-disconnected.png"))
+    private val trayImageConnected =
+        Image(display, javaClass.getResourceAsStream("/ui/icon-connected.png"))
+    private val trayImageDisconnected =
+        Image(display, javaClass.getResourceAsStream("/ui/icon-disconnected.png"))
     private val trayIcon = TrayItem(display.systemTray, SWT.NONE)
     var toolTip: ToolTip
         get() = trayIcon.toolTip
@@ -42,14 +44,12 @@ class TrayIcon @Inject constructor(
         trayIcon.addListener(SWT.Selection) { showMemoryStats() }
         trayIcon.addListener(SWT.DefaultSelection) { graphicalInterface.get().mainWindow.open() }
 
-        listOf(
+        eventBus.subscribe(
             Phones.NewPhoneRequestEvent::class,
             Phones.PhoneChangedEvent::class,
             TransferStatusMonitor.TransferUpdatedEvent::class
-        ).forEach { event ->
-            eventBus.subscribe(event) {
-                display.asyncExec { refresh() }
-            }
+        ) {
+            display.asyncExec { refresh() }
         }
 
         refresh()

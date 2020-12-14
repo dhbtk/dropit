@@ -128,3 +128,5 @@ configFolderProvider:
     couldNotCreateFolder: "Could not create config folder at {0}"
 trayIcon:
   starting: "{0} - Starting..."
+pairingDialog:
+  title: DropIt - Pairing

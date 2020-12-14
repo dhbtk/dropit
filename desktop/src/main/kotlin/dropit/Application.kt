@@ -26,6 +26,13 @@ object Application {
 fun main() {
     SLF4JBridgeHandler.removeHandlersForRootLogger()
     SLF4JBridgeHandler.install()
+    rootLogger.info(
+        "$APP_NAME starting: launch4j.exedir=${System.getProperty("launch4j.exedir")} launch4j.exefile=${
+            System.getProperty(
+                "launch4j.exefile"
+            )
+        }"
+    )
 
     val component = Application.component
     val shutdownHandler = Runnable(::shutdownHandler)

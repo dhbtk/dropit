@@ -5,8 +5,12 @@ import dropit.application.dto.FileRequest
 import dropit.application.dto.TokenRequest
 import dropit.application.dto.TokenResponse
 import dropit.application.dto.TransferRequest
+import io.reactivex.Completable
 import io.reactivex.Observable
+import io.reactivex.Single
 import okhttp3.*
+import retrofit2.Call
+import retrofit2.Callback
 import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
 import java.io.InputStream
@@ -25,18 +29,28 @@ class Client(
         .client(okHttpClient)
         .build().create(DropItServer::class.java)
 
-    fun requestToken(): Observable<String> {
-        return Observable.fromCallable {
+    fun requestToken(): Single<String> {
+        return Single.fromCallable {
             dropItServer.requestToken(phoneData)
                 .execute().body()!!
-        }.doOnNext { token = it }
+        }.doAfterSuccess { token = it }
     }
 
-    fun version(): Observable<String> {
-        return Observable.fromCallable { dropItServer.version().execute().body()!! }
+    fun version(): Single<String> {
+        return Single.create { emitter ->
+            dropItServer.version().enqueue(object : Callback<String> {
+                override fun onResponse(call: Call<String>, response: retrofit2.Response<String>) {
+                    emitter.onSuccess(response.body()!!)
+                }
+
+                override fun onFailure(call: Call<String>, t: Throwable) {
+                    emitter.tryOnError(t)
+                }
+            })
+        }
     }
 
-    fun getTokenStatus(): Observable<TokenResponse> {
+    fun getTokenStatus(): Single<TokenResponse> {
         return headerObservable()
             .map { header ->
                 dropItServer.getTokenStatus(header)
@@ -45,34 +59,40 @@ class Client(
     }
 
     fun createTransfer(request: TransferRequest): Observable<String> {
-        return headerObservable()
+        return headerObservable().toObservable()
             .map { header ->
                 dropItServer.createTransfer(header, request)
                     .execute().body()
             }
     }
 
-    fun uploadFile(fileRequest: FileRequest, inputStream: InputStream, callback: (Long) -> Unit): Observable<Unit> {
-        return headerObservable()
-            .map { header ->
-                val body = InputStreamBody(inputStream, fileRequest.fileSize!!, callback)
-                val sanitizedName = fileRequest.fileName!!.replace("\"", "%22")
-                dropItServer.uploadFile(
-                    header,
-                    fileRequest.id!!,
-                    MultipartBody.Part.create(
-                        Headers.Builder().addUnsafeNonAscii(
-                            "Content-Disposition",
-                            "form-data; name=\"file\"; filename=\"$sanitizedName\"").build(),
-                        body
-                    )
-                ).execute().body()!!
-            }
+    fun uploadFile(
+        fileRequest: FileRequest,
+        inputStream: InputStream,
+        callback: (Long) -> Unit
+    ): Completable {
+        return headerObservable().map { header ->
+            val body = InputStreamBody(inputStream, fileRequest.fileSize!!, callback)
+            val sanitizedName = fileRequest.fileName!!.replace("\"", "%22")
+            dropItServer.uploadFile(
+                header,
+                fileRequest.id!!,
+                MultipartBody.Part.create(
+                    Headers.Builder().addUnsafeNonAscii(
+                        "Content-Disposition",
+                        "form-data; name=\"file\"; filename=\"$sanitizedName\""
+                    ).build(),
+                    body
+                )
+            ).execute()
+        }.ignoreElement()
     }
 
-    fun sendToClipboard(data: String): Observable<Unit> {
+    fun sendToClipboard(data: String): Completable {
         return headerObservable()
-            .map { dropItServer.sendToClipboard(it, data).execute().body() }
+            .map {
+                dropItServer.sendToClipboard(it, data).execute()
+            }.ignoreElement()
     }
 
     fun connectWebSocket(listener: WebSocketListener): WebSocket {
@@ -104,9 +124,9 @@ class Client(
 
     private fun tokenHeader() = "Bearer $token"
 
-    private fun headerObservable(): Observable<String> {
+    private fun headerObservable(): Single<String> {
         val obs = if (token != null) {
-            Observable.just(token)
+            Single.just(token)
         } else {
             requestToken()
         }

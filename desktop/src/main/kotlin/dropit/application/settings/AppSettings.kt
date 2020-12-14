@@ -17,7 +17,7 @@ class AppSettings @Inject constructor(val jooq: DSLContext) {
     val firstStart = jooq.fetchOne(SETTINGS) == null
     private val record = createDefaultSettings()
     var computerId: UUID by Delegate(record)
-    var computerSecret: UUID by Delegate(record)
+    var computerSecret: String by Delegate(record)
     var computerName: String by Delegate(record)
     var transferFolderName: String by Delegate(record)
     var rootTransferFolder: String by Delegate(record)

@@ -16,11 +16,17 @@ import dagger.android.ContributesAndroidInjector
 import dagger.android.DaggerApplication
 import dropit.application.client.Client
 import dropit.application.client.ClientFactory
-import dropit.mobile.domain.entity.Computer
-import dropit.mobile.domain.service.ServerConnectionService
-import dropit.mobile.infrastructure.db.SQLiteHelper
-import dropit.mobile.infrastructure.preferences.PreferencesHelper
+import dropit.mobile.application.clipboard.SendClipboardService
+import dropit.mobile.application.connection.ServerConnectionService
+import dropit.mobile.application.entity.Computer
+import dropit.mobile.application.fileupload.FileUploadService
+import dropit.mobile.lib.db.SQLiteHelper
+import dropit.mobile.lib.preferences.PreferencesHelper
+import dropit.mobile.ui.camera.CameraActivity
+import dropit.mobile.ui.configuration.PairingDialogFragment
 import dropit.mobile.ui.main.MainActivity
+import dropit.mobile.ui.main.ui.home.HomeFragment
+import dropit.mobile.ui.sending.SendFileActivity
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import javax.inject.Singleton
@@ -71,7 +77,25 @@ abstract class ActivityModule {
     abstract fun injectMainActivity(): MainActivity
 
     @ContributesAndroidInjector
+    abstract fun injectSendFileActivity(): SendFileActivity
+
+    @ContributesAndroidInjector
+    abstract fun injectCameraActivity(): CameraActivity
+
+    @ContributesAndroidInjector
     abstract fun injectServerConnectionService(): ServerConnectionService
+
+    @ContributesAndroidInjector
+    abstract fun injectSendClipboardService(): SendClipboardService
+
+    @ContributesAndroidInjector
+    abstract fun injectFileUploadService(): FileUploadService
+
+    @ContributesAndroidInjector
+    abstract fun injectPairingDialogFragment(): PairingDialogFragment
+
+    @ContributesAndroidInjector
+    abstract fun injectHomeFragment(): HomeFragment
 }
 
 val Any.TAG: String

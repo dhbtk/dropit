@@ -15,7 +15,7 @@ object DiscoveryIntegrationTest : Spek({
         it("broadcasts and receives correctly") {
             discoveryBroadcaster.toString()
             var client: DiscoveryClient.ServerBroadcast? = null
-            eventBus.subscribe(DiscoveryClient.DiscoveryEvent::class) { (data) -> client = data }
+            eventBus.subscribe(DiscoveryClient.DiscoveryEvent::class) { data -> client = data }
             var tries = 0
             while (true) {
                 if (tries > 3) {

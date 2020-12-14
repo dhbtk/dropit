@@ -36,7 +36,7 @@ class GraphicalInterface @Inject constructor(
     val settingsWindow: SettingsWindow by WindowDelegate(guiIntegrations, settingsWindowProvider)
 
     init {
-        eventBus.subscribe(FileTransfers.ClipboardReceiveEvent::class) { (data) ->
+        eventBus.subscribe(FileTransfers.ClipboardReceiveEvent::class) { data ->
             display.asyncExec { receiveClipboardText(data) }
         }
     }

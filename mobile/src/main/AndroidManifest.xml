@@ -24,7 +24,7 @@
         <activity android:name=".ui.pairing.PairingQrCodeActivity" android:theme="@style/CameraTheme" />
         <activity
                 android:name=".ui.main.MainActivity"
-                android:label="@string/title_activity_main"
+                android:label="@string/app_name"
                 android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -62,26 +62,8 @@
             </intent-filter>
         </activity>
         <activity
-                android:name=".ui.sending.SendFileToClipboardActivity"
-                android:theme="@style/SplashTheme">
-            <intent-filter android:label="@string/send_to_clipboard">
-                <action android:name="android.intent.action.SEND" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-
-                <data android:mimeType="*/*" />
-            </intent-filter>
-            <intent-filter android:label="@string/send_to_clipboard">
-                <action android:name="android.intent.action.SEND_MULTIPLE" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-
-                <data android:mimeType="*/*" />
-            </intent-filter>
-        </activity>
-        <activity
                 android:name=".ui.configuration.ConfigurationActivity"
-                android:launchMode="singleInstance"></activity>
+                android:launchMode="singleInstance" />
         <activity
                 android:name=".ui.camera.CameraActivity"
                 android:icon="@mipmap/ic_launcher_camera"
@@ -97,7 +79,7 @@
         </activity>
 
         <receiver
-                android:name=".domain.service.BootBroadcastReceiver"
+                android:name=".application.BootBroadcastReceiver"
                 android:enabled="true"
                 android:exported="true">
             <intent-filter>
@@ -125,13 +107,14 @@
         </receiver>
 
         <service
-                android:name=".domain.service.ServerConnectionService"
+                android:name=".application.connection.ServerConnectionService"
                 android:permission="android.permission.BIND_JOB_SERVICE"
                 android:exported="false"
                 />
         <service
-                android:name=".domain.service.FileUploadService"
+                android:name=".application.fileupload.FileUploadService"
                 android:permission="android.permission.BIND_JOB_SERVICE" />
+        <service android:name=".application.clipboard.SendClipboardService" />
 
         <provider
                 android:name="androidx.core.content.FileProvider"

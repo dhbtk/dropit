@@ -22,7 +22,8 @@ object WebIntegrationTest : Spek({
         UUID.randomUUID(),
         "Phone"
     )
-    val dropItClient = ClientFactory(component.objectMapper()).create("https://localhost:58992", phoneData, null)
+    val dropItClient =
+        ClientFactory(component.objectMapper()).create("https://localhost:58992", phoneData, null)
 
     beforeEachTest {
         TestHelper.clearDatabase(component.jooq(), component.appSettings())
@@ -31,12 +32,12 @@ object WebIntegrationTest : Spek({
     describe("sending a file and sending clipboard text") {
         it("works as expected") {
 //            webServer.javalin.start()
-            val token = dropItClient.requestToken().blockingFirst()
+            val token = dropItClient.requestToken().blockingGet()
             assertNotNull(token)
 
             component.jooq().fetchOne(PHONE, PHONE.ID.eq(phoneData.id))!!.authorize()
 
-            val status = dropItClient.getTokenStatus().blockingFirst()
+            val status = dropItClient.getTokenStatus().blockingGet()
 
             assertEquals(TokenStatus.AUTHORIZED, status.status)
 
@@ -49,15 +50,15 @@ object WebIntegrationTest : Spek({
             dropItClient.uploadFile(
                 transferRequest.files[0],
                 javaClass.getResourceAsStream("/zeroes.bin")
-            ) {}.blockingFirst()
+            ) {}.blockingAwait()
 
             val textToSend = "abcde\nfghijk"
             var callbackCalled = false
-            component.eventBus().subscribe(FileTransfers.ClipboardReceiveEvent::class) { (data) ->
+            component.eventBus().subscribe(FileTransfers.ClipboardReceiveEvent::class) { data ->
                 callbackCalled = true
                 assertEquals(textToSend, data)
             }
-            dropItClient.sendToClipboard(textToSend).blockingFirst()
+            dropItClient.sendToClipboard(textToSend).blockingGet()
 
             assertTrue(callbackCalled)
         }

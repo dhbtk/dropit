@@ -7,10 +7,10 @@ import net.glxn.qrgen.javase.QRCode
 import org.eclipse.swt.SWT
 import org.eclipse.swt.graphics.Image
 import org.eclipse.swt.layout.GridData
+import org.eclipse.swt.layout.GridLayout
 import org.eclipse.swt.widgets.Group
 import org.eclipse.swt.widgets.Label
 import org.eclipse.swt.widgets.Shell
-import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 import java.net.Inet4Address
 import java.net.NetworkInterface
@@ -28,21 +28,29 @@ class PairingQrCode(private val appSettings: AppSettings, private val window: Sh
     }.map { it.hostAddress }.filter { it != null }.toList()
 
     private var qrCode: Image = generateQrCode()
-    private val group = Group(window, SWT.SHADOW_ETCHED_OUT).also { group ->
-        group.text = "Pairing QR Code"
-        group.layoutData = GridData(GridData.FILL_HORIZONTAL)
+    val group = Group(window, SWT.SHADOW_ETCHED_OUT).also { group ->
+        group.text = "Pairing"
+        group.layoutData = GridData(SWT.FILL, SWT.FILL, true, true)
             .apply {
                 minimumHeight = 128
             }
-        org.eclipse.swt.layout.GridLayout(1, false)
-            .apply {
-                group.layout = this
-            }
+        group.layout = GridLayout(1, false).apply {
+            marginHeight = 32
+            marginWidth = 64
+        }
+        group.size = window.size
+    }
+    private val label = Label(group, SWT.CENTER or SWT.WRAP).apply {
+        text =
+            "Open the DropIt app on your phone, tap \"Scan QR Code\" and\n scan the QR Code below to pair the phone with this computer."
+        layoutData = GridData(GridData.FILL_HORIZONTAL).apply {
+            minimumHeight = 64
+        }
     }
     private val canvas = Label(group, SWT.CENTER).apply {
         layoutData = GridData(SWT.CENTER, SWT.CENTER, true, true).apply {
-            widthHint = 256
-            heightHint = 256
+            widthHint = 384
+            heightHint = 384
         }
         image = qrCode
         pack()

@@ -1,4 +1,4 @@
-package dropit.mobile.domain.service
+package dropit.mobile.application
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -11,6 +11,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import dropit.mobile.CHANNEL_ID
 import dropit.mobile.R
+import dropit.mobile.application.connection.ServerConnectionService
 
 class BootBroadcastReceiver : BroadcastReceiver() {
     private val events = arrayOf(

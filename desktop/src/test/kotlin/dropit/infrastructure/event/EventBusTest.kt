@@ -43,7 +43,7 @@ object EventBusTest : Spek({
             val subscription = eventBus.subscribe(TestEvent::class) {
                 fail("subscription not removed")
             }
-            eventBus.unsubscribe(TestEvent::class, subscription)
+            eventBus.unsubscribe(subscription)
             eventBus.broadcast(TestEvent("test"))
         }
 
@@ -55,7 +55,7 @@ object EventBusTest : Spek({
             eventBus.subscribe(TestEvent::class) {
                 called = true
             }
-            eventBus.unsubscribe(TestEvent::class, subscription)
+            eventBus.unsubscribe(subscription)
             eventBus.broadcast(TestEvent("test"))
             assertTrue(called)
         }
@@ -64,8 +64,8 @@ object EventBusTest : Spek({
     describe("#broadcast") {
         it("passes along the event correctly") {
             val event = TestEvent("payload")
-            eventBus.subscribe(TestEvent::class) {
-                assertEquals(event, it)
+            eventBus.subscribe(TestEvent::class) { payload ->
+                assertEquals("payload", payload)
             }
             eventBus.broadcast(event)
         }

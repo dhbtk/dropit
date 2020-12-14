@@ -10,10 +10,10 @@ import dagger.android.support.AndroidSupportInjection
 import dagger.android.support.DaggerDialogFragment
 import dropit.application.dto.TokenRequest
 import dropit.mobile.R
-import dropit.mobile.domain.entity.Computer
-import dropit.mobile.domain.service.ServerConnectionService
-import dropit.mobile.infrastructure.db.SQLiteHelper
-import dropit.mobile.infrastructure.preferences.PreferencesHelper
+import dropit.mobile.application.connection.ServerConnectionService
+import dropit.mobile.application.entity.Computer
+import dropit.mobile.lib.db.SQLiteHelper
+import dropit.mobile.lib.preferences.PreferencesHelper
 import dropit.mobile.onMainThread
 import java.util.*
 import java.util.concurrent.ExecutorService

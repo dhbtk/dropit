@@ -1,8 +1,10 @@
-package dropit.mobile.infrastructure.preferences
+package dropit.mobile.lib.preferences
 
 import android.content.Context
 import android.provider.Settings
 import dropit.application.dto.TokenRequest
+import dropit.infrastructure.event.AppEvent
+import dropit.infrastructure.event.EventBus
 import java.util.*
 import javax.inject.Inject
 
@@ -10,8 +12,9 @@ private const val PHONE_ID = "phoneId"
 private const val PHONE_NAME = "phoneName"
 private const val CURRENT_COMPUTER_ID = "currentComputerId"
 
-class PreferencesHelper @Inject constructor(context: Context) {
-    private val sharedPreferences = context.getSharedPreferences("dropit.mobile.Preferences", Context.MODE_PRIVATE)
+class PreferencesHelper @Inject constructor(context: Context, eventBus: EventBus) {
+    private val sharedPreferences =
+        context.getSharedPreferences("dropit.mobile.Preferences", Context.MODE_PRIVATE)
 
     val phoneId
         get() = sharedPreferences.getString(PHONE_ID, "").let { UUID.fromString(it) }!!
@@ -42,8 +45,13 @@ class PreferencesHelper @Inject constructor(context: Context) {
         if (!sharedPreferences.contains(PHONE_NAME)) {
             sharedPreferences
                 .edit()
-                .putString(PHONE_NAME, Settings.Secure.getString(context.contentResolver, "bluetooth_name"))
+                .putString(
+                    PHONE_NAME,
+                    Settings.Secure.getString(context.contentResolver, "bluetooth_name")
+                )
                 .apply()
         }
     }
+
+    data class CurrentComputerIdChanged(override val payload: UUID?) : AppEvent<UUID?>
 }

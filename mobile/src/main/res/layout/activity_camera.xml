@@ -57,19 +57,6 @@
         android:src="@drawable/ic_photo_camera_white_24dp"
         app:layout_constraintHorizontal_chainStyle="spread"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/sendToClipboard"
-        app:layout_constraintBottom_toBottomOf="parent" />
-
-    <ImageView
-        android:id="@+id/sendToClipboard"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_marginEnd="24dp"
-        android:layout_marginBottom="24dp"
-        android:contentDescription="@string/switch_cameras"
-        android:src="@drawable/ic_content_paste_white_24dp"
-        app:layout_constraintHorizontal_chainStyle="spread"
-        app:layout_constraintStart_toEndOf="@+id/sendToComputer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

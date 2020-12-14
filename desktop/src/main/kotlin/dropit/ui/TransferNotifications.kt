@@ -102,7 +102,7 @@ class TransferNotifications @Inject constructor(
     }
 
     override fun start() {
-        eventBus.subscribe(FileTransfers.TransferCompleteEvent::class) { (completedTransfer) ->
+        eventBus.subscribe(FileTransfers.TransferCompleteEvent::class) { completedTransfer ->
             display.asyncExec { notifyTransferFinished(completedTransfer) }
         }
     }

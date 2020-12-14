@@ -1,4 +1,4 @@
-package dropit.mobile.domain.entity
+package dropit.mobile.application.entity
 
 import dropit.application.dto.TokenStatus
 import java.io.Serializable

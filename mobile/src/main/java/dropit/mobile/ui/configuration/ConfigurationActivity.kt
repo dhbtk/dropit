@@ -17,11 +17,11 @@ import dropit.application.discovery.DiscoveryClient
 import dropit.application.dto.BroadcastMessage
 import dropit.infrastructure.event.EventBus
 import dropit.mobile.R
+import dropit.mobile.application.connection.ServerConnectionService
+import dropit.mobile.application.entity.Computer
 import dropit.mobile.databinding.ActivityConfigurationBinding
-import dropit.mobile.domain.entity.Computer
-import dropit.mobile.domain.service.ServerConnectionService
-import dropit.mobile.infrastructure.db.SQLiteHelper
-import dropit.mobile.infrastructure.preferences.PreferencesHelper
+import dropit.mobile.lib.db.SQLiteHelper
+import dropit.mobile.lib.preferences.PreferencesHelper
 import dropit.mobile.onMainThread
 import dropit.mobile.ui.configuration.adapter.ServerListAdapter
 import java9.util.concurrent.CompletableFuture
@@ -45,8 +45,8 @@ class ConfigurationActivity : AppCompatActivity() {
         binding = ActivityConfigurationBinding.inflate(layoutInflater)
         setContentView(binding.root)
         sqliteHelper = SQLiteHelper(this)
-        preferencesHelper = PreferencesHelper(this)
-        eventBus.subscribe(DiscoveryClient.DiscoveryEvent::class) { (broadcast) ->
+        preferencesHelper = PreferencesHelper(this, eventBus)
+        eventBus.subscribe(DiscoveryClient.DiscoveryEvent::class) { broadcast ->
             handleBroadcast(broadcast)
         }
         TrafficStats.setThreadStatsTag(1)
@@ -55,7 +55,12 @@ class ConfigurationActivity : AppCompatActivity() {
         setContentView(R.layout.activity_configuration)
         binding.serverListView.layoutManager = LinearLayoutManager(this.applicationContext)
         binding.serverListView.itemAnimator = DefaultItemAnimator()
-        binding.serverListView.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
+        binding.serverListView.addItemDecoration(
+            DividerItemDecoration(
+                this,
+                DividerItemDecoration.VERTICAL
+            )
+        )
         binding.serverListView.adapter = serverListAdapter
 
         requestExternalStoragePermission()
@@ -91,7 +96,7 @@ class ConfigurationActivity : AppCompatActivity() {
             PackageManager.PERMISSION_GRANTED) {
             if (ActivityCompat.shouldShowRequestPermissionRationale(this,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-                ExternalStorageDialogFragment().show(fragmentManager, "t")
+                ExternalStorageDialogFragment().show(supportFragmentManager, "t")
             } else {
                 ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
                     REQUEST_WRITE_EXTERNAL_STORAGE)

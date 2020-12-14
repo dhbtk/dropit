@@ -1,9 +1,6 @@
 package dropit.application
 
-import com.fasterxml.jackson.core.JsonParseException
-import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
-import dropit.application.dto.DownloadStatus
 import dropit.application.dto.SentFileInfo
 import dropit.application.dto.TokenStatus
 import dropit.application.model.Phones
@@ -20,7 +17,6 @@ import dropit.jooq.tables.references.SENT_FILE
 import dropit.logger
 import io.javalin.websocket.WsContext
 import io.javalin.websocket.WsHandler
-import io.javalin.websocket.WsMessageContext
 import org.jooq.DSLContext
 import java.io.File
 import java.nio.ByteBuffer
@@ -97,7 +93,6 @@ class PhoneSessions @Inject constructor(
 
     fun configureEndpoint(wsHandler: WsHandler) {
         wsHandler.onConnect { openSession(it) }
-        wsHandler.onMessage { receiveDownloadStatus(it) }
         wsHandler.onError { session ->
             logger.warn("Error on phone session with ID ${session.sessionId}", session.error())
             closeSession(session)
@@ -108,38 +103,21 @@ class PhoneSessions @Inject constructor(
         }
     }
 
-    /**
-     *
-     */
-    fun receiveDownloadStatus(session: WsMessageContext) {
-        try {
-            val (fileId, downloaded) = session.message(DownloadStatus::class.java)
-            val phoneSession =
-                phoneSessions.filterValues { it.session?.header("Authorization") == session.header("Authorization") }.values.first()
-            val sentFile = phoneSession.files.find { it.id == fileId } ?: return
-            if (sentFile.size == downloaded) {
-                fileDownloadStatus.remove(sentFile)
-                bus.broadcast(UploadFinishedEvent(sentFile))
-                phoneSession.files.remove(sentFile)
-                val fileRecord = jooq.newRecord(
-                    SENT_FILE, SentFile(
-                        id = sentFile.id,
-                        phoneId = appSettings.currentPhoneId,
-                        fileName = sentFile.file.toString(),
-                        mimeType = Files.probeContentType(sentFile.file.toPath()),
-                        fileSize = sentFile.size
-                    )
-                )
-                fileRecord.insert()
-            } else {
-                fileDownloadStatus[sentFile]?.add(Pair(LocalDateTime.now(), downloaded))
-                bus.broadcast(UploadProgressEvent(sentFile))
-            }
-        } catch (e: JsonMappingException) {
-            // nop
-        } catch (e: JsonParseException) {
-            // nop
-        }
+    fun recordUploadFinished(phone: PhoneRecord, fileId: UUID) {
+        val phoneSession = phoneSessions[phone.id!!]!!
+        val sentFile = phoneSession.files.find { it.id == fileId } ?: return
+        fileDownloadStatus.remove(sentFile)
+        bus.broadcast(UploadFinishedEvent(sentFile))
+        phoneSession.files.remove(sentFile)
+        jooq.newRecord(
+            SENT_FILE, SentFile(
+                id = sentFile.id,
+                phoneId = appSettings.currentPhoneId,
+                fileName = sentFile.file.toString(),
+                mimeType = Files.probeContentType(sentFile.file.toPath()),
+                fileSize = sentFile.size
+            )
+        ).insert()
     }
 
     /**

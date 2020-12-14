@@ -34,8 +34,11 @@ object Phones : ApplicationModel() {
 
     fun current(): PhoneRecord? = jooq.fetchOne(PHONE, PHONE.ID.eq(appSettings.currentPhoneId))
 
-    fun pending(): List<PhoneRecord> = jooq.selectFrom(PHONE).where(PHONE.STATUS.eq(TokenStatus.PENDING)).fetch()
+    fun pending(): List<PhoneRecord> =
+        jooq.selectFrom(PHONE).where(PHONE.STATUS.eq(TokenStatus.PENDING)).fetch()
 
     data class NewPhoneRequestEvent(override val payload: PhoneRecord) : AppEvent<PhoneRecord>
     data class PhoneChangedEvent(override val payload: PhoneRecord) : AppEvent<PhoneRecord>
+    data class PhonePairedEvent(override val payload: PhoneRecord) : AppEvent<PhoneRecord>
+    data class PhoneRejectedEvent(override val payload: PhoneRecord) : AppEvent<PhoneRecord>
 }

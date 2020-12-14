@@ -1,4 +1,4 @@
-package dropit.mobile.domain.service
+package dropit.mobile.application.connection
 
 import android.app.Notification
 import android.app.PendingIntent
@@ -6,25 +6,23 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.os.Environment
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.FileProvider
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import dropit.application.client.Client
-import dropit.application.dto.DownloadStatus
 import dropit.application.dto.SentFileInfo
 import dropit.mobile.CHANNEL_ID
 import dropit.mobile.R
+import dropit.mobile.TAG
+import dropit.mobile.onMainThread
 import java9.util.concurrent.CompletableFuture
 import okhttp3.Response
 import okhttp3.WebSocket
-import okio.ByteString
 import java.io.File
-import java.util.*
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
-import kotlin.collections.ArrayList
 import kotlin.math.roundToInt
 
 class ServerFileDownloader(val context: Context, val queue: BlockingQueue<SentFileInfo>, val client: Client) {
@@ -34,7 +32,6 @@ class ServerFileDownloader(val context: Context, val queue: BlockingQueue<SentFi
     lateinit var webSocket: WebSocket
     private val seenFiles = ArrayList<SentFileInfo>()
     private val attempts = ConcurrentHashMap<SentFileInfo, Int>()
-    private val downloadProgress = HashMap<SentFileInfo, Long>()
 
     fun start() {
         CompletableFuture.runAsync { doRun() }
@@ -49,30 +46,37 @@ class ServerFileDownloader(val context: Context, val queue: BlockingQueue<SentFi
             val nextFileId = queue.poll(500, TimeUnit.MILLISECONDS)
             if (nextFileId != null && attempts.getOrDefault(nextFileId, 0) < 2) {
                 if(!seenFiles.contains(nextFileId)) seenFiles.add(nextFileId)
-                val currentNotificationId = downloadNotificationId + 2*seenFiles.indexOf(nextFileId)
+                val currentNotificationId =
+                    downloadNotificationId + 3 * seenFiles.indexOf(nextFileId)
                 val (fileId, totalSize) = nextFileId
                 try {
                     val progressBuilder = downloadProgressBuilder()
-                    notificationManager.notify(currentNotificationId, progressBuilder.build())
-
-                    val notifier = ProgressNotifier(nextFileId, webSocket)
-                    notifier.start()
+                    onMainThread {
+                        notificationManager.notify(currentNotificationId, progressBuilder.build())
+                    }
+                    Log.i(this.TAG, "Downloading file $fileId")
                     var currentPercentage = 0
                     val response = client.downloadFile(fileId) { read: Long, _: Long ->
                         val newPercentage = ((read.toDouble() / totalSize) * 100).roundToInt()
                         if (newPercentage > currentPercentage) {
+                            Log.i(this.TAG, "Download at $currentPercentage%")
                             currentPercentage = newPercentage
                             progressBuilder
-                                    .setProgress(100, currentPercentage, false)
-                                    .setContentText("$currentPercentage%")
-                            notificationManager.notify(currentNotificationId, progressBuilder.build())
+                                .setProgress(100, currentPercentage, false)
+                                .setContentText("$currentPercentage%")
+                            onMainThread {
+                                notificationManager.notify(
+                                    currentNotificationId,
+                                    progressBuilder.build()
+                                )
+                            }
                         }
-                        notifier.readBytes = read
                     }.blockingFirst()
 
                     val fileName = response.header("X-File-Name")!!
                     val file = fileForDownload(fileName)
 
+                    Log.i(this.TAG, "Saving filename: $fileName")
                     response.body!!.byteStream().use { input ->
                         file.outputStream().use { output ->
                             val buffer = ByteArray(8192)
@@ -83,19 +87,29 @@ class ServerFileDownloader(val context: Context, val queue: BlockingQueue<SentFi
                             }
                         }
                     }
-                    downloadDoneNotification(file, response)
-                            .apply { notificationManager.notify(currentNotificationId, this) }
-                    notifier.stop()
+                    Log.i(this.TAG, "Saved $fileName")
+                    onMainThread {
+                        notificationManager.cancel(currentNotificationId)
+                        downloadDoneNotification(file, response)
+                            .apply { notificationManager.notify(currentNotificationId + 2, this) }
+                    }
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    notificationManager.cancel(currentNotificationId)
-                    NotificationCompat.Builder(context, CHANNEL_ID)
+                    onMainThread {
+                        notificationManager.cancel(currentNotificationId)
+                        NotificationCompat.Builder(context, CHANNEL_ID)
                             .setContentTitle(context.getText(R.string.file_download_failed))
                             .setTicker(context.getText(R.string.receiving_file))
-                            .setLargeIcon(BitmapFactory.decodeResource(context.resources, R.drawable.ic_notification))
+                            .setLargeIcon(
+                                BitmapFactory.decodeResource(
+                                    context.resources,
+                                    R.drawable.ic_notification
+                                )
+                            )
                             .setSmallIcon(R.drawable.ic_notification)
                             .build()
                             .apply { notificationManager.notify(currentNotificationId + 1, this) }
+                    }
                     attempts.compute(nextFileId) { _, current ->
                         if (current == null) {
                             1
@@ -107,30 +121,6 @@ class ServerFileDownloader(val context: Context, val queue: BlockingQueue<SentFi
                 }
 
             }
-        }
-    }
-
-    class ProgressNotifier(private val sentFileInfo: SentFileInfo, private val webSocket: WebSocket) {
-        private val objectMapper = jacksonObjectMapper()
-        private var running = true
-        var readBytes = 0L
-
-        fun start() {
-            CompletableFuture.runAsync {
-                while (running) {
-                    sendReadBytes()
-                    Thread.sleep(1000)
-                }
-                sendReadBytes()
-            }
-        }
-
-        fun stop() {
-            running = false
-        }
-
-        private fun sendReadBytes() {
-            webSocket.send(ByteString.of(*objectMapper.writeValueAsBytes(DownloadStatus(sentFileInfo.id, readBytes))))
         }
     }
 

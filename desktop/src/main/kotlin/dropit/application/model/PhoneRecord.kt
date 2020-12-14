@@ -8,13 +8,14 @@ import dropit.application.model.Phones.jooq
 import dropit.jooq.tables.records.PhoneRecord
 import dropit.jooq.tables.references.TRANSFER
 import dropit.jooq.tables.references.TRANSFER_FILE
+import java.util.*
 
 fun PhoneRecord.role(): PhoneRole = status?.let { PhoneRole.valueOf(it.name) } ?: PhoneRole.PENDING
 
 fun PhoneRecord.tokenResponse(): TokenResponse {
     if (status != TokenStatus.AUTHORIZED) return TokenResponse(status)
 
-    return TokenResponse(status, appSettings.computerSecret)
+    return TokenResponse(status, UUID.fromString(appSettings.computerSecret))
 }
 
 fun PhoneRecord.authorize() {
@@ -22,6 +23,7 @@ fun PhoneRecord.authorize() {
     update()
     appSettings.currentPhoneId = id
     bus.broadcast(Phones.PhoneChangedEvent(this))
+    bus.broadcast(Phones.PhonePairedEvent(this))
 }
 
 fun PhoneRecord.destroy() {
@@ -36,5 +38,6 @@ fun PhoneRecord.destroy() {
         delete()
     }
     if (appSettings.currentPhoneId == id) appSettings.currentPhoneId = null
+    if (status == TokenStatus.PENDING) bus.broadcast(Phones.PhoneRejectedEvent(this))
     bus.broadcast(Phones.PhoneChangedEvent(this))
 }

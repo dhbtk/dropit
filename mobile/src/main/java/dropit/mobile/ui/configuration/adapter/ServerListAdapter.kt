@@ -1,14 +1,14 @@
 package dropit.mobile.ui.configuration.adapter
 
 import android.content.Context
-import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.recyclerview.widget.RecyclerView
 import dropit.application.dto.TokenStatus
 import dropit.mobile.R
-import dropit.mobile.domain.entity.Computer
+import dropit.mobile.application.entity.Computer
 
 class ServerListAdapter(
     val context: Context,

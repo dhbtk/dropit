@@ -1,42 +1,48 @@
 package dropit.mobile.ui.sending
 
-import android.content.*
+import android.app.PendingIntent
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import dropit.application.dto.FileRequest
-import dropit.application.dto.TokenRequest
+import androidx.core.app.NotificationManagerCompat
+import dagger.android.support.DaggerAppCompatActivity
+import dropit.application.client.Client
 import dropit.mobile.R
+import dropit.mobile.application.clipboard.SendClipboardService
+import dropit.mobile.application.fileupload.FileUpload
+import dropit.mobile.application.fileupload.UploadNotifications
 import dropit.mobile.databinding.ActivitySendFileBinding
-import dropit.mobile.domain.service.*
-import dropit.mobile.infrastructure.db.SQLiteHelper
-import dropit.mobile.infrastructure.preferences.PreferencesHelper
-import dropit.mobile.ui.configuration.ConfigurationActivity
-import java.util.*
+import dropit.mobile.lib.db.SQLiteHelper
+import dropit.mobile.lib.preferences.PreferencesHelper
+import dropit.mobile.onMainThread
+import dropit.mobile.ui.main.MainActivity
+import java9.util.concurrent.CompletableFuture
+import javax.inject.Inject
+import javax.inject.Provider
 
-open class SendFileActivity : AppCompatActivity() {
+open class SendFileActivity : DaggerAppCompatActivity() {
+    @Inject
     lateinit var sqliteHelper: SQLiteHelper
+
+    @Inject
     lateinit var preferencesHelper: PreferencesHelper
+
+    @Inject
+    lateinit var clientProvider: Provider<Client>
+
+    @Inject
+    lateinit var uploadNotifications: UploadNotifications
     lateinit var binding: ActivitySendFileBinding
-    var activeTasks: Int = 0
-    open val sendToClipboard = false
+    var activeTasks = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setTheme(R.style.NoTopBar)
         binding = ActivitySendFileBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        sqliteHelper = SQLiteHelper(this)
-        preferencesHelper = PreferencesHelper(this)
-
-        LocalBroadcastManager.getInstance(this).registerReceiver(
-            UploadFinishedReceiver(this::onUploadFinished),
-            IntentFilter(UPLOAD_FINISHED)
-        )
-
         handleIntent(intent)
     }
 
@@ -47,114 +53,110 @@ open class SendFileActivity : AppCompatActivity() {
         }
     }
 
+    private fun redirectToPairing() {
+        Toast.makeText(this, R.string.no_current_computer, Toast.LENGTH_LONG).show()
+        val configIntent = Intent(this, MainActivity::class.java)
+        startActivity(configIntent)
+        finish()
+    }
+
     private fun handleIntent(intent: Intent) {
         if (preferencesHelper.currentComputerId == null) {
-            Toast.makeText(this, R.string.no_current_computer, Toast.LENGTH_LONG).show()
-            val configIntent = Intent(this, ConfigurationActivity::class.java)
-            startActivity(configIntent)
-            finish()
+            redirectToPairing()
             return
         }
 
         val computer = sqliteHelper.getComputer(preferencesHelper.currentComputerId!!)
-        binding.connectionStatus.text = String.format(resources.getString(R.string.connecting_to_computer), computer.name)
+        binding.connectionStatus.text =
+            String.format(resources.getString(R.string.connecting_to_computer), computer.name)
 
         val action = intent.action
 
         if (action == Intent.ACTION_SEND || action == Intent.ACTION_SEND_MULTIPLE) {
-            if (intent.type == "text/plain") {
-                SendClipboardTask(
-                    computer,
-                    preferencesHelper.tokenRequest,
-                    this::onStartTransfer,
-                    this::showTransferError,
-                    this::showClipboardSuccess
-                ).execute(intent.getStringExtra(Intent.EXTRA_TEXT))
-            } else {
-                val uris = if (action == Intent.ACTION_SEND) {
-                    listOf(intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
-                } else {
-                    intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)!!
-                }
-
-                CreateTransferTask(
-                    contentResolver,
-                    computer,
-                    preferencesHelper.tokenRequest,
-                    sendToClipboard,
-                    this::onStartTransfer,
-                    this::showTransferError,
-                    this::startTransfer
-                ).execute(*uris.toTypedArray())
-            }
-        } else if (intent.getBooleanExtra("sendClipboard", false)) {
-            val clipText = (getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager)
-                .primaryClip!!.let { if (it.itemCount == 0) null else it.getItemAt(0).text.toString() }
-            if (clipText != null) {
-                SendClipboardTask(
-                    computer,
-                    preferencesHelper.tokenRequest,
-                    this::onStartTransfer,
-                    this::showTransferError,
-                    this::showClipboardSuccess
-                ).execute(clipText)
-            } else {
-                Toast.makeText(this, R.string.clipboard_is_empty, Toast.LENGTH_LONG).show()
-                finishIfPossible()
-            }
-
-        } else {
-            finishIfPossible()
+            handleSendIntent(intent, action)
+        } else if (intent.getBooleanExtra(SEND_CLIPBOARD, false)) {
+            handleClipboardIntent()
         }
     }
 
-    private fun onStartTransfer() {
+    private fun handleClipboardIntent() {
+        val clipText = (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager)
+            .primaryClip!!.let { if (it.itemCount == 0) null else it.getItemAt(0).text.toString() }
+        if (clipText != null) {
+            SendClipboardService.sendText(this, clipText)
+        } else {
+            Toast.makeText(this, R.string.clipboard_is_empty, Toast.LENGTH_LONG).show()
+        }
+        finishIfPossible()
+    }
+
+    private fun handleSendIntent(intent: Intent, action: String?) {
+        when {
+            intent.type == "text/plain" -> {
+                val text = intent.getStringExtra(Intent.EXTRA_TEXT)!!
+                SendClipboardService.sendText(this, text)
+                finishIfPossible()
+            }
+            action == Intent.ACTION_SEND -> {
+                val uris = arrayListOf(intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)!!)
+                doUpload(uris)
+            }
+            else -> {
+                val uris = intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)!!
+                doUpload(uris)
+            }
+        }
+    }
+
+    private fun doUpload(files: List<Uri>) {
+        moveTaskToBack(true)
         activeTasks++
+        NotificationManagerCompat.from(this).notify(
+            UploadNotifications.START_NOTIFICATION_ID,
+            uploadNotifications.startNotification.build()
+        )
+        FileUpload(this, clientProvider.get(), files, uploadNotifications.startNotification)
+            .let { CompletableFuture.runAsync(it) }
+            .exceptionally { t -> onMainThread { onError(t) }; null }
+            .thenRun { onMainThread { onSuccess() } }
+    }
+
+    private fun onSuccess() {
+        NotificationManagerCompat.from(this).cancel(
+            UploadNotifications.START_NOTIFICATION_ID
+        )
+        uploadNotifications.showSuccessNotification()
+        activeTasks--
+        finishIfPossible()
+    }
+
+    private fun onError(t: Throwable) {
+        NotificationManagerCompat.from(this).cancel(
+            UploadNotifications.START_NOTIFICATION_ID
+        )
+
+        t.cause?.printStackTrace()
+
+        Toast.makeText(this, "Upload failed: ${t.cause?.message}", Toast.LENGTH_LONG).show()
+        activeTasks--
+        finishIfPossible()
     }
 
     private fun finishIfPossible() {
         if (activeTasks == 0) {
             finish()
         } else {
-            moveTaskToBack(true)
+            moveTaskToBack(false)
         }
     }
 
-    private fun onUploadFinished() {
-        activeTasks--
-        finishIfPossible()
-    }
+    companion object {
+        private const val SEND_CLIPBOARD = "sendClipboard"
 
-    private fun showClipboardSuccess() {
-        Toast.makeText(this, R.string.text_sent_to_clipboard, Toast.LENGTH_LONG).show()
-        activeTasks--
-        finishIfPossible()
-    }
-
-    private fun showTransferError() {
-        Toast.makeText(this, R.string.connect_to_computer_failed, Toast.LENGTH_LONG).show()
-        val intent = Intent(this, ConfigurationActivity::class.java)
-        startActivity(intent)
-        activeTasks--
-        finishIfPossible()
-    }
-
-    private fun startTransfer(data: List<Pair<FileRequest, String>>) {
-        val intent = Intent(this, FileUploadService::class.java)
-            .putExtra(FILE_LIST, ArrayList(data))
-            .putExtra(COMPUTER, sqliteHelper.getComputer(preferencesHelper.currentComputerId!!))
-            .putExtra(TOKEN_REQUEST, TokenRequest(
-                preferencesHelper.phoneId,
-                preferencesHelper.phoneName
-            ))
-        ContextCompat.startForegroundService(this, intent)
-        binding.connectionStatus.text = getString(R.string.keep_upload_activity_open_notice)
-        moveTaskToBack(true)
-    }
-
-    class UploadFinishedReceiver(val onReceive: () -> Unit) : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            onReceive()
+        fun pendingIntent(context: Context): PendingIntent {
+            val intent = Intent(context, SendFileActivity::class.java)
+            intent.putExtra(SEND_CLIPBOARD, true)
+            return PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
         }
     }
 }

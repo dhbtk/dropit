@@ -1,4 +1,4 @@
-package dropit.mobile.domain.service
+package dropit.mobile.application.connection
 
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -12,9 +12,9 @@ import dropit.application.client.Client
 import dropit.application.dto.SentFileInfo
 import dropit.mobile.R
 import dropit.mobile.TAG
-import dropit.mobile.domain.entity.Computer
-import dropit.mobile.infrastructure.db.SQLiteHelper
-import dropit.mobile.infrastructure.preferences.PreferencesHelper
+import dropit.mobile.application.entity.Computer
+import dropit.mobile.lib.db.SQLiteHelper
+import dropit.mobile.lib.preferences.PreferencesHelper
 import dropit.mobile.onMainThread
 import okhttp3.Response
 import okhttp3.WebSocket
