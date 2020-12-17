@@ -53,17 +53,16 @@ class TransferTable(
     private fun updateTable() {
         display.asyncExec {
             transferStatusMonitor.currentTransfers.forEach { transfer ->
-                val tableItem = rowMap.computeIfAbsent(transfer.id) { TableItem(transferTable, SWT.NONE) }
-                tableItem.setImage(0, if (transfer.source == TransferSource.PHONE) {
-                    downloadImage
-                } else {
-                    uploadImage
-                })
-                tableItem.setText(1, transfer.name)
-                tableItem.setText(2, transfer.humanSize())
-                tableItem.setText(3, "${transfer.progress}%")
-                tableItem.setText(4, transfer.humanSpeed())
-                tableItem.setText(5, transfer.humanEta())
+                val tableItem =
+                    rowMap.computeIfAbsent(transfer.id) { TableItem(transferTable, SWT.NONE) }
+                val image =
+                    if (transfer.source == TransferSource.PHONE) downloadImage else uploadImage
+                tableItem.setImage(0, image)
+                tableItem.setText(0, transfer.name)
+                tableItem.setText(1, transfer.humanSize())
+                tableItem.setText(2, "${transfer.progress}%")
+                tableItem.setText(3, transfer.humanSpeed())
+                tableItem.setText(4, transfer.humanEta())
             }
             val ids = transferStatusMonitor.currentTransfers.map { it.id }
             rowMap.filter { (id, _) -> id !in ids }.forEach { (id, item) ->
@@ -76,13 +75,6 @@ class TransferTable(
     }
 
     private fun createColumns() {
-        TableColumn(transferTable, SWT.NONE)
-            .apply {
-                text = " "
-                alignment = SWT.CENTER
-                pack()
-            }
-
         arrayOf(
             "name" to SWT.LEFT, "size" to SWT.RIGHT, "progress" to SWT.RIGHT, "speed" to SWT.RIGHT, "eta" to SWT.RIGHT
         ).map { (str, align) -> t("transferTable.columns.$str") to align }.forEach { (name, align) ->
@@ -91,17 +83,17 @@ class TransferTable(
                     text = name
                     alignment = align
                     pack()
+                    resizable = false
                 }
         }
     }
 
     private fun resizeColumns(width: Int) {
-        transferTable.columns[0].width = min(26, width)
         val smallWidth = min(width / 6, 65)
-        for (i in 2..5) {
+        for (i in 1..4) {
             transferTable.columns[i].width = smallWidth
         }
-        val nameWidth = width - arrayOf(0, 2, 3, 4, 5).map { transferTable.columns[it].width }.sum()
-        transferTable.columns[1].width = nameWidth
+        val nameWidth = width - arrayOf(1, 2, 3, 4).map { transferTable.columns[it].width }.sum()
+        transferTable.columns[0].width = nameWidth
     }
 }

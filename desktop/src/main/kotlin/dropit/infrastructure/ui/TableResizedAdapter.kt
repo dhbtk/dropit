@@ -16,7 +16,7 @@ class TableResizedAdapter(
         val area = parent.clientArea
         val size = table.computeSize(SWT.DEFAULT, SWT.DEFAULT)
         val vBar = table.verticalBar
-        var width = area.width - table.computeTrim(0, 0, 0, 0).width - vBar.size.x
+        var width = area.width - table.computeTrim(0, 0, 0, 0).width
         if (size.y > area.height + table.headerHeight) {
             // Subtract the scrollbar width from the total column width
             // if a vertical scrollbar will be required

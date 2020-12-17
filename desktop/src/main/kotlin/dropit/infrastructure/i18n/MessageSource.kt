@@ -9,7 +9,7 @@ class MessageSource(baseName: String, locale: Locale, defaultLocale: Locale) {
     private val keys = inputStreamFor(baseName, locale, defaultLocale)
         .let { Yaml().load<HashMap<String, Any>>(it) }
 
-    fun get(key: String, vararg args: Any): String {
+    fun get(key: String, vararg args: Any?): String {
         val template = dig(key)
         return if (template != null) {
             MessageFormat(template).format(args)
@@ -58,4 +58,5 @@ private val messageSource = MessageSource(
 )
 
 @Suppress("SpreadOperator")
-fun t(str: String, vararg args: Any) = messageSource.get(str, *args)
+fun t(str: String, vararg args: Any?) = messageSource.get(str, *args)
+fun t(str: String) = messageSource.get(str)

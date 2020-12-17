@@ -66,7 +66,7 @@ class WebServer @Inject constructor(
         val currentPhone: PhoneRecord? = context.currentPhoneUuid().let { id ->
             jooq.selectFrom(PHONE).where(PHONE.TOKEN.eq(id)).fetchOptional().orElse(null)
         }
-        val role = currentPhone?.role()
+        val role = currentPhone?.role
         if (permittedRoles.isEmpty() || (role != null && role in permittedRoles)) {
             handler.handle(context)
         } else {

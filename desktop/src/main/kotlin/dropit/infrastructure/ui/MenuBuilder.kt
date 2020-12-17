@@ -1,5 +1,6 @@
 package dropit.infrastructure.ui
 
+import dropit.ui.DesktopIntegrations
 import org.eclipse.swt.SWT
 import org.eclipse.swt.widgets.Display
 import org.eclipse.swt.widgets.Menu
@@ -37,14 +38,27 @@ class MenuBuilder(val display: Display, private val menus: MutableList<MenuData>
         fun create(menu: Menu)
     }
 
-    class Item(private val title: String, val action: SelectAction = {}, private val systemMenuId: Int? = null) : MenuEntry {
+    class Item(
+        private val title: String,
+        val action: SelectAction = {},
+        private val systemMenuId: Int? = null,
+        private val accelerator: Int? = null
+    ) : MenuEntry {
+        val correctedTitle
+            get() = if (DesktopIntegrations().currentOS == DesktopIntegrations.OperatingSystem.MACOSX) {
+                title.replace("Ctrl+", "⌘+")
+            } else {
+                title
+            }
+
         override fun create(menu: Menu) {
             val sysMenuItem = menu.display.systemMenu?.items?.find { it.id == systemMenuId }
             if (sysMenuItem != null) {
                 sysMenuItem.addListener(SWT.Selection) { action() }
             } else {
                 MenuItem(menu, SWT.PUSH).apply {
-                    text = title
+                    text = correctedTitle
+                    accelerator = this@Item.accelerator ?: 0
                     addListener(SWT.Selection) { action() }
                 }
             }
@@ -71,8 +85,13 @@ class MenuBarBuilderDsl {
 class MenuBuilderDsl {
     val items = ArrayList<MenuBuilder.MenuEntry>()
 
-    fun item(title: String, action: SelectAction = {}, systemMenuId: Int? = null) {
-        items.add(MenuBuilder.Item(title, action, systemMenuId))
+    fun item(
+        title: String,
+        action: SelectAction = {},
+        accelerator: Int? = null,
+        systemMenuId: Int? = null
+    ) {
+        items.add(MenuBuilder.Item(title, action, systemMenuId, accelerator))
     }
 
     fun separator() {

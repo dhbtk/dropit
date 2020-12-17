@@ -3,11 +3,14 @@ package dropit.ui.settings
 import arrow.core.Either
 import arrow.core.flatMap
 import dropit.APP_NAME
+import dropit.application.PhoneSessions
 import dropit.application.model.ShowFileAction
 import dropit.application.settings.AppSettings
+import dropit.infrastructure.event.EventBus
 import dropit.infrastructure.i18n.t
 import dropit.infrastructure.ui.GuiIntegrations
 import dropit.ui.ShellContainer
+import dropit.ui.main.PhoneTable
 import org.eclipse.swt.SWT
 import org.eclipse.swt.events.FocusListener
 import org.eclipse.swt.graphics.Font
@@ -26,13 +29,16 @@ typealias SaveCallback = () -> Either<String, Unit>
 class SettingsWindow @Inject constructor(
     private val appSettings: AppSettings,
     private val guiIntegrations: GuiIntegrations,
-    private val display: Display
+    private val display: Display,
+    private val eventBus: EventBus,
+    private val phoneSessions: PhoneSessions
 ) : ShellContainer() {
     override val window = Shell(display, SWT.CLOSE or SWT.TITLE or SWT.MAX or SWT.RESIZE)
     private val saveCallbacks: ArrayList<SaveCallback> = ArrayList()
     private val descriptionFont = display.systemFont.fontData.map {
         it.apply { height *= 0.85f }
     }.let { Font(display, it.toTypedArray()) }
+    private val phoneTable = PhoneTable(eventBus, display, appSettings, phoneSessions)
 
     init {
         window.text = t("settingsWindow.title")
@@ -47,6 +53,7 @@ class SettingsWindow @Inject constructor(
         computerNameSetting()
         transferFolderSettings()
         privacySettings()
+        buildPhoneDetails()
 
         window.addListener(SWT.Close) {
             val invalidField = saveCallbacks.map { it() }.find { it.isLeft() }
@@ -55,6 +62,7 @@ class SettingsWindow @Inject constructor(
             it.doit = invalidField == null
             if (it.doit) {
                 display.asyncExec { guiIntegrations.afterWindowClose() }
+                phoneTable.dispose()
             }
         }
         window.addDisposeListener {
@@ -246,6 +254,15 @@ class SettingsWindow @Inject constructor(
         }
 
         separator(composite)
+    }
+
+    private fun buildPhoneDetails() {
+        Group(window, SWT.SHADOW_ETCHED_OUT).apply {
+            text = t("mainWindow.phoneDetails.title")
+            layoutData = GridData(GridData.FILL_HORIZONTAL).apply { minimumHeight = 128 }
+            layout = GridLayout(1, false)
+            phoneTable.init(this)
+        }
     }
 
     private fun privacySettings() {

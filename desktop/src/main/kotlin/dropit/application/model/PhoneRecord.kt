@@ -10,13 +10,17 @@ import dropit.jooq.tables.references.TRANSFER
 import dropit.jooq.tables.references.TRANSFER_FILE
 import java.util.*
 
-fun PhoneRecord.role(): PhoneRole = status?.let { PhoneRole.valueOf(it.name) } ?: PhoneRole.PENDING
+val PhoneRecord.role: PhoneRole
+    get() = status?.let { PhoneRole.valueOf(it.name) } ?: PhoneRole.PENDING
 
-fun PhoneRecord.tokenResponse(): TokenResponse {
-    if (status != TokenStatus.AUTHORIZED) return TokenResponse(status)
+val PhoneRecord.tokenResponse: TokenResponse
+    get() {
+        if (status != TokenStatus.AUTHORIZED) return TokenResponse(status)
 
-    return TokenResponse(status, UUID.fromString(appSettings.computerSecret))
-}
+        return TokenResponse(status, UUID.fromString(appSettings.computerSecret))
+    }
+
+val PhoneRecord.isDefault get() = id != null && appSettings.currentPhoneId == id
 
 fun PhoneRecord.authorize() {
     status = TokenStatus.AUTHORIZED

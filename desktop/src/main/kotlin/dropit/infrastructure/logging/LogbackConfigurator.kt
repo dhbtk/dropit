@@ -1,7 +1,6 @@
 package dropit.infrastructure.logging
 
 import ch.qos.logback.classic.Level
-import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.PatternLayout
 import ch.qos.logback.classic.layout.TTLLLayout
@@ -13,6 +12,7 @@ import ch.qos.logback.core.encoder.LayoutWrappingEncoder
 import ch.qos.logback.core.spi.ContextAwareBase
 import dropit.APP_NAME
 import dropit.infrastructure.fs.ConfigFolderProvider
+import org.slf4j.Logger.ROOT_LOGGER_NAME
 import java.io.FileOutputStream
 import java.io.OutputStream
 
@@ -22,13 +22,13 @@ class LogbackConfigurator : ContextAwareBase(), Configurator {
         "%d{yyyy-MM-dd HH:mm:ss} [%20.20thread] %highlight(%-5level) %cyan(%-30.30logger{29}) - %msg%n"
     private val useConsole = System.getProperty("dropit.debug") == "true"
     private val logLevels = mapOf(
-        Logger.ROOT_LOGGER_NAME to Level.INFO,
+        ROOT_LOGGER_NAME to Level.INFO,
         "org.jooq.Constants" to Level.WARN,
         "dropit" to Level.DEBUG
     )
 
     override fun configure(loggerContext: LoggerContext) {
-        loggerContext.getLogger(Logger.ROOT_LOGGER_NAME).apply {
+        loggerContext.getLogger(ROOT_LOGGER_NAME).apply {
             addAppender(loggerAppender(loggerContext, false))
             if (useConsole) addAppender(loggerAppender(loggerContext, true))
         }

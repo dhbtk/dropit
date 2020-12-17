@@ -16,18 +16,20 @@ import java.io.PrintWriter
 import kotlin.system.exitProcess
 
 object Application {
-    val component: ApplicationComponent
-
-    init {
-        component = DaggerApplicationComponent.create()
-    }
+    val component: ApplicationComponent = DaggerApplicationComponent.create()
 }
 
-fun main() {
+fun main(args: Array<String>) {
     SLF4JBridgeHandler.removeHandlersForRootLogger()
     SLF4JBridgeHandler.install()
     rootLogger.info(
-        "$APP_NAME starting: dropit.exefile=${System.getProperty("dropit.exefile")}"
+        "$APP_NAME starting: dropit.exefile=${System.getProperty("dropit.exefile")} args=${
+            args.joinToString(
+                ", ",
+                "\"",
+                "\""
+            )
+        }"
     )
 
     val component = Application.component

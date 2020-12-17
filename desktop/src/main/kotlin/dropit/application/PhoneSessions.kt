@@ -5,6 +5,7 @@ import dropit.application.dto.SentFileInfo
 import dropit.application.dto.TokenStatus
 import dropit.application.model.Phones
 import dropit.application.model.TransferSource
+import dropit.application.model.isDefault
 import dropit.application.settings.AppSettings
 import dropit.infrastructure.event.AppEvent
 import dropit.infrastructure.event.EventBus
@@ -15,7 +16,9 @@ import dropit.jooq.tables.references.CLIPBOARD_LOG
 import dropit.jooq.tables.references.PHONE
 import dropit.jooq.tables.references.SENT_FILE
 import dropit.logger
+import io.javalin.websocket.WsCloseContext
 import io.javalin.websocket.WsContext
+import io.javalin.websocket.WsErrorContext
 import io.javalin.websocket.WsHandler
 import org.jooq.DSLContext
 import java.io.File
@@ -28,10 +31,10 @@ import javax.inject.Singleton
 
 @Singleton
 class PhoneSessions @Inject constructor(
-    val bus: EventBus,
-    val jooq: DSLContext,
-    val objectMapper: ObjectMapper,
-    val appSettings: AppSettings
+    private val bus: EventBus,
+    private val jooq: DSLContext,
+    private val objectMapper: ObjectMapper,
+    private val appSettings: AppSettings
 ) {
     val fileDownloadStatus = HashMap<FileUpload, MutableList<Pair<LocalDateTime, Long>>>()
 
@@ -53,54 +56,51 @@ class PhoneSessions @Inject constructor(
     data class UploadProgressEvent(override val payload: FileUpload) : AppEvent<FileUpload>
     data class UploadFinishedEvent(override val payload: FileUpload) : AppEvent<FileUpload>
 
+    private val WsContext.token
+        get() = header("Authorization")
+            ?.replace(Regex("^Bearer "), "")
+            ?.let(UUID::fromString)
+    private val WsContext._phone get() = token?.let(this@PhoneSessions::getPhoneById)
+    private val WsContext.isForDefaultPhone get() = _phone != null && _phone!!.isDefault
+    private val WsContext.phone get() = _phone!!
+    private val WsContext.phoneId get() = phone.id!!
+
     /**
      *
      */
-    fun openSession(context: WsContext) {
-        val token = context.header("Authorization")?.split(" ")?.last()
-        if (token == null) {
+    private fun openSession(context: WsContext) {
+        if (!context.isForDefaultPhone) {
             context.session.close()
             return
         }
-        val phone = getPhoneByToken(token)
-        if (phone == null || phone.id != appSettings.currentPhoneId) {
-            context.session.close()
-            return
+
+        if (phoneSessions[context.phoneId] != null) {
+            updateSession(context)
+        } else {
+            phoneSessions[context.phoneId] = PhoneSession(context)
         }
-        context.session.idleTimeout = Long.MAX_VALUE
-        phoneSessions.compute(phone.id!!) { _, phoneSession ->
-            if (phoneSession != null) {
-                if (phoneSession.session != null) {
-                    context.session.close()
-                } else {
-                    phoneSession.session = context
-                    if (phoneSession.clipboardData != null) {
-                        context.send(phoneSession.clipboardData!!)
-                        phoneSession.clipboardData = null
-                    }
-                    sendFileList(phoneSession)
-                }
-                phoneSession
-            } else {
-                PhoneSession(context)
-            }
+
+        updatePhoneLastConnected(context.phoneId)
+        bus.broadcast(Phones.PhoneChangedEvent(context.phone))
+    }
+
+    private fun updateSession(context: WsContext) {
+        val phoneSession = phoneSessions[context.phoneId]!!
+        phoneSession.session = context
+
+        phoneSession.clipboardData?.also { data ->
+            context.send(data)
+            phoneSession.clipboardData = null
         }
-        updatePhoneLastConnected(phone.id!!)
-        bus.broadcast(Phones.PhoneChangedEvent(phone))
+        sendFileList(phoneSession)
     }
 
     fun defaultPhoneConnected() = phoneSessions[Phones.current()?.id]?.session != null
 
     fun configureEndpoint(wsHandler: WsHandler) {
-        wsHandler.onConnect { openSession(it) }
-        wsHandler.onError { session ->
-            logger.warn("Error on phone session with ID ${session.sessionId}", session.error())
-            closeSession(session)
-        }
-        wsHandler.onClose { session ->
-            logger.info("Closing session: id = ${session.sessionId} statusCode = ${session.status()}, reason: ${session.reason()}")
-            closeSession(session)
-        }
+        wsHandler.onConnect(this::openSession)
+        wsHandler.onError(this::closeSession)
+        wsHandler.onClose(this::closeSession)
     }
 
     fun recordUploadFinished(phone: PhoneRecord, fileId: UUID) {
@@ -120,17 +120,15 @@ class PhoneSessions @Inject constructor(
         ).insert()
     }
 
-    /**
-     *
-     */
-    fun closeSession(session: WsContext) {
-        logger.debug("Closing session with header ${session.header("Authorization")}")
-        phoneSessions.forEach { (id, value) ->
-            logger.debug("checking phone session token ${value.session?.header("Authorization")}")
-            if (value.session?.header("Authorization") == session.header("Authorization")) {
-                value.session = null
-                bus.broadcast(Phones.PhoneChangedEvent(getPhoneById(id)!!))
-            }
+    private fun closeSession(session: WsContext) {
+        if (session is WsErrorContext) {
+            logger.warn("Error on phone session with ID ${session.sessionId}", session.error())
+        } else if (session is WsCloseContext) {
+            logger.info("Closing session: id = ${session.sessionId} statusCode = ${session.status()}, reason: ${session.reason()}")
+        }
+        phoneSessions.values.find { it.session?.token == session.token }?.let { phoneSession ->
+            phoneSession.session = null
+            bus.broadcast(Phones.PhoneChangedEvent(session.phone))
         }
     }
 
@@ -142,7 +140,6 @@ class PhoneSessions @Inject constructor(
     }
 
     fun sendFile(phoneId: UUID, file: File) {
-        getPhoneById(phoneId) ?: return
         val session = phoneSessions.computeIfAbsent(phoneId) { PhoneSession() }
         val sentFile = FileUpload(file, file.length())
         session.files.add(sentFile)
@@ -151,7 +148,6 @@ class PhoneSessions @Inject constructor(
     }
 
     fun sendClipboard(phoneId: UUID, data: String) {
-        getPhoneById(phoneId) ?: return
         val session = phoneSessions.computeIfAbsent(phoneId) { PhoneSession() }
         session.clipboardData = data
         session.session?.send(data)
@@ -182,10 +178,6 @@ class PhoneSessions @Inject constructor(
 
     private fun getPhoneById(id: UUID): PhoneRecord? {
         return jooq.fetchOne(PHONE, PHONE.ID.eq(id).and(PHONE.STATUS.eq(TokenStatus.AUTHORIZED)))
-    }
-
-    private fun getPhoneByToken(token: String): PhoneRecord? {
-        return jooq.fetchOne(PHONE, PHONE.TOKEN.eq(UUID.fromString(token)).and(PHONE.STATUS.eq(TokenStatus.AUTHORIZED)))
     }
 
     private fun updatePhoneLastConnected(id: UUID) {

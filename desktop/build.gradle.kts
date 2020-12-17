@@ -76,49 +76,48 @@ macAppBundle {
 }
 
 dependencies {
-    implementation(project(":common"))
-    implementation(Deps.sqliteJdbc)
+    api(project(":common"))
+    api(Deps.sqliteJdbc)
     jooqGenerator(Deps.sqliteJdbc)
     jooqGenerator(Deps.jaxbRuntime)
     jooqGenerator(Deps.javaxActivation)
 
-    implementation(Deps.hikariCP)
-    implementation(Deps.flywayCore)
-    implementation(Deps.jooq)
-    implementation(Deps.julToSlf4j)
-    implementation(Deps.dagger)
-    implementation(Deps.javalin)
-    implementation(Deps.jacksonDatabind)
-    implementation(Deps.jacksonModuleKotlin)
-    implementation(Deps.jacksonDataformatYaml)
-    implementation(Deps.commonsLang3)
-    implementation(Deps.commonsFileupload)
-    implementation(Deps.javaxAnnotationApi)
-    implementation(Deps.jsr305)
-    implementation(Deps.logbackClassic)
-    implementation(Deps.dagger)
-//    implementation("io.arrow-kt:arrow-core-extensions:$arrow_version")
-    implementation(Deps.javaxAnnotationApi)
+    api(Deps.hikariCP)
+    api(Deps.flywayCore)
+    api(Deps.jooq)
+    api(Deps.julToSlf4j)
+    api(Deps.dagger)
+    api(Deps.javalin)
+    api(Deps.jacksonDatabind)
+    api(Deps.jacksonModuleKotlin)
+    api(Deps.jacksonDataformatYaml)
+    api(Deps.commonsLang3)
+    api(Deps.commonsFileupload)
+    api(Deps.javaxAnnotationApi)
+    api(Deps.jsr305)
+    api(Deps.logbackClassic)
+    api(Deps.dagger)
+    api(Deps.javaxAnnotationApi)
 
     testImplementation(Deps.junitJupiterEngine)
     testImplementation(kotlin("test-junit5"))
     testImplementation(Deps.spekDslJvm) {
         exclude(group = "org.jetbrains.kotlin")
     }
-    testRuntimeOnly (Deps.spekRunnerJunit5) {
+    testRuntimeOnly(Deps.spekRunnerJunit5) {
         exclude(group = "org.junit.platform")
         exclude(group = "org.jetbrains.kotlin")
     }
 
     // UI
-    implementation(Deps.swtRuntime) {
-        exclude( group = "org.eclipse.platform")
+    api(Deps.swtRuntime) {
+        exclude(group = "org.eclipse.platform")
     }
-    implementation(Deps.swt) {
-        exclude( group = "org.eclipse.platform")
+    api(Deps.swt) {
+        exclude(group = "org.eclipse.platform")
     }
-    implementation(Deps.qrGenJavaSe)
-    implementation(Deps.arrowCore)
+    api(Deps.qrGenJavaSe)
+    api(Deps.arrowCore)
 
     kapt(Deps.daggerCompiler)
 }

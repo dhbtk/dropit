@@ -23,7 +23,7 @@ class TokensController @Inject constructor(
             if (phone.status == TokenStatus.PENDING) {
                 Phones.bus.broadcast(Phones.NewPhoneRequestEvent(phone))
             }
-            context.json(phone.tokenResponse())
+            context.json(phone.tokenResponse)
         }
     }
 }

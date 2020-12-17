@@ -61,6 +61,7 @@ object Deps {
 
     const val legacySupportV4 = "androidx.legacy:legacy-support-v4:1.0.0"
     const val logbackClassic = "ch.qos.logback:logback-classic:1.2.3"
+    const val logbackCore = "ch.qos.logback:logback-core:1.2.3"
     const val material = "com.google.android.material:material:1.2.1"
 
     const val okHttp = "com.squareup.okhttp3:okhttp:4.9.0"
