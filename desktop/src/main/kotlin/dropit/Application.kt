@@ -27,11 +27,7 @@ fun main() {
     SLF4JBridgeHandler.removeHandlersForRootLogger()
     SLF4JBridgeHandler.install()
     rootLogger.info(
-        "$APP_NAME starting: launch4j.exedir=${System.getProperty("launch4j.exedir")} launch4j.exefile=${
-            System.getProperty(
-                "launch4j.exefile"
-            )
-        }"
+        "$APP_NAME starting: dropit.exefile=${System.getProperty("dropit.exefile")}"
     )
 
     val component = Application.component
