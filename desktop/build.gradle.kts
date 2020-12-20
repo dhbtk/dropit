@@ -1,86 +1,39 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import de.undercouch.gradle.tasks.download.Download
+import dropitconf.BuildPlatform
+import dropitconf.Deps
 import org.jooq.meta.jaxb.ForcedType
 import java.nio.file.Paths
 
 plugins {
-    use(Deps.Plugins.kotlinJvm)
-    use(Deps.Plugins.kotlinKapt)
-    use(Deps.Plugins.shadow)
-    use(Deps.Plugins.launch4j)
-    use(Deps.Plugins.macAppBundle)
-    use(Deps.Plugins.flyway)
-    use(Deps.Plugins.jooq)
+    id("dependencies-plugin")
+    kotlin("jvm")
+    kotlin("kapt")
+    id("com.github.johnrengelman.shadow")
+    id("edu.sc.seis.macAppBundle")
+    id("org.flywaydb.flyway")
+    id("nu.studer.jooq")
     id("application")
     id("de.undercouch.download")
 }
 
-description = ""
-project.buildDir.mkdirs()
-val buildTmpPath = Paths.get(project.buildDir.toString(), "tmp")
-buildTmpPath.toFile().mkdirs()
-val buildDbPath = Paths.get(buildTmpPath.toString(), "build.db")
-
-application {
-    mainClass.set("dropit.ApplicationKt")
-    mainClassName = "dropit.ApplicationKt"
-    applicationName = "DropIt"
-}
-
-tasks.named<ShadowJar>("shadowJar") {
-    archiveBaseName.set("dropit-desktop")
-    archiveClassifier.set(BuildPlatform.current.desktopClassifier)
-}
-
-launch4j {
-    icon = "${projectDir}/desktop.ico"
-    outfile = "DropIt.exe"
-    mainClassName = "dropit.ApplicationKt"
-    val shadowJar = project.tasks.named("shadowJar").get() as ShadowJar
-    copyConfigurable = emptyArray<String>()
-    jar = "${project.buildDir}/libs/${shadowJar.archiveBaseName.get()}-${project.version}-${shadowJar.archiveClassifier.get()}.jar"
-    print("Jar is $jar")
-    bundledJrePath = "jdk-15.0.1+9-jre"
-    jvmOptions = setOf("-Dlaunch4j.exedir=\"%EXEDIR%\"", "-Dlaunch4j.exefile=\"%EXEFILE%\"")
-}
-
-tasks.named("createExe").configure {
-    dependsOn(tasks.assemble)
-}
-
-task<Download>("downloadWindowsJre") {
-    src("https://github.com/AdoptOpenJDK/openjdk15-binaries/releases/download/jdk-15.0.1%2B9/OpenJDK15U-jre_x64_windows_hotspot_15.0.1_9.zip")
-    dest(File(File(project.buildDir, "jre"), "jre.zip"))
-}
-
-task<Copy>("unzipWindowsJre") {
-    dependsOn("downloadWindowsJre")
-    from(zipTree(tasks.named<Download>("downloadWindowsJre").get().dest))
-    into("${project.buildDir}/launch4j")
-}
-
-task<Zip>("windowsDistroZip") {
-    from("${project.buildDir}/launch4j")
-    include("**/*")
-    archiveFileName.set("dropit-desktop-${project.version}-win32.zip")
-    destinationDirectory.set(project.buildDir)
-
-    dependsOn(tasks.named("createExe"), tasks.named("unzipWindowsJre"))
-}
-
-macAppBundle {
-    javaExtras["-XstartOnFirstThread"] = null
-    javaExtras["-d64"] = null
-    mainClassName = "dropit.ApplicationKt"
-    appName = "DropIt"
+val zipFile by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    attributes {
+        attribute(Usage.USAGE_ATTRIBUTE, project.objects.named(Usage::class, "zipfile"))
+    }
 }
 
 dependencies {
+    if (BuildPlatform.current == BuildPlatform.WINDOWS) {
+        zipFile(project(":windows-wrapper"))
+    }
     api(project(":common"))
     api(Deps.sqliteJdbc)
     jooqGenerator(Deps.sqliteJdbc)
-    jooqGenerator(Deps.jaxbRuntime)
-    jooqGenerator(Deps.javaxActivation)
+//    jooqGenerator(Deps.jaxbRuntime)
+//    jooqGenerator(Deps.javaxActivation)
 
     api(Deps.hikariCP)
     api(Deps.flywayCore)
@@ -101,25 +54,103 @@ dependencies {
 
     testImplementation(Deps.junitJupiterEngine)
     testImplementation(kotlin("test-junit5"))
-    testImplementation(Deps.spekDslJvm) {
-        exclude(group = "org.jetbrains.kotlin")
-    }
-    testRuntimeOnly(Deps.spekRunnerJunit5) {
-        exclude(group = "org.junit.platform")
-        exclude(group = "org.jetbrains.kotlin")
-    }
+    testImplementation(Deps.spekDslJvm)
+    testRuntimeOnly(Deps.spekRunnerJunit5)
 
     // UI
-    api(Deps.swtRuntime) {
-        exclude(group = "org.eclipse.platform")
-    }
-    api(Deps.swt) {
-        exclude(group = "org.eclipse.platform")
-    }
+    api(Deps.swt)
     api(Deps.qrGenJavaSe)
     api(Deps.arrowCore)
 
     kapt(Deps.daggerCompiler)
+}
+
+description = ""
+val buildDbPath = Paths.get("$buildDir/build-db/build.db")
+val windowsBuildDir by extra { "$buildDir/windows" }
+
+application {
+    mainClass.set("dropit.ApplicationKt")
+    mainClassName = "dropit.ApplicationKt"
+    applicationName = "DropIt"
+}
+
+tasks {
+    val shadowJar by named<ShadowJar>("shadowJar") {
+        archiveBaseName.set("dropit-desktop")
+        archiveClassifier.set(BuildPlatform.current.desktopClassifier)
+    }
+
+    val downloadWindowsJre by registering(Download::class) {
+        src("https://github.com/AdoptOpenJDK/openjdk15-binaries/releases/download/jdk-15.0.1%2B9/OpenJDK15U-jre_x64_windows_hotspot_15.0.1_9.zip")
+        dest("$buildDir/jre-zip/jre.zip")
+    }
+
+    val windowsDistroZip by registering(Zip::class) {
+        from(shadowJar.archiveFile) {
+            rename(".+", "dropit.jar")
+        }
+        from(zipTree(downloadWindowsJre.get().dest))
+        from(zipFile.resolve().map { zipTree(it) })
+        include("**/*")
+        eachFile {
+            if (path.startsWith("jdk-")) {
+                val splitPath = ArrayList(path.split("/"))
+                splitPath[0] = "jre"
+                path = splitPath.joinToString("/")
+            }
+        }
+        includeEmptyDirs = false
+        archiveFileName.set("dropit-desktop-${project.version}-win32.zip")
+        destinationDirectory.set(file("$buildDir/windows-distro-zip"))
+        dependsOn(downloadWindowsJre, zipFile)
+    }
+
+    val generateKotlin by registering(Sync::class) {
+        val props = HashMap<String, Any>()
+        props["version"] = project.version
+        inputs.properties(props)
+        from("src/template/kotlin")
+        into("$buildDir/generated-template")
+        expand(props)
+    }
+
+    val compileKotlin by existing {
+        dependsOn.add(generateKotlin.get())
+    }
+
+    test {
+        useJUnitPlatform {
+            includeEngines("spek2")
+        }
+        testLogging {
+            events("PASSED", "STARTED", "FAILED", "SKIPPED")
+        }
+    }
+
+    build {
+        dependsOn(shadowJar)
+    }
+
+    val prepareBuildDbPath by registering {
+        mustRunAfter("clean")
+        doLast {
+            mkdir(buildDbPath.parent)
+        }
+    }
+
+    val flywayMigrate by existing {
+        dependsOn(prepareBuildDbPath)
+    }
+}
+
+sourceSets["main"].java.srcDir("$buildDir/generated-template")
+
+macAppBundle {
+    javaExtras["-XstartOnFirstThread"] = null
+    javaExtras["-d64"] = null
+    mainClassName = "dropit.ApplicationKt"
+    appName = "DropIt"
 }
 
 jooq {
@@ -137,9 +168,8 @@ jooq {
                     strategy.name = "org.jooq.codegen.DefaultGeneratorStrategy"
                     database.apply {
                         excludes = "flyway_schema_history"
-//                    schemaVersionProvider = "SELECT MAX(version) FROM flyway_schema_history"
-//                    catalogVersionProvider = "SELECT MAX(version) FROM flyway_schema_history"
-//                    withSyntheticPrimaryKeys(".+\\.(id|ID)")
+                        schemaVersionProvider = "SELECT MAX(version) FROM flyway_schema_history"
+                        catalogVersionProvider = "SELECT MAX(version) FROM flyway_schema_history"
                         forcedTypes.addAll(
                             arrayOf(
                                 ForcedType()
@@ -190,28 +220,9 @@ jooq {
 }
 
 val generateJooq by project.tasks
-generateJooq.dependsOn("flywayMigrate")
-
-tasks.clean {
-    delete(buildDbPath)
-}
+generateJooq.dependsOn(tasks.flywayMigrate)
 
 flyway {
     url = "jdbc:sqlite:$buildDbPath"
     mixed = true
-}
-
-tasks {
-    test {
-        useJUnitPlatform {
-            includeEngines("spek2")
-        }
-        testLogging {
-            events("PASSED", "STARTED", "FAILED", "SKIPPED")
-        }
-    }
-
-    build {
-        dependsOn(shadowJar)
-    }
 }

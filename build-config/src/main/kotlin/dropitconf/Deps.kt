@@ -1,22 +1,16 @@
+package dropitconf
+
+import org.eclipse.jgit.api.Git
+import java.io.File
+
 object Deps {
     object Plugins {
-        const val ANDROID_GRADLE = "4.0.2"
         const val KOTLIN = "1.4.21"
-
-        const val androidGradle = "com.android.tools.build:gradle:$ANDROID_GRADLE"
-
-        val kotlinJvm = Plugin("org.jetbrains.kotlin.jvm")
-        val kotlinKapt = Plugin("org.jetbrains.kotlin.kapt")
-        val shadow = Plugin("com.github.johnrengelman.shadow", "6.1.0")
-        val launch4j = Plugin("edu.sc.seis.launch4j", "2.4.9")
-        val macAppBundle = Plugin("edu.sc.seis.macAppBundle", "2.3.0")
-        val flyway = Plugin("org.flywaydb.flyway", FLYWAY_VERSION)
-        val jooq = Plugin("nu.studer.jooq", "5.2")
     }
 
     data class Plugin(val id: String, val version: String? = null)
 
-    const val FLYWAY_VERSION = "7.2.0"
+    const val FLYWAY_VERSION = "7.3.2"
     const val DAGGER_VERSION = "2.30.1"
     const val JACKSON_VERSION = "2.12.0"
     const val RETROFIT_VERSION = "2.9.0"
@@ -71,15 +65,37 @@ object Deps {
 
     const val recyclerView = "androidx.recyclerview:recyclerview:1.1.0"
     const val retrofit = "com.squareup.retrofit2:retrofit:$RETROFIT_VERSION"
-    const val retrofitConverterJackson = "com.squareup.retrofit2:converter-jackson:$RETROFIT_VERSION"
-    const val retrofitConverterScalars = "com.squareup.retrofit2:converter-scalars:$RETROFIT_VERSION"
+    const val retrofitConverterJackson =
+        "com.squareup.retrofit2:converter-jackson:$RETROFIT_VERSION"
+    const val retrofitConverterScalars =
+        "com.squareup.retrofit2:converter-scalars:$RETROFIT_VERSION"
     const val rxJava = "io.reactivex.rxjava2:rxjava:2.2.4"
 
     const val spekDslJvm = "org.spekframework.spek2:spek-dsl-jvm:$SPEK_VERSION"
     const val spekRunnerJunit5 = "org.spekframework.spek2:spek-runner-junit5:$SPEK_VERSION"
     const val sqliteJdbc = "org.xerial:sqlite-jdbc:3.21.0.1"
     const val swt = "org.eclipse.platform:org.eclipse.swt:$SWT_VERSION"
-    val swtRuntime = "org.eclipse.platform:org.eclipse.swt.${BuildPlatform.current.swtRuntime}:$SWT_VERSION"
+}
+
+fun gitVersion(gitRepo: File): String {
+    val git = Git.open(gitRepo)
+    val tagString = git.describe().setTags(true).setTarget("HEAD").setLong(false).call()
+    val tagRef = git.repository.findRef(tagString)
+    val headRef = git.repository.findRef("HEAD")
+    val isRelease = git.repository.branch == "master" && tagRef.objectId == headRef.objectId
+//    if (isRelease) return tagString
+
+    var distance = 0
+    for (commit in git.log().setMaxCount(100).call()) {
+        distance++
+        if (commit.id == headRef.objectId) break
+    }
+    return "$tagString.$distance"
+}
+
+fun gitCommitCount(gitRepo: File): Int {
+    val git = Git.open(gitRepo)
+    return git.log().call().sumBy { 1 }
 }
 
 enum class BuildPlatform(private val targetPlatform: String, val swtRuntime: String) {
@@ -88,7 +104,7 @@ enum class BuildPlatform(private val targetPlatform: String, val swtRuntime: Str
     MACOS("osx", "cocoa.macosx.x86_64");
 
     val desktopClassifier: String
-            get() = targetPlatform
+        get() = targetPlatform
 
     companion object {
         val current: BuildPlatform
@@ -105,13 +121,5 @@ enum class BuildPlatform(private val targetPlatform: String, val swtRuntime: Str
                     else -> LINUX
                 }
             }
-    }
-}
-
-fun org.gradle.plugin.use.PluginDependenciesSpec.use(plugin: Deps.Plugin) {
-    if (plugin.version == null) {
-        this.id(plugin.id)
-    } else {
-        this.id(plugin.id).version(plugin.version)
     }
 }

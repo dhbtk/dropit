@@ -1,4 +1,7 @@
+import dropitconf.Deps
+
 plugins {
+    id("dependencies-plugin")
     id("com.android.application")
     kotlin("android")
     kotlin("kapt")
@@ -6,13 +9,14 @@ plugins {
 }
 
 android {
+    val commitCount: Int by project.extra
     compileSdkVersion(30)
     defaultConfig {
         applicationId = "dropit.mobile"
         minSdkVersion(22)
         targetSdkVersion(30)
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = commitCount
+        versionName = project.version.toString()
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         vectorDrawables.useSupportLibrary = true

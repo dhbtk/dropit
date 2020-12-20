@@ -17,16 +17,14 @@ namespace DropIt
     {
         private void Application_Startup(object sender, StartupEventArgs e)
         {
-            MessageBox.Show(string.Join(",", e.Args));
             var jni = new JNI.JavaNativeInterface();
             var opts = new Dictionary<string, string>
             {
-                ["-Djava.class.path"] = "C:\\Users\\Diana\\Projetos\\dropit\\desktop\\build\\libs\\dropit-desktop-0.1-win32.jar",
+                ["-Djava.class.path"] = "dropit.jar",
                 ["-Ddropit.exefile"] = Process.GetCurrentProcess().MainModule.FileName
             };
             jni.LoadVM(opts);
             jni.CallMainMethod("dropit/ApplicationKt", e.Args);
-            MessageBox.Show("Main has exited");
             Environment.Exit(0);
         }
     }

@@ -23,7 +23,7 @@ fun main(args: Array<String>) {
     SLF4JBridgeHandler.removeHandlersForRootLogger()
     SLF4JBridgeHandler.install()
     rootLogger.info(
-        "$APP_NAME starting: dropit.exefile=${System.getProperty("dropit.exefile")} args=${
+        "$APP_NAME $VERSION starting: dropit.exefile=${System.getProperty("dropit.exefile")} args=${
             args.joinToString(
                 ", ",
                 "\"",

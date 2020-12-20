@@ -5,9 +5,11 @@ import dagger.Provides
 import dropit.APP_NAME
 import dropit.infrastructure.db.CrudListener
 import dropit.infrastructure.db.DatabaseInitializer
+import dropit.infrastructure.db.SqlLogger
 import dropit.infrastructure.fs.ConfigFolderProvider
 import org.jooq.SQLDialect
 import org.jooq.impl.DefaultConfiguration
+import org.jooq.impl.DefaultExecuteListenerProvider
 import org.jooq.impl.DefaultRecordListenerProvider
 import java.nio.file.Path
 import javax.inject.Named
@@ -26,6 +28,7 @@ class DatabaseModule {
         .set(dataSource)
         .set(SQLDialect.SQLITE)
         .set(DefaultRecordListenerProvider(CrudListener()))
+        .set(DefaultExecuteListenerProvider(SqlLogger()))
 
     @Provides
     @Named("databasePath")

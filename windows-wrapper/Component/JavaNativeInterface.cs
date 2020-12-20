@@ -29,8 +29,8 @@ namespace JNI
 
         public void LoadVM(Dictionary<string, string> options)
         {
-            string jvmDir = "C:\\Users\\Diana\\Projetos\\dropit\\desktop\\build\\launch4j\\jdk-15.0.1+9-jre";
-            string jvmDll = Path.Combine(jvmDir, "bin", "server", "jvm.dll");
+            string currentDir = Directory.GetCurrentDirectory();
+            string jvmDll = Path.Combine("jre", "bin", "server", "jvm.dll");
 
             if ((!File.Exists(jvmDll)))
                 throw new Exception("Error determining the location of the Java Runtime Environment");
@@ -68,6 +68,8 @@ namespace JNI
 
             jvm = new JavaVM(javaVirtualMachine);
             env = new JNIEnv(environment);
+
+            Directory.SetCurrentDirectory(currentDir);
         }
 
         public void InstantiateJavaObject(string ClassName)

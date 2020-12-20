@@ -1,6 +1,9 @@
+import dropitconf.Deps
+
 plugins {
-    use(Deps.Plugins.kotlinJvm)
-    use(Deps.Plugins.kotlinKapt)
+    kotlin("jvm")
+    kotlin("kapt")
+    id("dependencies-plugin")
 }
 
 description = ""
